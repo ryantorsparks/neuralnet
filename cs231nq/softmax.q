@@ -10,7 +10,7 @@ softmaxLossVectorized:{[w;x;y;b;reg;step]
 	scores:dot[x;w]+\:b;
 	probs:exp[scores]%sum each exp scores;
 	dataLoss:sum neg[log probs@'y]%count x;
-	regLoss:.5*reg*sum {x*x}raze w;
+	regLoss:.5*reg*r$r:raze w;
 	loss:dataLoss+regLoss;
 
 	dscores:@'[probs;y;-;1]%count x;
