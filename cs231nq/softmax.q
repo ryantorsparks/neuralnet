@@ -1,4 +1,4 @@
-dot:@[{system"l qml.q";show"setting dot as qml.mm";.qml.mm};();{"no qml, dot is mmu";mmu}];
+\l nn_util.q
 
 / softmax loss in kdb
 / reg:0.1
