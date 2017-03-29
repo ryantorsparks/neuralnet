@@ -4,14 +4,19 @@
 / relative errors
 relError:{[x;y]max/[abs[x-y]%1e-8|sum abs(x;y)]}
 
-checkInputs:{[d]
-    required:`x`w1`w2`b1`b2;
+/ like np.random.randn
+wInit:{(x;y)#sqrt[-2*log n?1.]*cos[2*3.14159265359*(n:x*y)?1.]}
+
+
+checkInputs:{[d;specials]
+    required:`x`w1`w2`b1`b2,specials;
     if[`y in k:key d;required,:`y`reg];
+    if[not all `w1`w2`b1`b2 in k;required,:`nHidden`batchSize];
     if[count missing:required except k;'"missing the following keys from input dict: ",-3!missing];
  };
  
 epoch:{[d]
-    checkInputs[d];
+    checkInputs[d;()];
     w1:d`w1;
     w2:d`w2;
     x:d`x;
@@ -68,26 +73,39 @@ train:{[d]
     valAccuracyHistory:();
     
  }; 
-    
+   
+
+/ e.g.
+/ res:{[d;inds]sgd[@[d;`sampleIndices;:;inds]]}/[get`:d;get`:randomInds]  
+/ res:sgd/[1000;d:`inputTrain`outputTrain`nHidden`nClass`reg`learnRate`learnRateDecay`std`batchSize!(xTrain;yTrain;50;10;0.5;1e-4;0.95;1e-4;200)]
+
 sgd:{[d]
-    if[count missing:`reg`learnRate`batchSize`inputTrain`outputTrain`nHidden except key d;
-       '"missing following keys from input dict: ",-3!missing
-      ];
-    sampleIndices:neg[d`batchSize]?d`numTrain;
-    d:d,
-    (!) . flip
-       ( 
-         (`x;d[`inputTrain]sampleIndices);
-         (`y;d[`outputTrain]sampleIndices);
-         (`w1;wInit[count x 0;d`nHidden]);
-         (`w2;wInit[d`nHidden;d`nClass]);
-         (`b1;d[`nHidden]#0f);
-         (`b2;d[`nClass]#0f)
-       );
+    numTrain:count d[`inputTrain];
+    numFeatures:count d[`inputTrain] 0;
+    if[not `cnt in key d;d[`cnt]:0];
+    batchSize:$[`batchSize in key d;d`batchSize;numTrain];
+    sampleIndices:$[`sampleIndices in key d;
+                      d`sampleIndices;
+                      neg[batchSize]?numTrain
+                  ];
+    std:$[`std in key d;d`std;1.0];
+    if[not`w1 in key d;d[`w1]:std*wInit[numFeatures;d`nHidden]];
+    if[not`w2 in key d;d[`w2]:std*wInit[d`nHidden;d`nClass]];
+    if[not`b1 in key d;d[`b1]:d[`nHidden]#0f];
+    if[not`b2 in key d;d[`b2]:d[`nClass]#0f];
+    d[`x`y]:d[`inputTrain`outputTrain]@\:sampleIndices;
+    checkInputs[d;`learnRate];
+    
     lossGrad:epoch[d];
     d[`loss],:lossGrad 0;
     grad:lossGrad 1;
     d[vars]-:abs[d`learnRate]*grad vars:`w1`b1`w2`b2;
+    if[0=d[`cnt] mod 100;show"iteration is ",string d`cnt];
+    if[0=d[`cnt]mod numTrain%batchSize;
+        show "cnt, learnRate and loss are ",-3!(d`cnt;d`learnRate;lossGrad 0);
+        if[`learnRateDecay in key d;d[`learnRate]*:d`learnRateDecay]
+    ];
+    d[`cnt]+:1;
     d
  };
 
@@ -103,16 +121,18 @@ sgd:{[d]
 / returns:
 / list of length N, predicted labels of elements of x (should
 /   be between 0 and C inclusive, e.g digits will be from 0 to 9).
+/ e.g:
+/ res:sgd/[1000;d:`inputTrain`outputTrain`nHidden`nClass`reg`learnRate`learnRateDecay`std`batchSize!(xTrain;yTrain;50;10;0.5;1e-4;0.95;1e-4;200)]
+/ predict `x`w1`w2`b1`b2!(xVal;res`w1;res`w2;res`b1;res`b2)
 predict:{[d]
-    a1:0|z1:dot[d`x;d`w1]+d`b1;
-    scores:dot[a1;d`w2]+d`b2;
+    a1:0|z1:dot[d`x;d`w1]+\:d`b1;
+    scores:dot[a1;d`w2]+\:d`b2;
     (first idesc@)each scores
  };
 
 
-
 twoLayerNet:{[d]
-    checkInputs[d];
+    checkInputs[d;()];
     w1:d`w1;
     w2:d`w2;
     x:d`x;
