@@ -1,5 +1,6 @@
 \l nn_util.q
-\l numerical_gradient.q 
+\l numerical_gradient.q
+if[not all `xTrain`yTrain in key `.;show "loading cifar";system"l load_cifar_data.q"];
 
 / relative errors
 relError:{[x;y]max/[abs[x-y]%1e-8|sum abs(x;y)]}
@@ -15,7 +16,7 @@ checkInputs:{[d;specials]
     if[count missing:required except k;'"missing the following keys from input dict: ",-3!missing];
  };
  
-epoch:{[d]
+twoLayerNet:{[d]
     checkInputs[d;()];
     w1:d`w1;
     w2:d`w2;
@@ -51,38 +52,14 @@ epoch:{[d]
  };
 
 
-/ numIters:100;
-/ reg:1e-5;
-/ batchSize:200;
-/ learnRate:0.001;
-/ learnRateDecay:0.95
-train:{[d]
-    inputTrain:d`inputTrain;
-    outputTrain:d`outputTrain;
-    inputValid:d`validTrain;
-    outputValid:d`outputValid;
-    learnRate:d`learnRate;
-    learnRateDecay:d`learnRateDecay;
-    reg:d`reg;
-    numIters:d`numIters;
-    batchSize:n`batchSize;
-    numTrain:count inputTrain;
-    iterationsPerEpoch:1|numTrain%batchSize;
-    lossHistory:();
-    trainAccuraccyHistory:();
-    valAccuracyHistory:();
-    
- }; 
-   
-
 / e.g.
 / res:{[d;inds]sgd[@[d;`sampleIndices;:;inds]]}/[get`:d;get`:randomInds]  
 / res:sgd/[1000;d:`inputTrain`outputTrain`nHidden`nClass`reg`learnRate`learnRateDecay`std`batchSize!(xTrain;yTrain;50;10;0.5;1e-4;0.95;1e-4;200)]
-
 sgd:{[d]
     numTrain:count d[`inputTrain];
     numFeatures:count d[`inputTrain] 0;
     if[not `cnt in key d;d[`cnt]:0];
+    if[not `accuracy in key d;d[`accuracy]:enlist 0.];
     batchSize:$[`batchSize in key d;d`batchSize;numTrain];
     sampleIndices:$[`sampleIndices in key d;
                       d`sampleIndices;
@@ -96,15 +73,15 @@ sgd:{[d]
     d[`x`y]:d[`inputTrain`outputTrain]@\:sampleIndices;
     checkInputs[d;`learnRate];
     
-    lossGrad:epoch[d];
+    lossGrad:twoLayerNet[d];
     d[`loss],:lossGrad 0;
     grad:lossGrad 1;
     d[vars]-:abs[d`learnRate]*grad vars:`w1`b1`w2`b2;
-    if[0=d[`cnt] mod 100;show"iteration is ",string d`cnt];
-    if[0=d[`cnt]mod numTrain%batchSize;
-        show "cnt, learnRate and loss are ",-3!(d`cnt;d`learnRate;lossGrad 0);
-        if[`learnRateDecay in key d;d[`learnRate]*:d`learnRateDecay]
+    if[0=d[`cnt] mod 100;
+        d[`accuracy],:  accuracy: avg predict[`x`w1`w2`b1`b2#d]=d`y;
+        show "(cnt;learnRate;loss;accuracy) are ",-3!(d`cnt;d`learnRate;lossGrad 0;accuracy)
     ];
+    if[(0=d[`cnt]mod numTrain%batchSize)and `learnRateDecay in key d;d[`learnRate]*:d`learnRateDecay];
     d[`cnt]+:1;
     d
  };
@@ -128,38 +105,4 @@ predict:{[d]
     a1:0|z1:dot[d`x;d`w1]+\:d`b1;
     scores:dot[a1;d`w2]+\:d`b2;
     (first idesc@)each scores
- };
-
-
-twoLayerNet:{[d]
-    checkInputs[d;()];
-    w1:d`w1;
-    w2:d`w2;
-    x:d`x;
-    b1:d`b1;
-    b2:d`b2;
-    reg:d`reg;
-
-    / forward
-    layer1:dot[x;w1]+\:b1;
-    layer2:0|layer1;
-    layer3:dot[layer2;w2]+\:b2;
-    scores:layer3;
-    if[not `y in key d;:scores];
-    expLayer3:exp layer3;
-    rows:sum each expLayer3;
-    layer4:avg neg[layer3@'y]+log rows;
-    loss:layer4+.5*reg*r$r:2 raze/w1,w2;
-
-    / backpass
-    dlayer4:1.0;
-    dlayer3:dlayer4*@'[expLayer3%rows;y;-;1f]%count x;
-    dlayer2:dot[dlayer3;flip w2];
-    dlayer1:dlayer2*layer1>0;
-    d1w:dot[flip x;dlayer1]+w1*reg;
-    w2:dot[flip layer2;dlayer3]+w2*reg;
-
-    db1:sum dlayer1;
-    db2:sum dlayer3;
-    (loss;`w1`w2`b1`b2!(dw1;dw2;db1;db2))
  };

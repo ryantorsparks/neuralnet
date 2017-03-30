@@ -20,7 +20,7 @@ numGradOneIndChange:{[f;d;param;ind]
  };
 
 / e.g
-/ {relError[res[1;x];numericalGradient[(first epoch@);d;x]]}each `w2`b2`w1`b1
+/ {relError[res[1;x];numericalGradient[(first twoLayerNet@);d;x]]}each `w2`b2`w1`b1
 numericalGradient:{[f;d;param]
    paramShape:shape d param;
    inds:cross/[til each paramShape];
