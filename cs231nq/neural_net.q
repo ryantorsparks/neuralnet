@@ -83,10 +83,9 @@ sgd:{[d]
     d[`loss],:lossGrad 0;
     grad:lossGrad 1;
     d[vars]-:abs[d`learnRate]*grad vars:`w1`b1`w2`b2;
-    show d`cnt;
     if[0=d[`cnt] mod 100;
         d[`accuracy],:  accuracy: avg predict[`x`w1`w2`b1`b2#d]=d`y;
-        lg "(cnt;learnRate;loss;accuracy) are ",-3!(d`cnt;d`learnRate;lossGrad 0;accuracy)
+        lg "TRAINING PROGRESS: cnt, learnRate, loss, accuracy are ",-3!(d`cnt;d`learnRate;lossGrad 0;accuracy)
     ];
     if[(0=d[`cnt]mod numTrain%batchSize)and `learnRateDecay in key d;d[`learnRate]*:d`learnRateDecay];
     d[`cnt]+:1;
