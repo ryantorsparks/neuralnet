@@ -33,6 +33,10 @@ lg maxRelativeGradErrors
 lg "train the toy model using the same \"random\" batch indices as python uses"
 toyTrained:{[d;inds]sgd[@[d;`sampleIndices;:;inds]]}/[@[toyInputDict;`reg;:;1e-5];toyRandomInds]
 lg "final traing loss: ",string last toyTrained`loss
+delete toyTrained from `.;
+{delete x from `.}each `toyTrained`toyLossGrad`toyScores`toyScoreDiff;
+.Q.gc[]
+
 
 lg "Now CIFAR_10 data is already loaded - so we train our network
     To train our network we will use SGD with momentum.
@@ -41,6 +45,6 @@ lg "Now CIFAR_10 data is already loaded - so we train our network
     we will reduce the learning rate by multiplying it by a decay rate."
 lg "run 1000 iterations with starting parameters:"
 lg trainStartDict:`inputTrain`outputTrain`nHidden`nClass`reg`learnRate`learnRateDecay`std`batchSize!(xTrain;yTrain;50;10;0.5;1e-4;0.95;1e-4;200)
-trainRes:1000 sgd/trainStartDict
+//trainRes:1000 sgd/trainStartDict
 
 
