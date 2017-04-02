@@ -83,5 +83,5 @@ res:({[d;lr;reg]
 
 / 0.0009866434 0.5184204
 bestParams:res first idesc res[;2]
-lg "Best params found to be ",(-3!bestParams 0 1),", try running on test data"
+lg "Best params found to be ",(-3!bestParams 0 1),", try running on test data, test accuracy is: "
 avg yTest=predict `x`w1`w2`b1`b2!enlist[xTest],bestParams 3
