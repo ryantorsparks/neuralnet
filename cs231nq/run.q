@@ -1,4 +1,5 @@
 system"l neural_net.q"
+system"l load_cifar_data.q"
 
 lg "First, we run a toy model with small data sets, 
     for this, we've pre generated the exact same random
@@ -9,34 +10,30 @@ lg "compute scores"
 toyScores:twoLayerNet `y _ toyInputDict
 
 lg "scores are"
-lg toyScores
+toyScores
 
 toyScoreDiff:2 sum/abs toyScores-toyCorrectScores
 lg "Difference between scores and correct scores are"
-lg toyScoreDiff
+toyScoreDiff
 
 lg "forward pass, compute loss and gradient"
 toyLossGrad: twoLayerNet toyInputDict
-lg toyLossGrad 0
+toyLossGrad 0
 correctToyLoss:1.30378789133
 lossDiff:2 sum/abs toyLossGrad[0]-correctToyLoss
 
 lg "Difference between your loss and correct loss:"
-lg lossDiff
+lossDiff
 
 lg "Backward pass on toy model"
 
-maxRelativeGradErrors:{[analyticRes;param]relError[analyticRes[param];numericalGradient[(first twoLayerNet@);toyInputDict;param]]}[toyLossGrad 1] each `w1`w2
+maxRelativeGradErrors:{[analyticRes;param]relError[analyticRes[param];numericalGradient[(first twoLayerNet@);toyInputDict;param]]}[toyLossGrad 1] each `w2`b2`w1`b1
 lg "max relative gradient errors for w1 and w2 are"
-lg maxRelativeGradErrors
+maxRelativeGradErrors
 
 lg "train the toy model using the same \"random\" batch indices as python uses"
 toyTrained:{[d;inds]sgd[@[d;`sampleIndices;:;inds]]}/[@[toyInputDict;`reg;:;1e-5];toyRandomInds]
 lg "final traing loss: ",string last toyTrained`loss
-delete toyTrained from `.;
-{delete x from `.}each `toyTrained`toyLossGrad`toyScores`toyScoreDiff;
-.Q.gc[]
-
 
 lg "Now CIFAR_10 data is already loaded - so we train our network
     To train our network we will use SGD with momentum.
@@ -45,6 +42,45 @@ lg "Now CIFAR_10 data is already loaded - so we train our network
     we will reduce the learning rate by multiplying it by a decay rate."
 lg "run 1000 iterations with starting parameters:"
 lg trainStartDict:`inputTrain`outputTrain`nHidden`nClass`reg`learnRate`learnRateDecay`std`batchSize!(xTrain;yTrain;50;10;0.5;1e-4;0.95;1e-4;200)
-//trainRes:1000 sgd/trainStartDict
+trainRes:1000 sgd/trainStartDict
 
+lg "Check the accuracy with validation data"
+valAccuracy:avg yVal=predict `x`w1`w2`b1`b2!enlist[xVal],trainRes`w1`w2`b1`b2;
+lg "Validation accuracy was only ",(string valAccuracy),", which isn't great.
+    We can look at things like the loss and accuracy history to try and tweak the 
+    hyperparamters"
+lg "loss history (better plotted using an IDE/chart"
+trainRes`loss
+lg "accuracy history (again, better in a chart"
+trainRes`accuracy
 
+lg "We use random search to find better hyperparameters (learning 
+    rate and regularization parameter), keeping reg between 0.35 and 0.6,
+    and lr between 0.0005 and 0.0015, lr and regs are respectively:"
+numRandoms:10
+(::)randomLearnRates:0.0005+numRandoms?0.001
+(::)randomRegs:0.35+numRandoms?0.25
+
+lg "for this test, we do multi process peach"
+slaves:abs system"s"
+{system"q -p ",string[8800+x]," -g 1 &"} each til slaves
+system"sleep 3"
+.z.pd:`u#hopen each 8800+til slaves
+.z.pd@\:"system\"l neural_net.q\""
+.z.pd@\:(set';valVars;value each valVars:`xVal`yVal)
+
+/ can try and peach this, but on my home laptop it struggles with RAM for > 2 slaves
+res:({[d;lr;reg]
+    d[`learnRate`reg]:(lr;reg);
+    lgToken:" lr = ",string[lr],", reg = ",string reg;
+    lg "running 2000 iterations of sgd for ",lgToken;
+    res:2000 sgd/d;
+    valAccuracy: avg yVal=predict `x`w1`w2`b1`b2!enlist[xVal],res`w1`w2`b1`b2;
+    lg "validation accuracy for ",lgToken," is ",string valAccuracy;
+    (lr;reg;valAccuracy;res`w1`w2`b1`b2)
+ }[trainStartDict;;] .) peach flip (randomLearnRates;randomRegs)
+
+/ 0.0009866434 0.5184204
+bestParams:res first idesc res[;2]
+lg "Best params found to be ",(-3!bestParams 0 1),", try running on test data"
+avg yTest=predict `x`w1`w2`b1`b2!enlist[xTest],bestParams 3

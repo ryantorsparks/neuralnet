@@ -64,3 +64,7 @@ $[all (vars:`xTrain`yTrain`xTest`yTest`xVal`yVal) in key dataDir;
     ];
     loadCIFARBinaryData[]
   ];
+
+/ not sure why this is needed, but dot[;w] type errors otherwise
+xVal:`real$xVal
+xTest:`real$xTest

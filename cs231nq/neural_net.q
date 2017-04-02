@@ -1,6 +1,5 @@
 \l nn_util.q
 \l numerical_gradient.q
-if[not all `xTrain`yTrain in key `.;lg "loading cifar";system"l load_cifar_data.q"];
 
 / relative errors
 relError:{[x;y]max/[abs[x-y]%1e-8|sum abs(x;y)]}
@@ -63,6 +62,7 @@ sgd:{[d]
     if[not `numFeatures in key d;d[`numFeatures]:count d[`inputTrain] 0];
     if[not `cnt in key d;d[`cnt]:0];
     if[not `accuracy in key d;d[`accuracy]:enlist 0.];
+    if[not `loss in key d;d[`loss]:enlist 0n];
     numTrain:d`numTrain;
     numFeatures:d`numFeatures;
     batchSize:$[`batchSize in key d;d`batchSize;numTrain];
@@ -83,8 +83,8 @@ sgd:{[d]
     d[`loss],:lossGrad 0;
     grad:lossGrad 1;
     d[vars]-:abs[d`learnRate]*grad vars:`w1`b1`w2`b2;
+    d[`accuracy],:  accuracy: avg predict[`x`w1`w2`b1`b2#d]=d`y;
     if[0=d[`cnt] mod 100;
-        d[`accuracy],:  accuracy: avg predict[`x`w1`w2`b1`b2#d]=d`y;
         lg "TRAINING PROGRESS: cnt, learnRate, loss, accuracy are ",-3!(d`cnt;d`learnRate;lossGrad 0;accuracy)
     ];
     if[(0=d[`cnt]mod numTrain%batchSize)and `learnRateDecay in key d;d[`learnRate]*:d`learnRateDecay];
