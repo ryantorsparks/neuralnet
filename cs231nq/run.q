@@ -1,4 +1,4 @@
-if[not 0>system"s";-1"this script should be run with multi process, so start with negative s, e.g. \"q run.q -s -2"";exit 0];
+if[not 0>system"s";-1"this script should be run with multi process, so start with negative s, e.g. \"q run.q -s -2\"";exit 0];
 system"l neural_net.q"
 system"l load_cifar_data.q"
 
@@ -66,22 +66,16 @@ lg "for this test, we do multi process peach"
 slaves:abs system"s"
 {system"q -p ",string[8800+x]," -g 1 &"} each til slaves
 system"sleep 3"
+
+lg "load functions and cifar data into slaves"
 .z.pd:`u#hopen each 8800+til slaves
 .z.pd@\:"system\"l neural_net.q\""
-.z.pd@\:(set';valVars;value each valVars:`xVal`yVal)
+.z.pd@\:"system\"l load_cifar_data.q\""
 
-/ can try and peach this, but on my home laptop it struggles with RAM for > 2 slaves
-res:({[d;lr;reg]
-    d[`learnRate`reg]:(lr;reg);
-    lgToken:" lr = ",string[lr],", reg = ",string reg;
-    lg "running 2000 iterations of sgd for ",lgToken;
-    res:2000 sgd/d;
-    valAccuracy: avg yVal=predict `x`w1`w2`b1`b2!enlist[xVal],res`w1`w2`b1`b2;
-    lg "validation accuracy for ",lgToken," is ",string valAccuracy;
-    (lr;reg;valAccuracy;res`w1`w2`b1`b2)
- }[trainStartDict;;] .) peach flip (randomLearnRates;randomRegs)
+lg "find better learning rate and regularization parameters"
+res:varyHyperParams[`inputTrain`outputTrain _ trainStartDict;2000;4;0.0015 0.005;0.35 0.5];
 
-/ 0.0009866434 0.5184204
+/ example, good parameters: 0.0009866434 0.5184204
 bestParams:res first idesc res[;2]
 lg "Best params found to be ",(-3!bestParams 0 1),", try running on test data, test accuracy is: "
 avg yTest=predict `x`w1`w2`b1`b2!enlist[xTest],bestParams 3

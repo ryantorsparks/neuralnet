@@ -92,6 +92,32 @@ sgd:{[d]
     d
  };
 
+/ optimize hyperparameters
+/ vary learning rate and regularization parameters to try and find
+/ better paramters for learning
+/ @global xVal (input validation data)
+/ @global yVal (output validation data)
+/ @global xTrain (input training data - too big for 32 bit kdb to handle sending across)
+/ @global yTarin (input output data)
+varyHyperParams:{[startDict;iterations;numRandoms;lrRange;regRange]
+    randomLearnRates:lrRange[0]+numRandoms?lrRange[1]-lrRange 0;
+    randomRegs:regRange[0]+numRandoms?regRange[1]-regRange 0;
+    lg "running varyHyperParams with: \n",.Q.s(randomLearnRates;randomRegs);
+    inputs:flip (randomLearnRates;randomRegs);
+    lg "running varyHyperParams with: \n",.Q.s inputs;
+    ( {[d;n;lr;reg]
+          lg"changing learnRate and reg, adding xTrain and yTrain (mem issues)";
+          d[`learnRate`reg`inputTrain`outputTrain]:(lr;reg;xTrain;yTrain);
+          lgToken:" lr = ",string[lr],", reg = ",string reg;
+          lg "running ",string[n]," iterations of sgd for ",lgToken;
+          res:n sgd/d;
+          valAccuracy: avg yVal=predict `x`w1`w2`b1`b2!enlist[xVal],res`w1`w2`b1`b2;
+          lg "validation accuracy for ",lgToken," is ",string valAccuracy;
+          (lr;reg;valAccuracy;res`w1`w2`b1`b2)
+      }[startDict;iterations;;] . 
+    ) peach inputs
+ };
+
 / predict function, determines which class
 / inputs:
 / d: dictionary, using following names:
