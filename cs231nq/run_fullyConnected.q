@@ -58,7 +58,21 @@ lossDx 0
 relError[dxNum;lossDx 1]
 
 lg "Two layer network"
-
+X:"f"$get `:assignmentInputs/fullyConnected_XTwoLayer
+y`:assignmentInputs/fullyConnected_yTwoLayer
+`. upsert `N`D`H`C`std!3,5,50,7,0.01 
+lg "Testing initialization"
+res:twoLayerNetParamInit[`dimInput`dimHidden`nClass`wScale!(D;H;C;std)] 
+wStd1:abs adev[res`w1]-std
+lg "wStd1 is ",.Q.s wStd1
+b1:res`b1
+wStd2:abs adev[res`w2]-std
+b2:res`b2
+if[wStd1>0.1*std;lg"WARN: first layer weights do not seem right"]
+if[not all b1=0;lg"WARN: first layer biases do not seem right"]
+if[wStd2>0.1*std;lg"WARN: second layer weights do not seem right"]
+if[not all b2=0;lg"WARN: second layer biases do not seem right"]
+X:flip (D;N)#linSpace[-5.5;4.5;N*D]
 
 
 

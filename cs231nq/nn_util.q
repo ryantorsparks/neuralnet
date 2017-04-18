@@ -45,3 +45,13 @@ linSpace:{[start;end;n]start+((end-start)%n-1)*til n}
 
 / save assignment inputs
 psave:{[x;y] (`$":assignmentInputs/fullyConnected_",string x) set y}
+
+/ same as np.random.randn, generates random arrays with var and dev = 1.0
+/ and avg=0.0
+randArray:{(x;y)#sqrt[-2*log n?1.]*cos[2*3.14159265359*(n:x*y)?1.]}
+
+/ array standard dev
+adev:{dev raze/[x]}
+
+/ array sum 
+asum:(sum/)

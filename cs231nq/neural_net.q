@@ -2,7 +2,7 @@
 \l numerical_gradient.q
 
 / like np.random.randn
-wInit:{(x;y)#sqrt[-2*log n?1.]*cos[2*3.14159265359*(n:x*y)?1.]}
+wInit:randArray
 
 / just to make sure we don't forget keys in our input dicts
 checkInputs:{[d;specials]
