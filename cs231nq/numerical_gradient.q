@@ -39,3 +39,17 @@ numericalGradientArray:{[f;d;df;param]
    paramShape#res
  };
 
+/ compare a few numerical gradients
+compareNumericalGradients:{[d;reg]
+    lg"running numeric gradient check with reg=",string reg;
+    d[`reg]:reg;
+    grads:last twoLayerNetModel[`loss;d];
+    {[d;grads;param]
+        f:(first twoLayerNetModel[`loss;]@);
+        gradNum:numericalGradient[f;d;param];
+        relErr:relError[gradNum;grads param];
+        lg"relative error for ",string[param]," is ",-3!relErr;
+    }[d;grads] each asc key grads;
+ };
+
+
