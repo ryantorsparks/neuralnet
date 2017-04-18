@@ -86,6 +86,7 @@ pool:{[m;fSize;stride]
     strides:1+(n-fSize)div stride;
     
     / index into m (i.e. each sector, flipped), then get max
+    / this is typically much faster than trying to index into each sector
     (2#strides)#max raze/[m] (raze til[stride]+/:n*til stride)+\:raze (stride*til strides)+/:(n*stride)*til strides
  };
 

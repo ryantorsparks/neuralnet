@@ -1,9 +1,6 @@
 \l nn_util.q
 \l numerical_gradient.q
 
-/ relative errors
-relError:{[x;y]max/[abs[x-y]%1e-8|sum abs(x;y)]}
-
 / like np.random.randn
 wInit:{(x;y)#sqrt[-2*log n?1.]*cos[2*3.14159265359*(n:x*y)?1.]}
 
