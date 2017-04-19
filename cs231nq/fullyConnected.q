@@ -44,8 +44,9 @@ affineReluBackward:{[dout;cache]
     dxDwDb
  };
 
-twoLayerNetParams:{[d]
+twoLayerNet.params:{[d]
     / use defaults if not provided
+    temp::d;
     defaults:`dimInput`dimHidden`nClass`wScale`reg!(3*32*32;100;10;1e-3;0.0);
     d:defaults,d;
     b1:d[`dimHidden]#0.;
@@ -57,9 +58,9 @@ twoLayerNetParams:{[d]
 
 / @param d: contains:
 / `w1`w2`b1`b2`x and possibly `y
-twoLayerNetLoss:{[d]
+twoLayerNet.loss:{[d]
     / check if d has all necessary fields, if not then needs to do an init first
-    if[not all `b1`w1`b2`w2 in key d;d:twoLayerNetParams d];
+    if[not all `b1`w1`b2`w2 in key d;d:twoLayerNet.params d];
 
     / forward into first layer
     hiddenCache:affineReluForward `x`w`b!d`x`w1`b1;
@@ -99,14 +100,76 @@ twoLayerNetLoss:{[d]
     (loss;grads)
  };
 
-/ if f is `params, then just get init params
-/ otherwise, check if d has all required keys, if not then needs to do an init,
-/ then run loss function
-twoLayerNetModel:{[f;d]
-    funcDict:`loss`params!(twoLayerNetLoss;twoLayerNetParams);
-    if[not f in k:key funcDict;'"twoLayerNetModel needs one of ",(-3!k)," for f input"];
-    funcDict[f]@d
- }
+/ ######## solver class functions ########
+/ optional args:
+/   `updateRule - e.g `sgd
+/   `optimConfig - dict of hyperparams, each update rule needs different 
+/       hyperparams, but all rules require a learnRate param
+/   `learnRateDecay - after each epoch learnRate is multiplied by this
+/   `batchSize - minibatch size for training
+/   `epochs - number of epochs to run during training
+/   `printEvery - training losses will be printery every printEvery iterations
+solver.init:{[d]
+    d:nulld,d;
+    defaults:(!) . flip (
+        (`updateRule;`sgd);
+        (`optimConfig;nulld);
+        (`optimConfigHistory;::);
+        (`learnRateDecay;1.0);
+        (`batchSize;100);
+        (`epochs;10);
+        (`printEvery;10)
+        );
+    d:defaults,d;
+    if[not count key dur:d`updateRule;'"update rule `",string[dur]," not defined"];
+ };
+
+/ reset a bunch of dict variables
+solver.reset:{[d]
+    / book-keeping variables
+    optimd:d`optimConfig;
+    d,:(!) . flip (
+        (`epoch;0);
+        (`bestValAcc;0.0);
+        (`bestParams;());
+        (`lossHistory;());
+        (`trainAccHistory;());
+        (`valAccHistory;());
+        / store optimConfig for each param in d
+        (`optimConfigs;(`,key optimd)!(::),count[optimd]#enlist optimd)
+        );
+    d
+ };
+
+/ step function???
+solver.step:{[d]
+    / create mini batch
+    numTrain:count d`xTrain;
+    batchMask:d[`batchSize]?numTrain;
+    xBatch:d[`xTrain] batchMask;
+    yBatch:d[`yTrain] batchMask;
+
+    / compute loss and grad of mini batch
+    lossFunc:` sv d[`model],`loss;
+    lossGrad:lossFunc `x`y!(d`xBatch;d`yBatch);
+    loss:lossGrad 0;
+    grads:lossGrad 1;
+    d[`lossHistory],:loss;
+
+    / parameter update
+    {[d;p;w] 
+        dw:grads p;
+        config:d[`optimConfigs]p;
+        nextWConfig:d[`updateRule][w;dw;config];
+        nextW:nextWConfig 0;
+        nextConfig:nextWConfig 1;
+        d[p]:nextW;
+        d[`optimConfigs;p]:nextConfig;
+        d
+    }/[d;
+ };
+
+
 
 
 

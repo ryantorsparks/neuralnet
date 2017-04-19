@@ -43,9 +43,9 @@ numericalGradientArray:{[f;d;df;param]
 compareNumericalGradients:{[d;reg]
     lg"running numeric gradient check with reg=",string reg;
     d[`reg]:reg;
-    grads:last twoLayerNetModel[`loss;d];
+    grads:last twoLayerNet.loss d;
     {[d;grads;param]
-        f:(first twoLayerNetModel[`loss;]@);
+        f:(first twoLayerNet.loss@);
         gradNum:numericalGradient[f;d;param];
         relErr:relError[gradNum;grads param];
         lg"relative error for ",string[param]," is ",-3!relErr;

@@ -53,3 +53,5 @@ adev:{dev raze/[x]}
 / array sum 
 asum:(sum/)
 
+/ null dictionary
+nulld:enlist[`]!enlist(::)
