@@ -58,7 +58,7 @@ lg"loss is ",.Q.s lossDx 0
 lg"relative error is ",.Q.s relError[dxNum;lossDx 1]
 
 
-lg "##### Two layer network #####"
+lg "##### Two layer network #####\n"
 
 X:"f"$get `:assignmentInputs/fullyConnected_XTwoLayer
 y:get`:assignmentInputs/fullyConnected_yTwoLayer
@@ -99,4 +99,15 @@ lossGrads:twoLayerNet.loss d
 correctLoss:26.5948426952
 if[1e-10<abs lossGrads[0]-correctLoss;lg"WARN: problem with regularization loss"];
 compareNumericalGradients[d] each 0.0 0.7;
+
+lg "###### Solver ######\n"
+d:nulld;
+d[`model]:`twoLayerNet
+
+
+
+
+
+
+
 

@@ -207,7 +207,7 @@ solver.train:{[d]
     numTrain:count d`xTrain;
     iterationsPerEpoch:1|numTrain div d`batchSize;
     numIterations:d[`numEpochs]*iterationsPerEpoch;
-    res:numIterations sover.train/d;
+    res:numIterations solver.trainInner/d;
     
     / finally, swap in best params
     res:res,res`bestParams;

@@ -1,6 +1,8 @@
 \l nn_util.q
+cifarMode:@[value;`cifarMode;{`flattened}]
 
 dataDir: `:CIFAR_data;
+dataDirUnflattened: `:CIFAR_data_unflattened;
 binDataDir: ` sv dataDir,`$"cifar-10-batches-bin";
 cifarDataUrl: "http://www.cs.toronto.edu/~kriz/cifar-10-binary.tar.gz";
 binData:`data_batch_1.bin`data_batch_2.bin`data_batch_3.bin`data_batch_4.bin`data_batch_5.bin`test_batch.bin
@@ -54,15 +56,49 @@ loadCIFARBinaryData:{[]
     xTest::raze each xTest;
     delete avgRes from `.;
 
-    {lg "saving ",string[x]," for future quick loading";(` sv dataDir,x) set value x} each vars;
+    saveTab[dataDir;] each vars;
  };
 
+
+reshapeTab:{[tabName]
+    lg "reshaping ",string tabName;
+    {[tabName;x]if[0=x mod 500;show x];
+       .[`.;(tabName;x);{32 32#/:x@(3*til 1024)+/:til 3}];
+    }[tabName;] each til count value tabName;
+ };
+
+loadCIFARBinaryDataUnflattened:{[]
+    lg "loading unflattened cifar binary data";
+    / first see what's missing    
+    missingXVars:`xTrain`xTest`xVal except key dataDirUnflattened;
+    missingYVars:`yTrain`yTest`yVal except key dataDirUnflattened;
+    if[count missingYVars;
+        lg"copying over y objects: ",-3!missingYVars;
+        {lg cmd:"cp "," " sv {1_string ` sv x,y}[;x]each dataDir,dataDirUnflattened;system cmd} each missingYVars
+      ];
+    lg "not all unflattened data found, lets reshape from the flat versions: ",-3!missingXVars;
+    loadAllTabs[dataDir];
+    reshapeTab each missingXVars;
+    saveTab[dataDirUnflattened;]each missingXVars;
+
+ };
+
+/ save and load functions
+saveTab:{[dir;x]lg "saving ",string[x]," to ",string[dir]," for future quick loading";(` sv dir,x) set value x}
+loadAllTabs:{[dir]{[x;dir]lg "loading ",string x;load ` sv dir,x}[;dir] each vars where not vars in key `.} 
+
 lg "first check if data exists in CIFAR_data folder, if so we don't need to download and process";
-$[all (vars:`xTrain`yTrain`xTest`yTest`xVal`yVal) in key dataDir;
+loadDir:$[cifarMode~`unflattened;dataDirUnflattened;dataDir];
+lg "load dir set as ",string loadDir;
+
+$[all (vars:`xTrain`yTrain`xTest`yTest`xVal`yVal) in key loadDir;
     [ lg "data exists in kdb form on disk, loading directly";
-      {lg "loading ",string x;load ` sv dataDir,x} each vars;
+      loadAllTabs[loadDir];
     ];
-    loadCIFARBinaryData[]
+    [ if[not all vars in key dataDir;loadCIFARBinaryData[]];
+      if[cifarMode~`unflattened;loadCIFARBinaryDataUnflattened[]];
+      loadAllTabs[loadDir]
+    ]
   ];
 
 / not sure why this is needed, but dot[;w] type errors otherwise
