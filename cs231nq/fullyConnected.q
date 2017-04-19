@@ -107,7 +107,7 @@ twoLayerNet.loss:{[d]
 /       hyperparams, but all rules require a learnRate param
 /   `learnRateDecay - after each epoch learnRate is multiplied by this
 /   `batchSize - minibatch size for training
-/   `epochs - number of epochs to run during training
+/   `numEpochs - number of epochs to run during training
 /   `printEvery - training losses will be printery every printEvery iterations
 solver.init:{[d]
     d:nulld,d;
@@ -117,7 +117,7 @@ solver.init:{[d]
         (`optimConfigHistory;::);
         (`learnRateDecay;1.0);
         (`batchSize;100);
-        (`epochs;10);
+        (`numEpochs;10);
         (`printEvery;10)
         );
     d:defaults,d;
@@ -136,7 +136,7 @@ solver.reset:{[d]
         (`trainAccHistory;());
         (`valAccHistory;());
         / store optimConfig for each param in d
-        (`optimConfigs;(`,key optimd)!(::),count[optimd]#enlist optimd)
+        (`optimConfigs;(key optimd)!count[optimd]#enlist optimd)
         );
     d
  };
@@ -195,11 +195,59 @@ solver.checkAccuracy:{[d]
     lossFunc:` sv d[`model],`loss;
 
     / also get index of each max entry in resulting loss array
-    yPred:raze {[f;d;x]{x?max x}each f @[d;`x;:;x]}[lossFunc;`y _ d] each x inds;
+    yPred:raze {[f;d;x]{x?max x}peach f @[d;`x;:;x]}[lossFunc;`y _ d] peach x inds;
 
     / finally, return accuracy
     avg yPred=y
  };
+
+/ train function
+solver.train:{[d]
+    / get # of trainings, numEpochs, iters per epoch etc.
+    numTrain:count d`xTrain;
+    iterationsPerEpoch:1|numTrain div d`batchSize;
+    numIterations:d[`numEpochs]*iterationsPerEpoch;
+    res:numIterations sover.train/d;
+    
+    / finally, swap in best params
+    res:res,res`bestParams;
+    res
+ };
+
+/ called iteratively by sover.train
+solver.trainInner:{[d]
+    / possibly print training loss
+    cnt:d`cnt;
+    if[0=cnt mod d`printEvery;
+        lg"Iteration: ",string[d`cnt],"/",string[d`numIterations]," loss: ",string last d`lossHistory;
+      ];
+
+    / at end of every epoch, increment epoch counter, decay learnRate
+    if[epochEnd:0=(1+cnt)mod d`iterationsPerEpoch;
+        d[`epoch]+:1;
+        d[`optimConfigs;;`learnRate]*:d`learnRateDecay;
+      ];
+
+    / check training and validation accuracy on first+last iteration,
+    / and at the end of every epoch
+    if[any (cnt=0;cnt=numIterations+1;epochEnd);
+        trainAcc:solver.checkAccuracy `x`y`batchSize`numSamples!d[`xTrain`yTrain`batchSize],1000;
+        valAcc:solver.checkAccuracy `x`y`batchSize`numSamples!d[`xVal`yVal`batchSize],0N;
+        d[`trainAccHistory],:trainAcc;
+        d[`valAccHistory],:valAcc;
+        lg"Epoch: ",string[d`epoch],"/",string[d`numEpochs]," train acc: ",string[trainAcc]," val acc: ",string[valAcc];
+        
+        / keep track of the best model
+        if[valAcc>d`bestValAcc;
+            d[`bestValAcc]:valAcc;
+            d[`bestParams]:`xTrain`x`xVal`yTrain`yVal`y _ d;
+          ];
+      ];
+    d
+ };
+
+
+
 
 
 
