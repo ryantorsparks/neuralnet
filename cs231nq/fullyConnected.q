@@ -145,7 +145,7 @@ solver.reset:{[d]
 solver.step:{[d]
     / create mini batch
     numTrain:count d`xTrain;
-    batchMask:d[`batchSize]?numTrain;
+    batchMask:neg[d`batchSize]?numTrain;
     xBatch:d[`xTrain] batchMask;
     yBatch:d[`yTrain] batchMask;
 
@@ -157,7 +157,7 @@ solver.step:{[d]
     d[`lossHistory],:loss;
 
     / parameter update
-    {[d;p;w] 
+    d:{[d;p;w] 
         dw:grads p;
         config:d[`optimConfigs]p;
         nextWConfig:d[`updateRule][w;dw;config];
@@ -166,10 +166,40 @@ solver.step:{[d]
         d[p]:nextW;
         d[`optimConfigs;p]:nextConfig;
         d
-    }/[d;
+    }/[d;key d;value d];
+    d
  };
 
+/ accuracy check
+/ d is `x`y`numSamples`batchSize
+solver.checkAccuracy:{[d]
+    / possibly sumbsample the data
+    N:count d`x;
+    batchSize:d`batchSize;
+    if[(not null numSamples)&N>numSamples:d`numSamples;
+        mask:neg[numSamples]?N;
+        N:numSamples;
+        x:d[`x]@mask;
+        y:d[`y]@mask;
+      ];
+    numBatches:N div batchSize;
 
+    / make sure we do at least enough batches
+    if[not 0=N mod batchSize;
+        numBatches+:1];
+
+    / get indices of the individual batches, no overlaps
+    inds:(batchSize*til numBatches)+\:0,batchSize-1;
+
+    / get loss func, as it only has x, no y, should just return loss)
+    lossFunc:` sv d[`model],`loss;
+
+    / also get index of each max entry in resulting loss array
+    yPred:raze {[f;d;x]{x?max x}each f @[d;`x;:;x]}[lossFunc;`y _ d] each x inds;
+
+    / finally, return accuracy
+    avg yPred=y
+ };
 
 
 
