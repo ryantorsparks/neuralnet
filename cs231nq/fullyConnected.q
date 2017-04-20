@@ -44,6 +44,8 @@ affineReluBackward:{[dout;cache]
     dxDwDb
  };
 
+twoLayerNet.paramList:`w1`b1`w2`b2
+
 twoLayerNet.params:{[d]
     / use defaults if not provided
     temp::d;
@@ -52,7 +54,7 @@ twoLayerNet.params:{[d]
     b1:d[`dimHidden]#0.;
     w1:d[`wScale]*randArray . d`dimInput`dimHidden;
     b2:d[`nClass]#0.;
-    w2:d[`wScale]*randArray . d`dimHidden`dimInput;
+    w2:d[`wScale]*randArray . d`dimHidden`nClass;
     d,`b1`w1`b2`w2!(b1;w1;b2;w2)
  };
 
@@ -60,7 +62,7 @@ twoLayerNet.params:{[d]
 / `w1`w2`b1`b2`x and possibly `y
 twoLayerNet.loss:{[d]
     / check if d has all necessary fields, if not then needs to do an init first
-    if[not all `b1`w1`b2`w2 in key d;d:twoLayerNet.params d];
+//    if[not all `b1`w1`b2`w2 in key d;show"not all wbs ";if[7=rand 10;break];d:twoLayerNet.params d];
 
     / forward into first layer
     hiddenCache:affineReluForward `x`w`b!d`x`w1`b1;
@@ -111,9 +113,13 @@ twoLayerNet.loss:{[d]
 /   `printEvery - training losses will be printery every printEvery iterations
 solver.init:{[d]
     d:nulld,d;
+   
+    / add on init params for the model
+    d:(` sv d[`model],`params)d;
     defaults:(!) . flip (
+        (`cnt;0);
         (`updateRule;`sgd);
-        (`optimConfig;nulld);
+        (`optimConfig;()!());
         (`optimConfigHistory;::);
         (`learnRateDecay;1.0);
         (`batchSize;100);
@@ -122,12 +128,15 @@ solver.init:{[d]
         );
     d:defaults,d;
     if[not count key dur:d`updateRule;'"update rule `",string[dur]," not defined"];
+    d
  };
 
 / reset a bunch of dict variables
 solver.reset:{[d]
     / book-keeping variables
     optimd:d`optimConfig;
+    modelParams:value ` sv d[`model],`paramList;
+    resetd::d;
     d,:(!) . flip (
         (`epoch;0);
         (`bestValAcc;0.0);
@@ -136,7 +145,7 @@ solver.reset:{[d]
         (`trainAccHistory;());
         (`valAccHistory;());
         / store optimConfig for each param in d
-        (`optimConfigs;(key optimd)!count[optimd]#enlist optimd)
+        (`optimConfigs;(modelParams)!count[modelParams]#enlist optimd)
         );
     d
  };
@@ -151,13 +160,19 @@ solver.step:{[d]
 
     / compute loss and grad of mini batch
     lossFunc:` sv d[`model],`loss;
-    lossGrad:lossFunc `x`y!(d`xBatch;d`yBatch);
+    modelParams:value ` sv d[`model],`paramList;
+    lossGrad:lossFunc (inter[modelParams,`reg;key d]#d),`x`y!(xBatch;yBatch);
     loss:lossGrad 0;
     grads:lossGrad 1;
+    if[null loss;break];
     d[`lossHistory],:loss;
 
     / parameter update
-    d:{[d;p;w] 
+    temp3::(d;loss;grads);
+    dchange:modelParams#d;
+    d:{[d;p;w;grads] 
+        //lg"updating parameter ",-3!p;
+        temp4::(d;p;w;grads);
         dw:grads p;
         config:d[`optimConfigs]p;
         nextWConfig:d[`updateRule][w;dw;config];
@@ -166,7 +181,7 @@ solver.step:{[d]
         d[p]:nextW;
         d[`optimConfigs;p]:nextConfig;
         d
-    }/[d;key d;value d];
+    }[;;;grads]/[d;key dchange;value dchange];
     d
  };
 
@@ -176,11 +191,13 @@ solver.checkAccuracy:{[d]
     / possibly sumbsample the data
     N:count d`x;
     batchSize:d`batchSize;
+    x:d`x;
+    y:d`y;
     if[(not null numSamples)&N>numSamples:d`numSamples;
         mask:neg[numSamples]?N;
         N:numSamples;
-        x:d[`x]@mask;
-        y:d[`y]@mask;
+        x@:mask;
+        y@:mask;
       ];
     numBatches:N div batchSize;
 
@@ -189,13 +206,13 @@ solver.checkAccuracy:{[d]
         numBatches+:1];
 
     / get indices of the individual batches, no overlaps
-    inds:(batchSize*til numBatches)+\:0,batchSize-1;
+    inds:(batchSize*til numBatches)_til N;
 
     / get loss func, as it only has x, no y, should just return loss)
     lossFunc:` sv d[`model],`loss;
 
     / also get index of each max entry in resulting loss array
-    yPred:raze {[f;d;x]{x?max x}peach f @[d;`x;:;x]}[lossFunc;`y _ d] peach x inds;
+    yPred:raze {[f;d;x]{x?max x}peach f @[d;`x;:;x]}[lossFunc;`y _ d] peach d[`x] inds;
 
     / finally, return accuracy
     avg yPred=y
@@ -207,6 +224,7 @@ solver.train:{[d]
     numTrain:count d`xTrain;
     iterationsPerEpoch:1|numTrain div d`batchSize;
     numIterations:d[`numEpochs]*iterationsPerEpoch;
+    d[`numIterations`iterationsPerEpoch]:numIterations,iterationsPerEpoch;
     res:numIterations solver.trainInner/d;
     
     / finally, swap in best params
@@ -217,9 +235,16 @@ solver.train:{[d]
 / called iteratively by sover.train
 solver.trainInner:{[d]
     / possibly print training loss
+    tempInner::d;
     cnt:d`cnt;
+    numIterations:d`numIterations;
+
+    / step
+    d:solver.step d;
+
     if[0=cnt mod d`printEvery;
-        lg"Iteration: ",string[d`cnt],"/",string[d`numIterations]," loss: ",string last d`lossHistory;
+        temp1::(d;numIterations);
+        lg"Iteration: ",string[d`cnt],"/",string[numIterations]," loss: ",string last d`lossHistory;
       ];
 
     / at end of every epoch, increment epoch counter, decay learnRate
@@ -230,9 +255,10 @@ solver.trainInner:{[d]
 
     / check training and validation accuracy on first+last iteration,
     / and at the end of every epoch
+    modelParams:value ` sv d[`model],`paramList;
     if[any (cnt=0;cnt=numIterations+1;epochEnd);
-        trainAcc:solver.checkAccuracy `x`y`batchSize`numSamples!d[`xTrain`yTrain`batchSize],1000;
-        valAcc:solver.checkAccuracy `x`y`batchSize`numSamples!d[`xVal`yVal`batchSize],0N;
+        trainAcc:solver.checkAccuracy (inter[modelParams;key d]#d),`model`x`y`batchSize`numSamples!d[`model`xTrain`yTrain`batchSize],1000;
+        valAcc:solver.checkAccuracy (inter[modelParams;key d]#d),`model`x`y`batchSize`numSamples!d[`model`xVal`yVal`batchSize],0N;
         d[`trainAccHistory],:trainAcc;
         d[`valAccHistory],:valAcc;
         lg"Epoch: ",string[d`epoch],"/",string[d`numEpochs]," train acc: ",string[trainAcc]," val acc: ",string[valAcc];
@@ -243,10 +269,14 @@ solver.trainInner:{[d]
             d[`bestParams]:`xTrain`x`xVal`yTrain`yVal`y _ d;
           ];
       ];
+    d[`cnt]+:1;
     d
  };
 
-
+/ vanilla socastic gradient descent
+sgd:{[w;dw;config]
+    (w-config[`learnRate]*dw;config)
+ }; 
 
 
 

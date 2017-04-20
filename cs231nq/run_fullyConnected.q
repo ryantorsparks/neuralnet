@@ -3,6 +3,8 @@
 \l numerical_gradient.q
 \l softmax.q
 \l linear_svm.q
+cifarMode:`unflattened
+\l load_cifar_data.q
 
 b:"f"$get `:assignmentInputs/fullyConnected_b
 w:"f"$get `:assignmentInputs/fullyConnected_w
@@ -100,11 +102,9 @@ correctLoss:26.5948426952
 if[1e-10<abs lossGrads[0]-correctLoss;lg"WARN: problem with regularization loss"];
 compareNumericalGradients[d] each 0.0 0.7;
 
-lg "###### Solver ######\n"
-d:nulld;
-d[`model]:`twoLayerNet
-
-
+lg "\n###### Solver ######\n"
+startd:`model`xTrain`yTrain`xVal`yVal`updateRule`optimConfig`learnRateDecay`numEpochs`batchSize`printEvery!(`twoLayerNet;xTrain;yTrain;xVal;yVal;`sgd;enlist[`learnRate]!enlist 1e-3;0.95;3;200;100)
+d:solver.reset solver.init startd
 
 
 
