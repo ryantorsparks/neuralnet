@@ -1,10 +1,11 @@
 \l nn_util.q
+reshape:{[x;w](first[shape x],first shape w)#raze/[x]}
 
 affineForward:{[d]
     x:d`x;
     w:d`w;
     b:d`b;
-    res:b+/:dot[(first[shape x],first shape w)#raze/[x];w];
+    res:b+/:dot[reshape[x;w];w];
     (res;`x`w`b!(x;w;b))
  };
 
@@ -12,7 +13,7 @@ affineBackward:{[dout;cached]
     x:cached `x;
     w:cached `w;
     b:cached `b;
-    dw:dot[flip (first[shape x],first shape w)#raze/[x];dout];
+    dw:dot[flip (reshape[x;w];dout];
     db:sum dout;
     dx:shape[x]#raze/[dot[dout;flip w]];
     `dx`dw`db!(dx;dw;db)
@@ -44,9 +45,13 @@ affineReluBackward:{[dout;cache]
     dxDwDb
  };
 
+
+/ ############ twoLayerNet class functions ############
+
+/ learnable params
 twoLayerNet.params:`w1`b1`w2`b2
 
-twoLayerNet.defaultParams:{[d]
+twoLayerNet.init:{[d]
     / use defaults if not provided
     temp::d;
     defaults:`dimInput`dimHidden`nClass`wScale`reg!(3*32*32;100;10;1e-3;0.0);
@@ -99,6 +104,79 @@ twoLayerNet.loss:{[d]
     (loss;grads)
  };
 
+/ ########## fullyConnectedNet class functions ###########
+
+/ initialization/default params
+/ possible inputs:
+/ dimHidden - list of integers giving the size of each hidden layer
+/ dimInput - integer giving size of the input
+/ dropout - scalar b/w 0.0 and 1.0 giving dropout strength, 0=no dropout
+/ useBatchNorm - boolean indicating to use batch normalization or not
+/ reg - L2 regularization strength
+/ weightScale - standard deviation for random initialization of weights
+/ seed - if not none, then pass this random seed to dropout layers, which makes dropout layers
+/        deterministic so we can gradient check the model
+/ @global - sets fullyConnectedNet.params here (list of `b1`b2`b3...`w1`w2`w3...
+fullyConnectedNet.init:{[d]
+    defaults:(!) . flip (
+        (`dimInput;3*32*32);
+        (`nClass;10);
+        (`dropout;0);
+        (`useBatchNorm;0b);
+        (`wScale;0.01);
+        (`reg;0.0);
+        (`seed;0N)
+        );
+    d:defaults,d;
+    d[`useDropout]:d[`dropout]>0;
+    numLayers:1+count d`dimHidden;
+    d[`numLayers]:numLayers;
+
+    / parameters of the network, w1 b1, w2 b2, etc.
+    dims:raze d`dimInput`dimHidden`nClass;
+ 
+    / set b1, b2, b3, ... etc., add to d
+    bParams:`$"b",/:string tnl:1+til numLayers;
+    d,:bParams!dims[tnl]#\:0f;
+  
+    / set w1, w2, w3, ... etc., where w1 has dimensions dims[0 1], 
+    / w2 has dimensions dims[1 2], etc., add to d
+    wDims:flip  1_'(prev dims;dims);
+    wParams:`$"w",/:string tnl;
+    d,:wParams!d[`wScale]*randArray ./:wDims;
+    
+    / now, also set fullyConnected.params (these are the params to learn)
+    fullyConnectedNet.params:bParams,wParams;
+    lg "Set fullyConnectedNet.params as ",-3!fullyConnectedNet.params;
+
+    / when using dropout, need to pass a dropoutParam dict to each dropout
+    / layer so that the layer knows the dropout probability and the mode (train
+    / vs. test). You can pass teh same dropoutParam to each dropout layer
+    d[`dropoutParam]:()!();
+    if[d`useDropout;
+        d[`dropoutParam]:`mode`p!(`train;d`dropout);
+        if[not null d`seed;
+            d[`dropoutParam;`seed]:d`seed
+          ]
+      ];
+
+    / for batch normalization, we need to keep track of running means and
+    / variances, so need to pass a special bnParam object to each batch norm 
+    / layer. so we use d[`bnParams;0] for the forward pass of the first batch
+    / norm layer, and d[`bnParams;1] for the forward pass of the second batch
+    / norm layer, etc.
+    d[`bnParams]:$[d`useBatchNorm;
+                     (numLayers-1)#enlist enlist[`mode]!enlist`train;
+                     ()
+                   ];
+    d
+ };
+
+/ loss function for 
+fullyConnectedNet.loss:{[d]
+    } 
+
+
 / ######## solver class functions ########
 / optional args:
 /   `updateRule - e.g `sgd
@@ -112,7 +190,7 @@ solver.init:{[d]
     d:nulld,d;
    
     / add on initial default params for the model
-    d:(` sv d[`model],`defaultParams)d;
+    d:(` sv d[`model],`init)d;
     defaults:(!) . flip (
         (`cnt;0);
         (`updateRule;`sgd);
@@ -273,7 +351,7 @@ sover.i.train:{[d]
 
 / vanilla socastic gradient descent
 sgd:{[w;dw;config]
-    (w-config[`learnRate]*dw;config)
+    (w-dw*config`learnRate;config)
  }; 
 
 

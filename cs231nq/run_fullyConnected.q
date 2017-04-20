@@ -107,6 +107,10 @@ startd:`model`xTrain`yTrain`xVal`yVal`updateRule`optimConfig`learnRateDecay`numE
 d:solver.reset solver.init startd
 lg "run training, should be able to achieve > 50% validation accuracy"
 res: solver.train d;
+lg "plot loss history, validation and training accuracy in an IDE e.g qstudio using scatterplots:"
+lg"loss history: ([]iteration:til count res`lossHistory;loss:res`lossHistory)"
+lg"train history: ([]epoch:til 1+ res`numEpochs;loss: res`trainAccHistory)"
+lg"validation history: ([]epoch:til 1+ res`numEpochs;loss: res`valAccHistory)"
 
 
 
