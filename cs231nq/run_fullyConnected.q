@@ -67,7 +67,7 @@ y:get`:assignmentInputs/fullyConnected_yTwoLayer
 `. upsert `N`D`H`C`std!3,5,50,7,0.01;
 
 lg "Testing initialization"
-d:twoLayerNet.params `dimInput`dimHidden`nClass`wScale!(D;H;C;std)
+d:twoLayerNet.defaultParams `dimInput`dimHidden`nClass`wScale!(D;H;C;std)
 wStd1:abs adev[d`w1]-std
 lg "wStd1 is ",.Q.s wStd1
 b1:d`b1

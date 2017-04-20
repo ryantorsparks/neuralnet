@@ -44,9 +44,9 @@ affineReluBackward:{[dout;cache]
     dxDwDb
  };
 
-twoLayerNet.paramList:`w1`b1`w2`b2
+twoLayerNet.params:`w1`b1`w2`b2
 
-twoLayerNet.params:{[d]
+twoLayerNet.defaultParams:{[d]
     / use defaults if not provided
     temp::d;
     defaults:`dimInput`dimHidden`nClass`wScale`reg!(3*32*32;100;10;1e-3;0.0);
@@ -61,9 +61,6 @@ twoLayerNet.params:{[d]
 / @param d: contains:
 / `w1`w2`b1`b2`x and possibly `y
 twoLayerNet.loss:{[d]
-    / check if d has all necessary fields, if not then needs to do an init first
-//    if[not all `b1`w1`b2`w2 in key d;show"not all wbs ";if[7=rand 10;break];d:twoLayerNet.params d];
-
     / forward into first layer
     hiddenCache:affineReluForward `x`w`b!d`x`w1`b1;
     hiddenLayer:hiddenCache 0;
@@ -114,8 +111,8 @@ twoLayerNet.loss:{[d]
 solver.init:{[d]
     d:nulld,d;
    
-    / add on init params for the model
-    d:(` sv d[`model],`params)d;
+    / add on initial default params for the model
+    d:(` sv d[`model],`defaultParams)d;
     defaults:(!) . flip (
         (`cnt;0);
         (`updateRule;`sgd);
@@ -135,7 +132,7 @@ solver.init:{[d]
 solver.reset:{[d]
     / book-keeping variables
     optimd:d`optimConfig;
-    modelParams:value ` sv d[`model],`paramList;
+    modelParams:value ` sv d[`model],`params;
     resetd::d;
     d,:(!) . flip (
         (`epoch;0);
@@ -160,7 +157,7 @@ solver.step:{[d]
 
     / compute loss and grad of mini batch
     lossFunc:` sv d[`model],`loss;
-    modelParams:value ` sv d[`model],`paramList;
+    modelParams:value ` sv d[`model],`params;
     lossGrad:lossFunc (inter[modelParams,`reg;key d]#d),`x`y!(xBatch;yBatch);
     loss:lossGrad 0;
     grads:lossGrad 1;
@@ -225,7 +222,7 @@ solver.train:{[d]
     iterationsPerEpoch:1|numTrain div d`batchSize;
     numIterations:d[`numEpochs]*iterationsPerEpoch;
     d[`numIterations`iterationsPerEpoch]:numIterations,iterationsPerEpoch;
-    res:numIterations solver.trainInner/d;
+    res:numIterations sover.i.train/d;
     
     / finally, swap in best params
     res:res,res`bestParams;
@@ -233,7 +230,7 @@ solver.train:{[d]
  };
 
 / called iteratively by sover.train
-solver.trainInner:{[d]
+sover.i.train:{[d]
     / possibly print training loss
     tempInner::d;
     cnt:d`cnt;
@@ -255,7 +252,7 @@ solver.trainInner:{[d]
 
     / check training and validation accuracy on first+last iteration,
     / and at the end of every epoch
-    modelParams:value ` sv d[`model],`paramList;
+    modelParams:value ` sv d[`model],`params;
     if[any (cnt=0;cnt=numIterations+1;epochEnd);
         accd::d;
         trainAcc:solver.checkAccuracy (inter[modelParams;key d]#d),`model`x`y`batchSize`numSamples!d[`model`xTrain`yTrain`batchSize],1000;
