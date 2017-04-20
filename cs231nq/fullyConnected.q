@@ -172,9 +172,34 @@ fullyConnectedNet.init:{[d]
     d
  };
 
-/ loss function for 
+/ loss function for fully connected class
+/ @param d: contains:
+/ `w1`w2`w3 ... `b1`b2`b3  ... , `x and possibly `y
 fullyConnectedNet.loss:{[d]
-    } 
+    mode:$[`y in key d;`train;`test];
+    
+    / set train test mode for batchnorm params and dropout param since they
+    / behave differently during training and testing
+    if[not count d`dropoutParam;
+        d[`dropoutParam;`mode]:mode
+      ];
+
+    / bnParam should have:
+    /   mode - `train or `test
+    /   eps: - constant for numerical stability
+    /   momentum - constant for running mean/variance
+    /   runningMean - array of shape (D,), running mean of features
+    /   runningVar - shape (D,), running variance of features
+    / ????? not sure about this update ?????
+    if[d`useBatchNorm;
+        d:.[d;(`bnParams;mode);:;mode];
+      ];
+
+    / forward pass, compute class scores for x, store in scores
+    layer:();
+
+
+ }
 
 
 / ######## solver class functions ########
