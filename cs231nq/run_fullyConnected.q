@@ -103,9 +103,10 @@ if[1e-10<abs lossGrads[0]-correctLoss;lg"WARN: problem with regularization loss"
 compareNumericalGradients[d] each 0.0 0.7;
 
 lg "\n###### Solver ######\n"
-startd:`model`xTrain`yTrain`xVal`yVal`updateRule`optimConfig`learnRateDecay`numEpochs`batchSize`printEvery!(`twoLayerNet;xTrain;yTrain;xVal;yVal;`sgd;enlist[`learnRate]!enlist 1e-3;0.95;3;200;100)
+startd:`model`xTrain`yTrain`xVal`yVal`updateRule`optimConfig`learnRateDecay`numEpochs`batchSize`printEvery!(`twoLayerNet;xTrain;yTrain;xVal;yVal;`sgd;enlist[`learnRate]!enlist 1e-3;0.95;9;200;100)
 d:solver.reset solver.init startd
-
+lg "run training, should be able to achieve > 50% validation accuracy"
+res: solver.train d;
 
 
 

@@ -212,7 +212,7 @@ solver.checkAccuracy:{[d]
     lossFunc:` sv d[`model],`loss;
 
     / also get index of each max entry in resulting loss array
-    yPred:raze {[f;d;x]{x?max x}peach f @[d;`x;:;x]}[lossFunc;`y _ d] peach d[`x] inds;
+    yPred:raze {[f;d;x]{x?max x}peach f @[d;`x;:;x]}[lossFunc;`y _ d] peach x inds;
 
     / finally, return accuracy
     avg yPred=y
@@ -257,6 +257,7 @@ solver.trainInner:{[d]
     / and at the end of every epoch
     modelParams:value ` sv d[`model],`paramList;
     if[any (cnt=0;cnt=numIterations+1;epochEnd);
+        accd::d;
         trainAcc:solver.checkAccuracy (inter[modelParams;key d]#d),`model`x`y`batchSize`numSamples!d[`model`xTrain`yTrain`batchSize],1000;
         valAcc:solver.checkAccuracy (inter[modelParams;key d]#d),`model`x`y`batchSize`numSamples!d[`model`xVal`yVal`batchSize],0N;
         d[`trainAccHistory],:trainAcc;
