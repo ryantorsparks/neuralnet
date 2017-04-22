@@ -228,20 +228,16 @@ fullyConnectedNet.loss:{[d]
     layerInds:d`layerInds;
     dxDwDbTab:`layer xkey enlist @[affineBackward[dscores;cacheScores];`layer;:;last layerInds];
     / add on reg to last dw
-    //dxDwDbTab[last layerInds;`dw]+:d[`reg]*d last wParams;
     dxDwDbDict:renameKey[last layerInds;] affineBackward[dscores;cacheScores];
 
     / backprop into remaining layers (cacheLayers from above)
     / each iteration uses the `dx from the previous iteration (i.e if we're currently
     / doing layer=7, it will use the `dx from layer 8)
     dxDwDbDict,:{[x;layer;cache;w;reg]
-//        dxDwDb:affineReluBackward[x[layer+1;`dx];cache];
         dxDwDb:affineReluBackward[x[`$"x",string layer+1];cache];
         dxDwDb[`dw]+:reg*w;
         x,renameKey[layer;]dxDwDb
-//        x upsert layer,dxDwDb`dx`dw`db
         }/[dxDwDbDict;1_ reverse layerInds;reverse caches;1_ reverse d wParams;d`reg];
-//    (loss;dxDwDbTab)
     (loss;dxDwDbDict)
  };
 
@@ -316,7 +312,6 @@ solver.step:{[d]
     / parameter update
     dchange:modelParams#d;
     d:{[d;p;w;grads] 
-        //lg"updating parameter ",-3!p;
         dw:grads p;
         config:d[`optimConfigs]p;
         nextWConfig:d[`updateRule][w;dw;config];
