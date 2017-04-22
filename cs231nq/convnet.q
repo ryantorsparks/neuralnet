@@ -38,7 +38,7 @@ conv:{[V;F;b;padSize;stride]
     fSize:shape[F] 2;
 
     / flatten filters
-    flatF:(raze/)each F;
+    flatF:razeo each F;
 
     / output dimension/total number of strides
     strides:1+(paddedVSize-fSize)div stride;
@@ -47,7 +47,7 @@ conv:{[V;F;b;padSize;stride]
     filterInds:strideInds[paddedVSize;shape[paddedV]0;fSize;stride;strides];
 
     / perform the convolution/matrix multiplication
-    (2#strides)#/:b+dot[flatF;raze/[paddedV] filterInds]
+    (2#strides)#/:b+dot[flatF;razeo[paddedV] filterInds]
  }
 
 / old version, less efficient indexing/flip with filterInds
@@ -63,7 +63,7 @@ convOld:{[V;F;b;padSize;stride]
     fSize:shape[F] 2;
 
     / flatten filters
-    flatF:(raze/)each F;
+    flatF:razeo each F;
 
     / output dimension/total number of strides
     strides:1+(paddedVSize-fSize)div stride;
@@ -87,7 +87,7 @@ pool:{[m;fSize;stride]
     
     / index into m (i.e. each sector, flipped), then get max
     / this is typically much faster than trying to index into each sector
-    (2#strides)#max raze/[m] (raze til[stride]+/:n*til stride)+\:raze (stride*til strides)+/:(n*stride)*til strides
+    (2#strides)#max razeo[m] (raze til[stride]+/:n*til stride)+\:raze (stride*til strides)+/:(n*stride)*til strides
  };
 
 / older, less efficient version

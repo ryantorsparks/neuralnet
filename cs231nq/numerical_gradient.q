@@ -43,13 +43,15 @@ numericalGradientArray:{[f;d;df;param]
 compareNumericalGradients:{[d;reg]
     lg"running numeric gradient check with reg=",string reg;
     d[`reg]:reg;
-    grads:last twoLayerNet.loss d;
-    {[d;grads;param]
-        f:(first twoLayerNet.loss@);
+    lossFunc:value ` sv $[`model in key d;d`model;`twoLayerNet],`loss;
+ 
+    grads:last lossFunc d;
+    {[d;grads;lossFunc;param]
+        f:(first lossFunc@);
         gradNum:numericalGradient[f;d;param];
         relErr:relError[gradNum;grads param];
         lg"relative error for ",string[param]," is ",-3!relErr;
-    }[d;grads] each asc key grads;
+    }[`model _ d;grads;lossFunc;] each asc {x where not x like "x*"} key grads;
  };
 
 

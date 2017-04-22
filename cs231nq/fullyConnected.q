@@ -1,5 +1,5 @@
 \l nn_util.q
-reshape:{[x;w](first[shape x],first shape w)#raze/[x]}
+reshape:{[x;w](first[shape x],first shape w)#razeo x}
 
 affineForward:{[d]
     x:d`x;
@@ -13,9 +13,9 @@ affineBackward:{[dout;cached]
     x:cached `x;
     w:cached `w;
     b:cached `b;
-    dw:dot[flip (reshape[x;w];dout];
+    dw:dot[flip reshape[x;w];dout];
     db:sum dout;
-    dx:shape[x]#raze/[dot[dout;flip w]];
+    dx:shape[x]#razeo dot[dout;flip w];
     `dx`dw`db!(dx;dw;db)
  };
 
@@ -53,7 +53,6 @@ twoLayerNet.params:`w1`b1`w2`b2
 
 twoLayerNet.init:{[d]
     / use defaults if not provided
-    temp::d;
     defaults:`dimInput`dimHidden`nClass`wScale`reg!(3*32*32;100;10;1e-3;0.0);
     d:defaults,d;
     b1:d[`dimHidden]#0.;
@@ -84,7 +83,7 @@ twoLayerNet.loss:{[d]
     dataLoss:lossDscores 0;
     dscores: lossDscores 1;
 
-    regLoss:.5*d[`reg]*r$r:raze/[d`w1`w2];
+    regLoss:.5*d[`reg]*r$r:razeo d`w1`w2;
     loss:dataLoss+regLoss;
 
     / backprop into second layer
@@ -147,6 +146,9 @@ fullyConnectedNet.init:{[d]
     
     / now, also set fullyConnected.params (these are the params to learn)
     fullyConnectedNet.params:bParams,wParams;
+    d[`bParams]:bParams;
+    d[`wParams]:wParams;
+    d[`layerInds]:tnl;
     lg "Set fullyConnectedNet.params as ",-3!fullyConnectedNet.params;
 
     / when using dropout, need to pass a dropoutParam dict to each dropout
@@ -180,7 +182,7 @@ fullyConnectedNet.loss:{[d]
     
     / set train test mode for batchnorm params and dropout param since they
     / behave differently during training and testing
-    if[not count d`dropoutParam;
+    if[(()!())~d`dropoutParam;
         d[`dropoutParam;`mode]:mode
       ];
 
@@ -191,18 +193,61 @@ fullyConnectedNet.loss:{[d]
     /   runningMean - array of shape (D,), running mean of features
     /   runningVar - shape (D,), running variance of features
     / ????? not sure about this update ?????
-    if[d`useBatchNorm;
+    if[1b~d`useBatchNorm;
         d:.[d;(`bnParams;mode);:;mode];
       ];
 
     / forward pass, compute class scores for x, store in scores
-    layer:();
+    / feed each first[outCache] (result of affineReluForward) into next affineReluForward
+    / first, get wParams (`w1`w2`w3 ...`w[n-1]) and bParams (`b1`b2 ...`b[n-1])
+    wParams:d`wParams;
+    bParams:d`bParams;
+    cacheLayers:{[outCache;w;b] affineReluForward @[d;`x`w`b;:;(outCache 0;w;b)]}\[(d`x;());d@-1_ wParams;d@-1_ bParams];
+    layers: cacheLayers[;0];
+    caches: cacheLayers[;1];
+
+    / forward into last layer  
+    scoresCache:affineForward @[d;`x`w`b;:;(last layers;d last wParams;d last bParams)];
+    scores:scoresCache 0;
+    cacheScores: scoresCache 1;
+
+    / exit early and return scores if we're doing test (not training)
+    if[mode=`test;:scores];
+
+    lossDscores:softmaxLoss `x`y!(scores;d`y);
+    loss:lossDscores 0;
+    dscores:lossDscores 1;
+
+    / add on regularization for each  weights (sum of sum x*x for each weights)
+    loss+:0.5*d[`reg]*r$r:razeo d wParams;
+    
+    / back prop into remaining layers
+    / first do afineBackwards on final layer
+    / indexes of all the layers, starting from 1, e.g. if we have `w1`w2...`w9, then
+    / layerInds are 1 2 3 ... 9
+    layerInds:d`layerInds;
+    dxDwDbTab:`layer xkey enlist @[affineBackward[dscores;cacheScores];`layer;:;last layerInds];
+    / add on reg to last dw
+    //dxDwDbTab[last layerInds;`dw]+:d[`reg]*d last wParams;
+    dxDwDbDict:renameKey[last layerInds;] affineBackward[dscores;cacheScores];
+
+    / backprop into remaining layers (cacheLayers from above)
+    / each iteration uses the `dx from the previous iteration (i.e if we're currently
+    / doing layer=7, it will use the `dx from layer 8)
+    dxDwDbDict,:{[x;layer;cache;w;reg]
+//        dxDwDb:affineReluBackward[x[layer+1;`dx];cache];
+        dxDwDb:affineReluBackward[x[`$"x",string layer+1];cache];
+        dxDwDb[`dw]+:reg*w;
+        x,renameKey[layer;]dxDwDb
+//        x upsert layer,dxDwDb`dx`dw`db
+        }/[dxDwDbDict;1_ reverse layerInds;reverse caches;1_ reverse d wParams;d`reg];
+//    (loss;dxDwDbTab)
+    (loss;dxDwDbDict)
+ };
 
 
- }
+/ ########### solver class functions ###########
 
-
-/ ######## solver class functions ########
 / optional args:
 /   `updateRule - e.g `sgd
 /   `optimConfig - dict of hyperparams, each update rule needs different 
@@ -236,7 +281,6 @@ solver.reset:{[d]
     / book-keeping variables
     optimd:d`optimConfig;
     modelParams:value ` sv d[`model],`params;
-    resetd::d;
     d,:(!) . flip (
         (`epoch;0);
         (`bestValAcc;0.0);
@@ -261,18 +305,18 @@ solver.step:{[d]
     / compute loss and grad of mini batch
     lossFunc:` sv d[`model],`loss;
     modelParams:value ` sv d[`model],`params;
-    lossGrad:lossFunc (inter[modelParams,`reg;key d]#d),`x`y!(xBatch;yBatch);
+  
+    / ??? about the stuff after `reg
+    lossGrad:lossFunc (inter[modelParams,`reg`dropoutParam`useBatchNorm`bnParams`wParams`bParams`layerInds;key d]#d),`x`y!(xBatch;yBatch);
     loss:lossGrad 0;
     grads:lossGrad 1;
     if[null loss;break];
     d[`lossHistory],:loss;
 
     / parameter update
-    temp3::(d;loss;grads);
     dchange:modelParams#d;
     d:{[d;p;w;grads] 
         //lg"updating parameter ",-3!p;
-        temp4::(d;p;w;grads);
         dw:grads p;
         config:d[`optimConfigs]p;
         nextWConfig:d[`updateRule][w;dw;config];
@@ -325,7 +369,7 @@ solver.train:{[d]
     iterationsPerEpoch:1|numTrain div d`batchSize;
     numIterations:d[`numEpochs]*iterationsPerEpoch;
     d[`numIterations`iterationsPerEpoch]:numIterations,iterationsPerEpoch;
-    res:numIterations sover.i.train/d;
+    res:numIterations solver.i.train/d;
     
     / finally, swap in best params
     res:res,res`bestParams;
@@ -333,9 +377,8 @@ solver.train:{[d]
  };
 
 / called iteratively by sover.train
-sover.i.train:{[d]
+solver.i.train:{[d]
     / possibly print training loss
-    tempInner::d;
     cnt:d`cnt;
     numIterations:d`numIterations;
 
@@ -343,7 +386,6 @@ sover.i.train:{[d]
     d:solver.step d;
 
     if[0=cnt mod d`printEvery;
-        temp1::(d;numIterations);
         lg"Iteration: ",string[d`cnt],"/",string[numIterations]," loss: ",string last d`lossHistory;
       ];
 
@@ -357,9 +399,8 @@ sover.i.train:{[d]
     / and at the end of every epoch
     modelParams:value ` sv d[`model],`params;
     if[any (cnt=0;cnt=numIterations+1;epochEnd);
-        accd::d;
-        trainAcc:solver.checkAccuracy (inter[modelParams;key d]#d),`model`x`y`batchSize`numSamples!d[`model`xTrain`yTrain`batchSize],1000;
-        valAcc:solver.checkAccuracy (inter[modelParams;key d]#d),`model`x`y`batchSize`numSamples!d[`model`xVal`yVal`batchSize],0N;
+        trainAcc:solver.checkAccuracy (inter[modelParams,`bParams`wParams`layerInds;key d]#d),`model`x`y`batchSize`numSamples!d[`model`xTrain`yTrain`batchSize],1000;
+        valAcc:solver.checkAccuracy (inter[modelParams,`bParams`wParams`layerInds;key d]#d),`model`x`y`batchSize`numSamples!d[`model`xVal`yVal`batchSize],0N;
         d[`trainAccHistory],:trainAcc;
         d[`valAccHistory],:valAcc;
         lg"Epoch: ",string[d`epoch],"/",string[d`numEpochs]," train acc: ",string[trainAcc]," val acc: ",string[valAcc];

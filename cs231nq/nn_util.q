@@ -1,5 +1,5 @@
 / utils
-system"c 30 180"
+system"c 30 150"
 
 / for comments, trim off white spaces,
 / then shift everything to the right two spaces
@@ -47,11 +47,17 @@ psave:{[name;param] (`$":assignmentInputs/fullyConnected_",string name) set para
 / and avg=0.0
 randArray:{(x;y)#sqrt[-2*log n?1.]*cos[2*3.14159265359*(n:x*y)?1.]}
 
-/ array standard dev
-adev:{dev raze/[x]}
+/ raze over
+razeo:raze/
 
-/ array sum 
-asum:(sum/)
+/ array standard dev
+adev:{dev razeo x}
+
+/ sum over 
+sumo:sum/
 
 / null dictionary
 nulld:enlist[`]!enlist(::)
+
+/ transform dict `dx`dw`db!(a;b;c) -> `dx3`dw3`db3!(a;b;c) (for input layer 3)
+renameKey:{[layer;dict] (`$1_'string[key dict],\:string layer)!value dict};

@@ -67,7 +67,7 @@ y:get`:assignmentInputs/fullyConnected_yTwoLayer
 `. upsert `N`D`H`C`std!3,5,50,7,0.01;
 
 lg "Testing initialization"
-d:twoLayerNet.defaultParams `dimInput`dimHidden`nClass`wScale!(D;H;C;std)
+d:twoLayerNet.init `dimInput`dimHidden`nClass`wScale!(D;H;C;std)
 wStd1:abs adev[d`w1]-std
 lg "wStd1 is ",.Q.s wStd1
 b1:d`b1
@@ -86,7 +86,7 @@ d[`x]:flip (D;N)#linSpace[-5.5;4.5;N*D]
 scores:twoLayerNet.loss d
 lg"scores are ",.Q.s scores
 correctScores:get `:assignmentInputs/fullyConnected_correctScoresTwoLayer
-scoresDiff:abs asum scores-correctScores
+scoresDiff:abs sumo scores-correctScores
 if[not scoresDiff<1e-6;lg"WARN: problem with test time forward pass"];
 
 lg"Testing training loss (no regularization)"
@@ -100,12 +100,14 @@ d[`reg]:1.0
 lossGrads:twoLayerNet.loss d
 correctLoss:26.5948426952
 if[1e-10<abs lossGrads[0]-correctLoss;lg"WARN: problem with regularization loss"];
+/ key d has `dimInput`dimHidden`nClass`wScale`reg`b1`w1`b2`w2`x`y
 compareNumericalGradients[d] each 0.0 0.7;
 
 lg "\n###### Solver ######\n"
 startd:`model`xTrain`yTrain`xVal`yVal`updateRule`optimConfig`learnRateDecay`numEpochs`batchSize`printEvery!(`twoLayerNet;xTrain;yTrain;xVal;yVal;`sgd;enlist[`learnRate]!enlist 1e-3;0.95;9;200;100)
 d:solver.reset solver.init startd
 lg "run training, should be able to achieve > 50% validation accuracy"
+
 res: solver.train d;
 lg "plot loss history, validation and training accuracy in an IDE e.g qstudio using scatterplots:"
 lg"loss history: ([]iteration:til count res`lossHistory;loss:res`lossHistory)"
@@ -113,6 +115,20 @@ lg"train history: ([]epoch:til 1+ res`numEpochs;loss: res`trainAccHistory)"
 lg"validation history: ([]epoch:til 1+ res`numEpochs;loss: res`valAccHistory)"
 
 
+lg "######## Multi layer network ###########"
+`. upsert `N`D`H1`H2`C!2 15 20 30 10
+d:`dimHidden`dimInput`nClass`reg`wScale!(H1,H2;D;C;0.0;5e-2)  
+x:randArray . N,D
+y:N?C
+startd: d,`x`y`reg!(x;y;0.0)
+initd:fullyConnectedNet.init startd
+res: fullyConnectedNet.loss fullyConnectedNet.init startd
+lg "compare numerical gradients for reg in 0.0 3.14"
+gradCheckDict:@[((raze key[startd],initd[`wParams`bParams]),`wParams`bParams`layerInds`dropoutParam)#initd;`model;:;`fullyConnectedNet]
+compareNumericalGradients[gradCheckDict]each 0.0 3.14;
 
-
-
+lg "Overfit a small data set"
+numTrain:50
+smallData:`xTrain`yTrain`xVal`yVal!(xTrain til numTrain;yTrain til numTrain;xVal;yVal)
+startd:smallData,`model`dimHidden`nClass`reg`learnRate`learnRateDecay`wScale`updateRule`optimConfig`numEpochs`batchSize`printEvery!(`fullyConnectedNet;100 100;10;0.0;0.01;0.95;0.01;`sgd;enlist[`learnRate]!enlist 0.01;20;25;10)
+res: solver.train solver.reset fullyConnectedNet.init startd
