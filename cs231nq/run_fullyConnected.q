@@ -127,8 +127,15 @@ lg "compare numerical gradients for reg in 0.0 3.14"
 gradCheckDict:@[((raze key[startd],initd[`wParams`bParams]),`wParams`bParams`layerInds`dropoutParam)#initd;`model;:;`fullyConnectedNet]
 compareNumericalGradients[gradCheckDict]each 0.0 3.14;
 
-lg "Overfit a small data set"
+lg "Overfit a small data set using a 3-layer net"
 numTrain:50
 smallData:`xTrain`yTrain`xVal`yVal!(xTrain til numTrain;yTrain til numTrain;xVal;yVal)
 startd:smallData,`model`dimHidden`nClass`reg`learnRate`learnRateDecay`wScale`updateRule`optimConfig`numEpochs`batchSize`printEvery!(`fullyConnectedNet;100 100;10;0.0;0.01;0.95;0.01;`sgd;enlist[`learnRate]!enlist 0.01;20;25;10)
 res: solver.train solver.reset fullyConnectedNet.init startd
+
+lg "Use a 5 layer net to overfit 50 training examples"
+numTrain:50
+smallData:`xTrain`yTrain`xVal`yVal!(xTrain til numTrain;yTrain til numTrain;xVal;yVal)
+startd:smallData,`model`dimHidden`nClass`reg`learnRate`learnRateDecay`wScale`updateRule`optimConfig`numEpochs`batchSize`printEvery!(`fullyConnectedNet;4#100;10;0.0;0.021;0.95;0.036;`sgd;enlist[`learnRate]!enlist 0.021;20;25;10)
+res: solver.train solver.reset fullyConnectedNet.init startd
+
