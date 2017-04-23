@@ -105,15 +105,14 @@ compareNumericalGradients[d] each 0.0 0.7;
 
 lg "\n###### Solver ######\n"
 startd:`model`xTrain`yTrain`xVal`yVal`updateRule`optimConfig`learnRateDecay`numEpochs`batchSize`printEvery!(`twoLayerNet;xTrain;yTrain;xVal;yVal;`sgd;enlist[`learnRate]!enlist 1e-3;0.95;9;200;100)
-d:solver.reset solver.init startd
 lg "run training, should be able to achieve > 50% validation accuracy"
-
-res: solver.train d;
+/
+res: solver.train startd;
 lg "plot loss history, validation and training accuracy in an IDE e.g qstudio using scatterplots:"
 lg"loss history: ([]iteration:til count res`lossHistory;loss:res`lossHistory)"
 lg"train history: ([]epoch:til 1+ res`numEpochs;loss: res`trainAccHistory)"
 lg"validation history: ([]epoch:til 1+ res`numEpochs;loss: res`valAccHistory)"
-
+\
 
 lg "######## Multi layer network ###########"
 `. upsert `N`D`H1`H2`C!2 15 20 30 10
@@ -129,13 +128,26 @@ compareNumericalGradients[gradCheckDict]each 0.0 3.14;
 
 lg "Overfit a small data set using a 3-layer net"
 numTrain:50
-smallData:`xTrain`yTrain`xVal`yVal!(xTrain til numTrain;yTrain til numTrain;xVal;yVal)
+smallData:`xTrain`yTrain`xVal`yVal!(numTrain#xTrain;numTrain#yTrain;xVal;yVal)
 startd:smallData,`model`dimHidden`nClass`reg`learnRate`learnRateDecay`wScale`updateRule`optimConfig`numEpochs`batchSize`printEvery!(`fullyConnectedNet;100 100;10;0.0;0.01;0.95;0.01;`sgd;enlist[`learnRate]!enlist 0.01;20;25;10)
-res: solver.train solver.reset fullyConnectedNet.init startd
+res: solver.train startd
 
 lg "Use a 5 layer net to overfit 50 training examples"
 numTrain:50
-smallData:`xTrain`yTrain`xVal`yVal!(xTrain til numTrain;yTrain til numTrain;xVal;yVal)
+smallData:`xTrain`yTrain`xVal`yVal!(numTrain#xTrain;numTrain#yTrain;xVal;yVal)
 startd:smallData,`model`dimHidden`nClass`reg`learnRate`learnRateDecay`wScale`updateRule`optimConfig`numEpochs`batchSize`printEvery!(`fullyConnectedNet;4#100;10;0.0;0.021;0.95;0.036;`sgd;enlist[`learnRate]!enlist 0.021;20;25;10)
-res: solver.train solver.reset fullyConnectedNet.init startd
+res:solver.train startd
+
+
+lg "\n########### SGD and momentum ############"
+N:4
+D:5
+w:(N,D)#linSpace[-0.4;0.6;N*D] 
+dw:(N,D)#linSpace[-0.6;0.4;N*D] 
+v:(N;D)#linSpace[0.6;0.9;N*D]
+config:`learnRate`velocity!(0.001;v)
+nextWConfig:sgdMomentum[w;dw;config]
+lg"read in expected nextW and velocity"
+relError[nextWConfig 0;get`:assignmentInputs/fullyConnected_expectedNextWSgdMomentum]
+relError[nextWConfig[1;`velocity];get `:assignmentInputs/fullyConnected_expectedVelocitySgdMomentum]
 

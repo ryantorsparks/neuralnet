@@ -48,8 +48,8 @@ affineReluBackward:{[dout;cache]
 
 / ############ twoLayerNet class functions ############
 
-/ learnable params
-twoLayerNet.params:`w1`b1`w2`b2
+/ learnable params, always  just these 4
+twoLayerNet.params:{[d] `w1`b1`w2`b2}
 
 twoLayerNet.init:{[d]
     / use defaults if not provided
@@ -105,6 +105,26 @@ twoLayerNet.loss:{[d]
 
 / ########## fullyConnectedNet class functions ###########
 
+/ return list of params for a fully connected neural net given dict d
+/ given a dict d, if it contains `modelParams already, return it,
+/ otherwise if it has `wParams`bParams
+fullyConnectedNet.params:{[d]
+    / if we already have it in d, return early
+    if[`modelParams in key d;:d`modelParams];
+
+    / if w and b params are in d, combine them and return
+    if[all `wParams`bParams in key d;:raze d`wParams`bParams];
+
+    / otherwise, make sure dimHidden is in d, and use that to create
+    / if we have 5 hidden dimensions, model params will be `b1`b2...`b6`w1`w2...`w6
+    if[not `dimHidden in key d;'"fullyConnectedNet.params: d is missing `dimHidden"];
+    numLayers:1+count d`dimHidden;
+    tnl:1+til numLayers;
+    bParams:`$"b",/:string tnl;
+    wParams:`$"w",/:string tnl;
+    bParams,wParams
+ };
+
 / initialization/default params
 / possible inputs:
 / dimHidden - list of integers giving the size of each hidden layer
@@ -143,13 +163,9 @@ fullyConnectedNet.init:{[d]
     wDims:flip  1_'(prev dims;dims);
     wParams:`$"w",/:string tnl;
     d,:wParams!d[`wScale]*randArray ./:wDims;
-    
-    / now, also set fullyConnected.params (these are the params to learn)
-    fullyConnectedNet.params:bParams,wParams;
     d[`bParams]:bParams;
     d[`wParams]:wParams;
     d[`layerInds]:tnl;
-    lg "Set fullyConnectedNet.params as ",-3!fullyConnectedNet.params;
 
     / when using dropout, need to pass a dropoutParam dict to each dropout
     / layer so that the layer knows the dropout probability and the mode (train
@@ -256,7 +272,7 @@ solver.init:{[d]
     d:nulld,d;
    
     / add on initial default params for the model
-    d:(` sv d[`model],`init)d;
+    d:getModelValue[d;`init];
     defaults:(!) . flip (
         (`cnt;0);
         (`updateRule;`sgd);
@@ -276,7 +292,9 @@ solver.init:{[d]
 solver.reset:{[d]
     / book-keeping variables
     optimd:d`optimConfig;
-    modelParams:value ` sv d[`model],`params;
+
+    / use [model].params[d] to get param list
+    modelParams:getModelValue[d;`params];
     d,:(!) . flip (
         (`epoch;0);
         (`bestValAcc;0.0);
@@ -300,7 +318,7 @@ solver.step:{[d]
 
     / compute loss and grad of mini batch
     lossFunc:` sv d[`model],`loss;
-    modelParams:value ` sv d[`model],`params;
+    modelParams:getModelValue[d;`params];
   
     / ??? about the stuff after `reg
     lossGrad:lossFunc (inter[modelParams,`reg`dropoutParam`useBatchNorm`bnParams`wParams`bParams`layerInds;key d]#d),`x`y!(xBatch;yBatch);
@@ -359,6 +377,13 @@ solver.checkAccuracy:{[d]
 
 / train function
 solver.train:{[d]
+    / first initialize d (this will first call model specific d[`model].init func, then
+    / fill in blanks with default values)
+    d: solver.init d;
+
+    / then reset everything
+    d: solver.reset d;
+
     / get # of trainings, numEpochs, iters per epoch etc.
     numTrain:count d`xTrain;
     iterationsPerEpoch:1|numTrain div d`batchSize;
@@ -392,7 +417,7 @@ solver.i.train:{[d]
 
     / check training and validation accuracy on first+last iteration,
     / and at the end of every epoch
-    modelParams:value ` sv d[`model],`params;
+    modelParams:getModelValue[d;`params];
     if[any (cnt=0;cnt=numIterations+1;epochEnd);
         trainAcc:solver.checkAccuracy (inter[modelParams,`bParams`wParams`layerInds;key d]#d),`model`x`y`batchSize`numSamples!d[`model`xTrain`yTrain`batchSize],1000;
         valAcc:solver.checkAccuracy (inter[modelParams,`bParams`wParams`layerInds;key d]#d),`model`x`y`batchSize`numSamples!d[`model`xVal`yVal`batchSize],0N;
@@ -410,10 +435,45 @@ solver.i.train:{[d]
     d
  };
 
+
+/ ########### optimiser funcs #############
 / vanilla socastic gradient descent
 sgd:{[w;dw;config]
     (w-dw*config`learnRate;config)
- }; 
+ };
+
+/ sgd with momentum
+/ config is :
+/   learnRate - float
+/   momentum - foat within (0 1f) giving momentum value, 0 -> plain sgd
+/   velocity - float array same shape as w and dw used to store a moving
+/              average of the gradients
+sgdMomentum:{[w;dw;config]
+    defaults:`learnRate`momentum!0.01 0.9;
+    config:defaults,config;
+    
+    / velocity, default to 0's of shape w
+    v:$[`velocity in key config;config`velocity;w*0.0];
+
+    / momentum update
+    v: (v*config`momentum)-dw*config`learnRate;
+    config[`velocity]:v;
+    (w+v;config)
+ };
+
+
+/ ########### utility style funcs #############
+
+/ get model params
+/ e.g. getModelValue[d;`params]
+/      getModelValue[d;`init]
+getModelValue:{[d;x]
+    if[not `model in key d;'"getModelValue: d is missing `model from key"];
+    modelFunc: ` sv d[`model],x;
+    if[not count key modelFunc;'"getModelValue: model function ",(-3!modelFunc)," does not exist"];
+    modelFunc@d
+ };
+
 
 
 
