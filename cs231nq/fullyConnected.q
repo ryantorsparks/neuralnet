@@ -303,7 +303,8 @@ solver.reset:{[d]
         (`trainAccHistory;());
         (`valAccHistory;());
         / store optimConfig for each param in d
-        (`optimConfigs;(modelParams)!count[modelParams]#enlist optimd)
+//        (`optimConfigs;(modelParams)!count[modelParams]#enlist optimd)
+        (`optimConfigs;([]p:modelParams)!count[modelParams]#enlist optimd)
         );
     d
  };
@@ -336,6 +337,10 @@ solver.step:{[d]
         nextW:nextWConfig 0;
         nextConfig:nextWConfig 1;
         d[p]:nextW;
+        optimConfigs:d`optimConfigs;
+        if[count missingConfigParams:key[nextConfig] except cols optimConfigs;
+            d[`optimConfigs]:![optimConfigs;();0b;missingConfigParams!count[missingConfigParams]#enlist (::)];
+          ];
         d[`optimConfigs;p]:nextConfig;
         d
     }[;;;grads]/[d;key dchange;value dchange];
@@ -449,15 +454,16 @@ sgd:{[w;dw;config]
 /   velocity - float array same shape as w and dw used to store a moving
 /              average of the gradients
 sgdMomentum:{[w;dw;config]
+    config:where[config~\:(::)] _ config;
     defaults:`learnRate`momentum!0.01 0.9;
     config:defaults,config;
     
     / velocity, default to 0's of shape w
-    v:$[`velocity in key config;config`velocity;w*0.0];
+    v:$[(`velocity in key config)and not all null razeo (),config`velocity;config`velocity;w*0.0];
 
     / momentum update
     v: (v*config`momentum)-dw*config`learnRate;
-    config[`velocity]:v;
+    config:config,enlist[`velocity]!enlist v;
     (w+v;config)
  };
 

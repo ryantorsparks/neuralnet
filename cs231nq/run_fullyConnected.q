@@ -151,3 +151,11 @@ lg"read in expected nextW and velocity"
 relError[nextWConfig 0;get`:assignmentInputs/fullyConnected_expectedNextWSgdMomentum]
 relError[nextWConfig[1;`velocity];get `:assignmentInputs/fullyConnected_expectedVelocitySgdMomentum]
 
+lg"train a 6 layer network with sgd and sgdMomentum, sgdMomentum should converge faster"
+numTrain:4000
+smallData:`xTrain`yTrain`xVal`yVal!(numTrain#xTrain;numTrain#yTrain;xVal;yVal)
+startd:smallData,(!) . flip (`model`fullyConnectedNet;(`dimHidden;5#100);(`nClass;10);(`learnRate;0.01);(`wScale;5e-2);(`optimConfig;(enlist `learnRate)!enlist 0.01);(`numEpochs;5);(`batchSize;100))
+lg "running training with sgd"
+resSgd:solver.train @[startd;`updateRule;:;`sgd] 
+lg "running training with sgdMomentum"
+resSgdMomentum:solver.train @[startd;`updateRule;:;`sgdMomentum] 
