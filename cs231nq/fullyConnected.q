@@ -478,6 +478,9 @@ sgdMomentum:{[w;dw;config]
 /   cache - mavg of second moments of gradients
 rmsProp:{[x;dx;config]
     defaults: `learnRate`updateDecayRate`epsilon`cache!(0.01;0.99;1e-8;x*0.0);
+
+    / remove the null initialized ones (replace with default)
+    config:where[config~\:(::)] _ config;
     config:defaults,config;
     
     / store next value of x as nextX
@@ -504,6 +507,9 @@ rmsProp:{[x;dx;config]
 adam:{[x;dx;config]
     defaults:(!) . flip ((`learnRate;1e-3);(`beta1;0.9);(`beta2;0.999);
              (`epsilon;1e-8);(`mAdam;0f*x);(`vAdam;0f*x);(`tAdam;0));
+
+    / remove the null initialized ones (replace with default)
+    config:where[config~\:(::)] _ config;
     config:defaults,config;
     learnRate:config`learnRate;
     beta1:config`beta1;

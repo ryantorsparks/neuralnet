@@ -191,4 +191,31 @@ relError[nextWConfig 0;get`:assignmentInputs/fullyConnected_expectedNextWAdam]
 relError[nextWConfig[1;`vAdam];get`:assignmentInputs/fullyConnected_expectedVAdam]
 relError[nextWConfig[1;`mAdam];get`:assignmentInputs/fullyConnected_expectedMAdam]
 
+lg "now train some deep networks using rmsprop and adam"
+//numTrain:4000
+smallData:`xTrain`yTrain`xVal`yVal!(numTrain#xTrain;numTrain#yTrain;xVal;yVal)
+startd:smallData,(!) . flip (`model`fullyConnectedNet;(`dimHidden;5#100);(`nClass;10);(`wScale;5e-2);(`optimConfig;(enlist `learnRate)!enlist 0.01);(`numEpochs;5);(`batchSize;100))
+lg "running training with rmsProp"
+resRmsProp:solver.train @[startd;`updateRule`learnRate`optimConfig;:;(`rmsProp;1e-4;enlist[`learnRate]!enlist 1e-4)]
+
+lg "running training with adam"
+resAdam:solver.train @[startd;`updateRule`learnRate`optimConfig;:;(`adam;1e-3;enlist[`learnRate]!enlist 1e-3)]
+
+lg "plot all 4 togehter, sgd, sgdMomentum, rmsProp, adam"
+lg"scatter plot of: ([]iteration:til 200;lossSgd:resSgd`lossHistory;lossSgdMomentum:resSgdMomentum`lossHistory;lossRmsProp:resRmsProp`lossHistory;lossAdam:resAdam `lossHistory)"
+lg"line chart of: ([]iteration:string til 1+count resRmsProp`valAccHistory;trainAccSgd:0.,resSgd`valAccHistory;lossSgdMomentum:0.,resSgdMomentum`trainAccHistory;trainAccSgd:0.,resRmsProp`valAccHistory;lossAdam:0.,resAdam`trainAccHistory)"
+lg"line chart of: ([]iteration:string til 1+count resRmsProp`valAccHistory;valAccSgd:0.,resSgd`valAccHistory;lossSgdMomentum:0.,resSgdMomentum`valAccHistory;valAccSgd:0.,resRmsProp`valAccHistory;lossAdam:0.,resAdam`valAccHistory)"
+
+lg "\n########## training a good model #############\n"
+
+startd:(!) . flip ((`xTrain;xTrain);(`yTrain;yTrain);(`xVal;xVal);(`yVal;yVal);`model`fullyConnectedNet;(`dimHidden;100 75 50 25);(`nClass;10);(`wScale;5e-2);(`optimConfig;(enlist `learnRate)!enlist 1e-3);(`numEpochs;5);(`batchSize;200);(`printEvery;100);(`updateRule;`adam))
+
+lg "run adam with 100 75 50 25 hidden dimensions"
+res:solver.train startd
+
+lg "plot results"
+lg"scatter plot:  ([]iteration:til count res`lossHistory;loss:res`lossHistory)"
+lg"line chart: ([]iteration:string til 1+count res`valAccHistory;validationAccuracy:0.,res`valAccHistory)"
+
+
 
