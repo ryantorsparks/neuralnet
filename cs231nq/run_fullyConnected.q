@@ -164,3 +164,31 @@ lg "scatter plot of: ([]iteration:til count resSgd`lossHistory;lossSgd:resSgd`lo
 lg "line chart of: ([]iteration:string til 1+count resSgd`valAccHistory;trainAccSgd:0.,resSgd`valAccHistory;lossSgdMomentum:0.,resSgdMomentum`trainAccHistory)"   
 lg "line chart of: ([]iteration:string til 1+count resSgd`valAccHistory;valAccSgd:0.,resSgd`valAccHistory;lossSgdMomentum:0.,resSgdMomentum`valAccHistory)"
 
+lg "\n############ rms prop and adam update ###########\n"
+lg "test rmsProp implementatoin, error should be less than 1e-7"
+N:4
+D:5
+w:(N,D)#linSpace[-0.4;0.6;N*D]
+dw:(N,D)#linSpace[-0.6;0.4;N*D]
+cache:(N,D)#linSpace[0.6;0.9;N*D]
+config:`learnRate`cache!(1e-2;cache)
+nextWConfig:rmsProp[w;dw;config]
+lg "compare nextW and cache to expected results"
+relError[nextWConfig 0;get `:assignmentInputs/fullyConnected_expectedNextWRmsProp]
+relError[nextWConfig[1]`cache;get `:assignmentInputs/fullyConnected_expectedCacheRmsProp]
+
+lg "test adam implementation, error shoudl be ~ 1e-7 or less"
+N:4
+D:5
+w:(N,D)#linSpace[-0.4;0.6;N*D]
+dw:(N,D)#linSpace[-0.6;0.4;N*D]
+mAdam:(N,D)#linSpace[0.6;0.9;N*D]
+vAdam:(N,D)#linSpace[0.7;0.5;N*D]
+config:`learnRate`mAdam`vAdam`tAdam!(0.01;mAdam;vAdam;5)
+nextWConfig:adam[w;dw;config]
+lg "compare nextW, v and m to expected values"
+relError[nextWConfig 0;get`:assignmentInputs/fullyConnected_expectedNextWAdam]
+relError[nextWConfig[1;`vAdam];get`:assignmentInputs/fullyConnected_expectedVAdam]
+relError[nextWConfig[1;`mAdam];get`:assignmentInputs/fullyConnected_expectedMAdam]
+
+

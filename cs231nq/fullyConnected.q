@@ -442,7 +442,8 @@ solver.i.train:{[d]
  };
 
 
-/ ########### optimiser funcs #############
+/ ########### optimiser (update rule) funcs #############
+
 / vanilla socastic gradient descent
 sgd:{[w;dw;config]
     (w-dw*config`learnRate;config)
@@ -468,19 +469,59 @@ sgdMomentum:{[w;dw;config]
     (w+v;config)
  };
 
-
-/ ########### utility style funcs #############
-
-/ get model params
-/ e.g. getModelValue[d;`params]
-/      getModelValue[d;`init]
-getModelValue:{[d;x]
-    if[not `model in key d;'"getModelValue: d is missing `model from key"];
-    modelFunc: ` sv d[`model],x;
-    if[not count key modelFunc;'"getModelValue: model function ",(-3!modelFunc)," does not exist"];
-    modelFunc@d
+/ rmsProp update rule, uses mavg of square gradient rules set adaptive per-
+/ parameter learning rates
+/ config format should be:
+/   learnRate - float
+/   updateDecayRate - float between 0 and 1f, decay rate of the squared gradient cache
+/   epsilon - small float, used for smoothing to avoid dividing by 0
+/   cache - mavg of second moments of gradients
+rmsProp:{[x;dx;config]
+    defaults: `learnRate`updateDecayRate`epsilon`cache!(0.01;0.99;1e-8;x*0.0);
+    config:defaults,config;
+    
+    / store next value of x as nextX
+    cache:config`cache;
+    updateDecayRate:config`updateDecayRate;
+    epsilon:config`epsilon;
+    learnRate:config`learnRate;
+    cache:(cache*updateDecayRate)+(1-updateDecayRate)*dx*dx;
+    nextX:x-learnRate*dx%epsilon+sqrt cache;
+    config[`cache]:cache;
+    (nextX;config)
  };
 
+/ adam update, which incorporates moving averages of both the gradient
+/ and its square, and a bias correction term
+/ config format should be:
+/   learnRate - float
+/   beta1 - decay rate for mavg of first moment of gradient
+/   beta2 - decay rate for mavg of second moment of gradient
+/   epsilon - small float for smoothing to avoid dividing by 0
+/   mAdam - moving avg of gradient
+/   vAdam - moving average of squared gradient
+/   tAdam - iteration number
+adam:{[x;dx;config]
+    defaults:(!) . flip ((`learnRate;1e-3);(`beta1;0.9);(`beta2;0.999);
+             (`epsilon;1e-8);(`mAdam;0f*x);(`vAdam;0f*x);(`tAdam;0));
+    config:defaults,config;
+    learnRate:config`learnRate;
+    beta1:config`beta1;
+    beta2:config`beta2;
+    epsilon:config`epsilon;
+    mAdam:config`mAdam;
+    vAdam:config`vAdam;
+    tAdam:1+config`tAdam;
+    mAdam:(beta1*mAdam)+dx*1-beta1;
+    vAdam:(beta2*vAdam)+(1-beta2)*dx*dx;
+    
+    / bias correction
+    mb:mAdam%1-beta1 xexp tAdam;
+    vb:vAdam%1-beta2 xexp tAdam;
+    nextX:x-learnRate* mb % epsilon+sqrt vb;
+    config[`mAdam`vAdam`tAdam]:(mAdam;vAdam;tAdam);
+    (nextX;config)
+ };
 
 
 

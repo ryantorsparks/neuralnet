@@ -61,3 +61,13 @@ nulld:enlist[`]!enlist(::)
 
 / transform dict `dx`dw`db!(a;b;c) -> `dx3`dw3`db3!(a;b;c) (for input layer 3)
 renameKey:{[layer;dict] (`$1_'string[key dict],\:string layer)!value dict};
+
+/ get model params
+/ e.g. getModelValue[d;`params]
+/      getModelValue[d;`init]
+getModelValue:{[d;x]
+    if[not `model in key d;'"getModelValue: d is missing `model from key"];
+    modelFunc: ` sv d[`model],x;
+    if[not count key modelFunc;'"getModelValue: model function ",(-3!modelFunc)," does not exist"];
+    modelFunc@d
+ };
