@@ -396,8 +396,9 @@ solver.train:{[d]
     d[`numIterations`iterationsPerEpoch]:numIterations,iterationsPerEpoch;
     res:numIterations solver.i.train/d;
     
-    / finally, swap in best params
-    res:res,res`bestParams;
+    / finally, swap in best params (only the model params though, leave
+    / the rest in tact (e.g. loss/accuracy histories)
+    res:res,getModelValue[res;`params]#res`bestParams;
     res
  };
 
