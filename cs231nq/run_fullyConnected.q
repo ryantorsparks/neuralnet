@@ -159,3 +159,8 @@ lg "running training with sgd"
 resSgd:solver.train @[startd;`updateRule;:;`sgd] 
 lg "running training with sgdMomentum"
 resSgdMomentum:solver.train @[startd;`updateRule;:;`sgdMomentum] 
+lg "plot loss histories for each, e.g. in qstudio"
+lg "scatter plot of: ([]iteration:til 200;lossSgd:resSgd`lossHistory;lossSgdMomentum:resSgdMomentum`lossHistory)"
+lg "line chart of: ([]iteration:string til 1+count resSgd`valAccHistory;trainAccSgd:0.,resSgd`valAccHistory;lossSgdMomentum:0.,resSgdMomentum`trainAccHistory)"   
+lg "line chart of: ([]iteration:string til 1+count resSgd`valAccHistory;valAccSgd:0.,resSgd`valAccHistory;lossSgdMomentum:0.,resSgdMomentum`valAccHistory)"
+
