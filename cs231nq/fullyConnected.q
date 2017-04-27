@@ -2,6 +2,7 @@
 reshape:{[x;w](first[shape x],first shape w)#razeo x}
 
 affineForward:{[d]
+    / d expects `x`w`b
     x:d`x;
     w:d`w;
     b:d`b;
@@ -10,6 +11,7 @@ affineForward:{[d]
  };
 
 affineBackward:{[dout;cached]
+    / cached expects `x`w`b
     x:cached `x;
     w:cached `w;
     b:cached `b;
@@ -25,8 +27,8 @@ reluBackward:{[dout;cache]
     dout*not cache<0
  };
 
-/ d should have `x`w`b
 affineReluForward:{[d]
+    / d should have `x`w`b (affineForward)
     res:affineForward d;
     a:res 0;
     fcCache:res 1;
@@ -38,6 +40,7 @@ affineReluForward:{[d]
  };
 
 affineReluBackward:{[dout;cache]
+    / cache expects `x`w`b (affineBackward)
     fcCache:cache 0;
     reluCache:cache 1;
     da:reluBackward[dout;reluCache];
@@ -51,7 +54,11 @@ affineReluBackward:{[dout;cache]
 / learnable params, always  just these 4
 twoLayerNet.params:{[d] `w1`b1`w2`b2}
 
+/ layer inds, always 1 2
+twoLayerNet.layerInds:{[d] 1 2}
+
 twoLayerNet.init:{[d]
+    / d expects nothing (defauls will provided for `dimInput`dimHidden`nClass`wScale`reg)
     / use defaults if not provided
     defaults:`dimInput`dimHidden`nClass`wScale`reg!(3*32*32;100;10;1e-3;0.0);
     d:defaults,d;
@@ -65,6 +72,9 @@ twoLayerNet.init:{[d]
 / @param d: contains:
 / `w1`w2`b1`b2`x and possibly `y
 twoLayerNet.loss:{[d]
+    / d expects `x`w1`b1`w2`b2
+    / d can also accept `y, and if provided (i.e. running train mode),
+    /     then it expects `reg
     / forward into first layer
     hiddenCache:affineReluForward `x`w`b!d`x`w1`b1;
     hiddenLayer:hiddenCache 0;
@@ -109,6 +119,8 @@ twoLayerNet.loss:{[d]
 / given a dict d, if it contains `modelParams already, return it,
 / otherwise if it has `wParams`bParams
 fullyConnectedNet.params:{[d]
+    / d either expects `modelParams (exit early), both `wParams+`bParams (exit early),
+    /     or it needs `dimHidden
     / if we already have it in d, return early
     if[`modelParams in key d;:d`modelParams];
 
@@ -125,6 +137,21 @@ fullyConnectedNet.params:{[d]
     bParams,wParams
  };
 
+/ get the layer inds (e.g. if we have 2 hidden layers, it's 1 2 3)
+fullyConnectedNet.layerInds:{[d]
+    if[`layerInds in key d;:d`layerInds];
+
+    if[`wParams in key d;:1+til count d`wParams];
+    if[`bParams in key d;:1+til count d`bParams];
+
+    if[`modelParams in key d;:1+til count[d`modelParams]div 2];
+
+    if[`numLayers in key d;:1+til d`numLayers];
+
+    if[not `dimHidden in key d;'"fullyConnectedNet.layerInds: needs `dimHidden"];
+    1+til 1+count d`dimHidden
+ };
+
 / initialization/default params
 / possible inputs:
 / dimHidden - list of integers giving the size of each hidden layer
@@ -137,6 +164,7 @@ fullyConnectedNet.params:{[d]
 /        deterministic so we can gradient check the model
 / @global - sets fullyConnectedNet.params here (list of `b1`b2`b3...`w1`w2`w3...
 fullyConnectedNet.init:{[d]
+    / d expects at the very least `dimHidden
     defaults:(!) . flip (
         (`dimInput;3*32*32);
         (`nClass;10);
@@ -165,7 +193,7 @@ fullyConnectedNet.init:{[d]
     d,:wParams!d[`wScale]*randArray ./:wDims;
     d[`bParams]:bParams;
     d[`wParams]:wParams;
-    d[`layerInds]:tnl;
+    d[`layerInds]:getModelValue[@[d;`model;:;`fullyConnectedNet];`layerInds];
 
     / when using dropout, need to pass a dropoutParam dict to each dropout
     / layer so that the layer knows the dropout probability and the mode (train
@@ -194,6 +222,9 @@ fullyConnectedNet.init:{[d]
 / @param d: contains:
 / `w1`w2`w3 ... `b1`b2`b3  ... , `x and possibly `y
 fullyConnectedNet.loss:{[d]
+    / d expects `dropoutParam`useBatchNorm`wParams(`w1`w2 ...`wN)`bParams(`b1`b2...`bN)
+    /           `layerInds(1,2,3...N)
+    / d possibly (???) needs `bnParams
     mode:$[`y in key d;`train;`test];
     
     / set train test mode for batchnorm params and dropout param since they
@@ -216,8 +247,13 @@ fullyConnectedNet.loss:{[d]
     / forward pass, compute class scores for x, store in scores
     / feed each first[outCache] (result of affineReluForward) into next affineReluForward
     / first, get wParams (`w1`w2`w3 ...`w[n-1]) and bParams (`b1`b2 ...`b[n-1])
-    wParams:d`wParams;
-    bParams:d`bParams;
+    / test:
+    modelParams:2 0N#getModelValue[@[d;`model;:;`fullyConnectedNet];`params];
+    wParams:modelParams 0;
+    bParams:modelParams 1;
+    layerInds:getModelValue[@[d;`model;:;`fullyConnectedNet];`layerInds];
+
+    / forward pass on all but last layer (scan and store result as caches)
     cacheLayers:{[outCache;w;b] affineReluForward @[d;`x`w`b;:;(outCache 0;w;b)]}\[(d`x;());d@-1_ wParams;d@-1_ bParams];
     layers: cacheLayers[;0];
     caches: cacheLayers[;1];
@@ -241,9 +277,8 @@ fullyConnectedNet.loss:{[d]
     / first do afineBackwards on final layer
     / indexes of all the layers, starting from 1, e.g. if we have `w1`w2...`w9, then
     / layerInds are 1 2 3 ... 9
-    layerInds:d`layerInds;
-    dxDwDbTab:`layer xkey enlist @[affineBackward[dscores;cacheScores];`layer;:;last layerInds];
-    / add on reg to last dw
+    layerInds:getModelValue[@[d;`model;:;`fullyConnectedNet];`layerInds];
+    / add on reg to last dw (store as dict of `dxN`dwN`dbN)
     dxDwDbDict:renameKey[last layerInds;] affineBackward[dscores;cacheScores];
 
     / backprop into remaining layers (cacheLayers from above)
@@ -269,6 +304,7 @@ fullyConnectedNet.loss:{[d]
 /   `numEpochs - number of epochs to run during training
 /   `printEvery - training losses will be printery every printEvery iterations
 solver.init:{[d]
+    / d expects `model (getModelValue)
     d:nulld,d;
    
     / add on initial default params for the model
@@ -290,6 +326,7 @@ solver.init:{[d]
 
 / reset a bunch of dict variables
 solver.reset:{[d]
+    / d expects `optimConfig`model
     / book-keeping variables
     optimd:d`optimConfig;
 
@@ -303,7 +340,6 @@ solver.reset:{[d]
         (`trainAccHistory;());
         (`valAccHistory;());
         / store optimConfig for each param in d
-//        (`optimConfigs;(modelParams)!count[modelParams]#enlist optimd)
         (`optimConfigs;([]p:modelParams)!count[modelParams]#enlist optimd)
         );
     d
@@ -311,6 +347,8 @@ solver.reset:{[d]
 
 / step function???
 solver.step:{[d]
+    / d expects `xTrain`yTrain`batchSize`lossHistory`optimConfigs`updateRule
+    / possibly (???( 
     / create mini batch
     numTrain:count d`xTrain;
     batchMask:neg[d`batchSize]?numTrain;
@@ -318,11 +356,10 @@ solver.step:{[d]
     yBatch:d[`yTrain] batchMask;
 
     / compute loss and grad of mini batch
-    lossFunc:` sv d[`model],`loss;
     modelParams:getModelValue[d;`params];
   
     / ??? about the stuff after `reg
-    lossGrad:lossFunc (inter[modelParams,`reg`dropoutParam`useBatchNorm`bnParams`wParams`bParams`layerInds;key d]#d),`x`y!(xBatch;yBatch);
+    lossGrad:getModelValue[ (inter[modelParams,`reg`dropoutParam`useBatchNorm`bnParams`wParams`bParams`layerInds`model;key d]#d),`x`y!(xBatch;yBatch);`loss];
     loss:lossGrad 0;
     grads:lossGrad 1;
     if[null loss;break];
@@ -350,6 +387,7 @@ solver.step:{[d]
 / accuracy check
 / d is `x`y`numSamples`batchSize
 solver.checkAccuracy:{[d]
+    / d expects `x`y`model`numSamples`batchSize
     / possibly sumbsample the data
     N:count d`x;
     batchSize:d`batchSize;
@@ -382,6 +420,7 @@ solver.checkAccuracy:{[d]
 
 / train function
 solver.train:{[d]
+    / d expects `xTrain`batchSize`numEpochs
     / first initialize d (this will first call model specific d[`model].init func, then
     / fill in blanks with default values)
     d: solver.init d;
@@ -404,6 +443,9 @@ solver.train:{[d]
 
 / called iteratively by sover.train
 solver.i.train:{[d]
+    / d expects `cnt`numIterations`printEvery`lossHistory`iterationsPerEpoch`epoch
+    /           `optimConfigs`learnRate`learnRateDecay`model`batchSize`xTrain`yTrain
+    /           `trainAccHistory`valAccHistory`bestValAcc
     / possibly print training loss
     cnt:d`cnt;
     numIterations:d`numIterations;
@@ -434,7 +476,7 @@ solver.i.train:{[d]
         / keep track of the best model
         if[valAcc>d`bestValAcc;
             d[`bestValAcc]:valAcc;
-            d[`bestParams]:`xTrain`x`xVal`yTrain`yVal`y _ d;
+            d[`bestParams]:getModelValue[d;`params]#d;
           ];
       ];
     d[`cnt]+:1;
@@ -446,6 +488,7 @@ solver.i.train:{[d]
 
 / vanilla socastic gradient descent
 sgd:{[w;dw;config]
+    / config expects `learnRate
     (w-dw*config`learnRate;config)
  };
 
@@ -456,6 +499,7 @@ sgd:{[w;dw;config]
 /   velocity - float array same shape as w and dw used to store a moving
 /              average of the gradients
 sgdMomentum:{[w;dw;config]
+    / config expects `learnRate`momentum`velocity
     config:where[config~\:(::)] _ config;
     defaults:`learnRate`momentum!0.01 0.9;
     config:defaults,config;
@@ -477,6 +521,7 @@ sgdMomentum:{[w;dw;config]
 /   epsilon - small float, used for smoothing to avoid dividing by 0
 /   cache - mavg of second moments of gradients
 rmsProp:{[x;dx;config]
+    / d optionals `learnRate`updateDecayRate`epsilon`cache (defaults provided)
     defaults: `learnRate`updateDecayRate`epsilon`cache!(0.01;0.99;1e-8;x*0.0);
 
     / remove the null initialized ones (replace with default)
@@ -501,12 +546,13 @@ rmsProp:{[x;dx;config]
 /   beta1 - decay rate for mavg of first moment of gradient
 /   beta2 - decay rate for mavg of second moment of gradient
 /   epsilon - small float for smoothing to avoid dividing by 0
-/   mAdam - moving avg of gradient
-/   vAdam - moving average of squared gradient
-/   tAdam - iteration number
+/   m - moving avg of gradient
+/   v - moving average of squared gradient
+/   t - iteration number
 adam:{[x;dx;config]
+    / d optionals `learnRate`beta1`beta2`epsilon`m`v`t
     defaults:(!) . flip ((`learnRate;1e-3);(`beta1;0.9);(`beta2;0.999);
-             (`epsilon;1e-8);(`mAdam;0f*x);(`vAdam;0f*x);(`tAdam;0));
+             (`epsilon;1e-8);(`m;0f*x);(`v;0f*x);(`t;0));
 
     / remove the null initialized ones (replace with default)
     config:where[config~\:(::)] _ config;
@@ -515,17 +561,17 @@ adam:{[x;dx;config]
     beta1:config`beta1;
     beta2:config`beta2;
     epsilon:config`epsilon;
-    mAdam:config`mAdam;
-    vAdam:config`vAdam;
-    tAdam:1+config`tAdam;
-    mAdam:(beta1*mAdam)+dx*1-beta1;
-    vAdam:(beta2*vAdam)+(1-beta2)*dx*dx;
+    m:config`m;
+    v:config`v;
+    t:1+config`t;
+    m:(beta1*m)+dx*1-beta1;
+    v:(beta2*v)+(1-beta2)*dx*dx;
     
     / bias correction
-    mb:mAdam%1-beta1 xexp tAdam;
-    vb:vAdam%1-beta2 xexp tAdam;
+    mb:m%1-beta1 xexp t;
+    vb:v%1-beta2 xexp t;
     nextX:x-learnRate* mb % epsilon+sqrt vb;
-    config[`mAdam`vAdam`tAdam]:(mAdam;vAdam;tAdam);
+    config[`m`v`t]:(m;v;t);
     (nextX;config)
  };
 

@@ -3,8 +3,11 @@ system"c 30 150"
 
 / for comments, trim off white spaces,
 / then shift everything to the right two spaces
-lg:{-1 $[10h=type x;"\n" sv "  ",/:ltrim each "\n" vs x;.Q.s x];};
+lg:{-1 $[10h=type x;"\n" sv "  ",/:ltrim each "\n" vs $[x like "#*#";"\n",x,"\n";x];.Q.s x];};
 
+/ log with a hash bar araound it, e.g "\n######### abc def #########\n"
+lgBar:10#"#"
+lgh:{lg reverse[h],x,h:" ",lgBar,"\n"}
 
 / util to convert n dimentional q  matrix to python copy paste-able
 / (useful for confirming results should match)

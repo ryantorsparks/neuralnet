@@ -6,16 +6,26 @@
 cifarMode:`unflattened
 \l load_cifar_data.q
 
+lg "##############################
+    Fully connected neural nets
+    ##############################"
+
 b:"f"$get `:assignmentInputs/fullyConnected_b
 w:"f"$get `:assignmentInputs/fullyConnected_w
 x:"f"$get `:assignmentInputs/fullyConnected_x
 correctOut:get `:assignmentInputs/fullyConnected_correctOut
 
-lg "Affine forwards"
+lg "##############################
+    Afine forwards
+    ##############################"
+
 out:first affineForward `x`w`b!(x;w;b)
 relError[out;correctOut]
 
-lg "Affine backwards"
+lg "##############################
+    Affine backwards
+    ##############################"
+
 b:"f"$get `:assignmentInputs/fullyConnected_bAffineBackward
 w:"f"$get `:assignmentInputs/fullyConnected_wAffineBackward
 x:"f"$get `:assignmentInputs/fullyConnected_xAffineBackward
@@ -25,12 +35,18 @@ dxDwDb:affineBackward[dout;cache]
 dxDwDb_num:numericalGradientArray[(first affineForward@);`x`w`b!(x;w;b);dout;]each `x`w`b
 relError'[dxDwDb;dxDwDb_num]
 
-lg "ReLU layer forward"
+lg "##############################
+    ReLU layer forward
+    ##############################"
+
 x:3 4#linSpace[-0.5;.5;12]
 out:0|x
 relError[get`:assignmentInputs/fullyConnected_correctOutReluForward;0|x]
 
-lg "ReLU backward"
+lg "##############################
+    ReLU backward
+    ##############################"
+
 x:"f"$get`:assignmentInputs/fullyConnected_xReluBackward
 dout:"f"$get`:assignmentInputs/fullyConnected_doutReluBackward
 cache: last reluForward[x]
@@ -38,7 +54,10 @@ dx:reluBackward[dout;cache]
 dx_num:numericalGradientArray[(first reluForward@);x;dout;`x]
 relError[dx;dx_num]
 
-lg "Sandwich layers"
+lg "##############################
+    Sandwich layers
+    ##############################"
+
 w:"f"$get`:assignmentInputs/fullyConnected_wSandwich
 b:"f"$get`:assignmentInputs/fullyConnected_bSandwich
 x:"f"$get`:assignmentInputs/fullyConnected_xSandwich
@@ -48,7 +67,10 @@ dxDwDb:affineReluBackward[dout;outCache 1]
 dxDwDb_num:numericalGradientArray[(first affineReluForward@);`x`w`b!(x;w;b);dout;]each `x`w`b
 relError'[value dxDwDb;dxDwDb_num]
 
-lg "Loss layeres: Softmax and SVM"
+lg "##############################
+    Loss layeres: Softmax and SVM
+    ##############################"
+
 y:get`:assignmentInputs/fullyConnected_yLossLayers
 x:"f"$get`:assignmentInputs/fullyConnected_xLossLayers
 dxNum:numericalGradient[(first svmLoss@);`x`y!(x;y);`x] 
@@ -59,8 +81,9 @@ lossDx:softmaxLoss `x`y!(x;y)
 lg"loss is ",.Q.s lossDx 0
 lg"relative error is ",.Q.s relError[dxNum;lossDx 1]
 
-
-lg "##### Two layer network #####\n"
+lg "##############################
+    Two layer network
+    ##############################"
 
 X:"f"$get `:assignmentInputs/fullyConnected_XTwoLayer
 y:get`:assignmentInputs/fullyConnected_yTwoLayer
@@ -103,7 +126,10 @@ if[1e-10<abs lossGrads[0]-correctLoss;lg"WARN: problem with regularization loss"
 / key d has `dimInput`dimHidden`nClass`wScale`reg`b1`w1`b2`w2`x`y
 compareNumericalGradients[d] each 0.0 0.7;
 
-lg "\n###### Solver ######\n"
+lg "##############################
+    Solver
+    ##############################"
+
 startd:`model`xTrain`yTrain`xVal`yVal`updateRule`optimConfig`learnRateDecay`numEpochs`batchSize`printEvery!(`twoLayerNet;xTrain;yTrain;xVal;yVal;`sgd;enlist[`learnRate]!enlist 1e-3;0.95;9;200;100)
 lg "run training, should be able to achieve > 50% validation accuracy"
 /
@@ -114,10 +140,13 @@ lg"train history: ([]epoch:til 1+ res`numEpochs;loss: res`trainAccHistory)"
 lg"validation history: ([]epoch:til 1+ res`numEpochs;loss: res`valAccHistory)"
 \
 
-lg "######## Multi layer network ###########"
-`. upsert `N`D`H1`H2`C!2 15 20 30 10
+lg "##############################
+    Multi layer network
+    ##############################"
+
+`. upsert `N`D`H1`H2`C!2 15 20 30 10;
 d:`dimHidden`dimInput`nClass`reg`wScale!(H1,H2;D;C;0.0;5e-2)  
-x:randArray . N,D
+x:randArray[N;D]
 y:N?C
 startd: d,`x`y`reg!(x;y;0.0)
 initd:fullyConnectedNet.init startd
@@ -129,17 +158,20 @@ compareNumericalGradients[gradCheckDict]each 0.0 3.14;
 lg "Overfit a small data set using a 3-layer net"
 numTrain:50
 smallData:`xTrain`yTrain`xVal`yVal!(numTrain#xTrain;numTrain#yTrain;xVal;yVal)
-startd:smallData,`model`dimHidden`nClass`reg`learnRate`learnRateDecay`wScale`updateRule`optimConfig`numEpochs`batchSize`printEvery!(`fullyConnectedNet;100 100;10;0.0;0.01;0.95;0.01;`sgd;enlist[`learnRate]!enlist 0.01;20;25;10)
+startd:smallData,`model`dimHidden`nClass`reg`learnRateDecay`wScale`updateRule`optimConfig`numEpochs`batchSize`printEvery!(`fullyConnectedNet;100 100;10;0.0;0.95;0.01;`sgd;enlist[`learnRate]!enlist 0.01;20;25;10)
 res: solver.train startd
 
 lg "Use a 5 layer net to overfit 50 training examples"
 numTrain:50
 smallData:`xTrain`yTrain`xVal`yVal!(numTrain#xTrain;numTrain#yTrain;xVal;yVal)
-startd:smallData,`model`dimHidden`nClass`reg`learnRate`learnRateDecay`wScale`updateRule`optimConfig`numEpochs`batchSize`printEvery!(`fullyConnectedNet;4#100;10;0.0;0.021;0.95;0.036;`sgd;enlist[`learnRate]!enlist 0.021;20;25;10)
+startd:smallData,`model`dimHidden`nClass`reg`learnRateDecay`wScale`updateRule`optimConfig`numEpochs`batchSize`printEvery!(`fullyConnectedNet;4#100;10;0.0;0.95;0.036;`sgd;enlist[`learnRate]!enlist 0.021;20;25;10)
 res:solver.train startd
 
 
-lg "\n########### SGD and momentum ############"
+lg "#################################
+    SGD and momentum
+    ##############################"###
+
 N:4
 D:5
 w:(N,D)#linSpace[-0.4;0.6;N*D] 
@@ -154,7 +186,7 @@ relError[nextWConfig[1;`velocity];get `:assignmentInputs/fullyConnected_expected
 lg"train a 6 layer network with sgd and sgdMomentum, sgdMomentum should converge faster"
 numTrain:4000
 smallData:`xTrain`yTrain`xVal`yVal!(numTrain#xTrain;numTrain#yTrain;xVal;yVal)
-startd:smallData,(!) . flip (`model`fullyConnectedNet;(`dimHidden;5#100);(`nClass;10);(`learnRate;0.01);(`wScale;5e-2);(`optimConfig;(enlist `learnRate)!enlist 0.01);(`numEpochs;5);(`batchSize;100))
+startd:smallData,(!) . flip (`model`fullyConnectedNet;(`dimHidden;5#100);(`nClass;10);(`wScale;5e-2);(`optimConfig;(enlist `learnRate)!enlist 0.01);(`numEpochs;5);(`batchSize;100))
 lg "running training with sgd"
 resSgd:solver.train @[startd;`updateRule;:;`sgd] 
 lg "running training with sgdMomentum"
@@ -164,7 +196,11 @@ lg "scatter plot of: ([]iteration:til count resSgd`lossHistory;lossSgd:resSgd`lo
 lg "line chart of: ([]iteration:string til 1+count resSgd`valAccHistory;trainAccSgd:0.,resSgd`valAccHistory;lossSgdMomentum:0.,resSgdMomentum`trainAccHistory)"   
 lg "line chart of: ([]iteration:string til 1+count resSgd`valAccHistory;valAccSgd:0.,resSgd`valAccHistory;lossSgdMomentum:0.,resSgdMomentum`valAccHistory)"
 
-lg "\n############ rms prop and adam update ###########\n"
+
+lg "##############################
+    rms prop and adam update
+    ##############################"
+
 lg "test rmsProp implementatoin, error should be less than 1e-7"
 N:4
 D:5
@@ -182,31 +218,33 @@ N:4
 D:5
 w:(N,D)#linSpace[-0.4;0.6;N*D]
 dw:(N,D)#linSpace[-0.6;0.4;N*D]
-mAdam:(N,D)#linSpace[0.6;0.9;N*D]
-vAdam:(N,D)#linSpace[0.7;0.5;N*D]
-config:`learnRate`mAdam`vAdam`tAdam!(0.01;mAdam;vAdam;5)
+m:(N,D)#linSpace[0.6;0.9;N*D]
+v:(N,D)#linSpace[0.7;0.5;N*D]
+config:`learnRate`m`v`t!(0.01;m;v;5)
 nextWConfig:adam[w;dw;config]
 lg "compare nextW, v and m to expected values"
 relError[nextWConfig 0;get`:assignmentInputs/fullyConnected_expectedNextWAdam]
-relError[nextWConfig[1;`vAdam];get`:assignmentInputs/fullyConnected_expectedVAdam]
-relError[nextWConfig[1;`mAdam];get`:assignmentInputs/fullyConnected_expectedMAdam]
+relError[nextWConfig[1;`v];get`:assignmentInputs/fullyConnected_expectedVAdam]
+relError[nextWConfig[1;`m];get`:assignmentInputs/fullyConnected_expectedMAdam]
 
 lg "now train some deep networks using rmsprop and adam"
-//numTrain:4000
+numTrain:4000
 smallData:`xTrain`yTrain`xVal`yVal!(numTrain#xTrain;numTrain#yTrain;xVal;yVal)
-startd:smallData,(!) . flip (`model`fullyConnectedNet;(`dimHidden;5#100);(`nClass;10);(`wScale;5e-2);(`optimConfig;(enlist `learnRate)!enlist 0.01);(`numEpochs;5);(`batchSize;100))
+startd:smallData,(!) . flip (`model`fullyConnectedNet;(`dimHidden;5#100);(`nClass;10);(`wScale;5e-2);(`numEpochs;5);(`batchSize;100))
 lg "running training with rmsProp"
-resRmsProp:solver.train @[startd;`updateRule`learnRate`optimConfig;:;(`rmsProp;1e-4;enlist[`learnRate]!enlist 1e-4)]
+resRmsProp:solver.train @[startd;`updateRule`optimConfig;:;(`rmsProp;enlist[`learnRate]!enlist 1e-4)]
 
 lg "running training with adam"
-resAdam:solver.train @[startd;`updateRule`learnRate`optimConfig;:;(`adam;1e-3;enlist[`learnRate]!enlist 1e-3)]
+resAdam:solver.train @[startd;`updateRule`optimConfig;:;(`adam;enlist[`learnRate]!enlist 1e-3)]
 
 lg "plot all 4 togehter, sgd, sgdMomentum, rmsProp, adam"
 lg"scatter plot of: ([]iteration:til 200;lossSgd:resSgd`lossHistory;lossSgdMomentum:resSgdMomentum`lossHistory;lossRmsProp:resRmsProp`lossHistory;lossAdam:resAdam `lossHistory)"
 lg"line chart of: ([]iteration:string til 1+count resRmsProp`valAccHistory;trainAccSgd:0.,resSgd`valAccHistory;lossSgdMomentum:0.,resSgdMomentum`trainAccHistory;trainAccSgd:0.,resRmsProp`valAccHistory;lossAdam:0.,resAdam`trainAccHistory)"
 lg"line chart of: ([]iteration:string til 1+count resRmsProp`valAccHistory;valAccSgd:0.,resSgd`valAccHistory;lossSgdMomentum:0.,resSgdMomentum`valAccHistory;valAccSgd:0.,resRmsProp`valAccHistory;lossAdam:0.,resAdam`valAccHistory)"
 
-lg "\n########## training a good model #############\n"
+lg "##############################
+    training a good model
+    ##############################"
 
 startd:(!) . flip ((`xTrain;xTrain);(`yTrain;yTrain);(`xVal;xVal);(`yVal;yVal);`model`fullyConnectedNet;(`dimHidden;100 75 50 25);(`nClass;10);(`wScale;5e-2);(`optimConfig;(enlist `learnRate)!enlist 1e-3);(`numEpochs;5);(`batchSize;200);(`printEvery;100);(`updateRule;`adam))
 

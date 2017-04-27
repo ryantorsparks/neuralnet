@@ -41,6 +41,8 @@ numericalGradientArray:{[f;d;df;param]
 
 / compare a few numerical gradients
 compareNumericalGradients:{[d;reg]
+    / d expects `reg`model, any params from model's loss func,
+    /           so possibly `x`w1`w2...`b1`b2...
     lg"running numeric gradient check with reg=",string reg;
     d[`reg]:reg;
     lossFunc:value ` sv $[`model in key d;d`model;`twoLayerNet],`loss;
