@@ -199,7 +199,7 @@ fullyConnectedNet.init:{[d]
     d,:wParams!d[`wScale]*randArray ./:wDims;
     d[`bParams]:bParams;
     d[`wParams]:wParams;
-    d[`layerInds]:getModelValue[d;`layerInds];
+    d[`layerInds]:fullyConnectedNet.layerInds[d];
 
     / when using dropout, need to pass a dropoutParam dict to each dropout
     / layer so that the layer knows the dropout probability and the mode (train
@@ -232,7 +232,6 @@ fullyConnectedNet.loss:{[d]
     /           `layerInds(1,2,3...N)
     / d possibly (???) needs `bnParams
     mode:$[`y in key d;`train;`test];
-    d[`model]:`fullyConnectedNet;
  
     / set train test mode for batchnorm params and dropout param since they
     / behave differently during training and testing
@@ -255,11 +254,10 @@ fullyConnectedNet.loss:{[d]
     / feed each first[outCache] (result of affineReluForward) into next affineReluForward
     / first, get wParams (`w1`w2`w3 ...`w[n-1]) and bParams (`b1`b2 ...`b[n-1])
     / test:
-//    modelParams:2 0N#getModelValue[@[d;`model;:;`fullyConnectedNet];`params];
-    modelParams:2 0N#getModelValue[d;`params];
+    modelParams:2 0N#fullyConnectedNet.params d;
     wParams:modelParams 0;
     bParams:modelParams 1;
-    layerInds:getModelValue[d;`layerInds];
+    layerInds:fullyConnectedNet.layerInds d;
 
     / forward pass on all but last layer (scan and store result as caches)
     cacheLayers:{[outCache;w;b] affineReluForward @[d;`x`w`b;:;(outCache 0;w;b)]}\[(d`x;());d@-1_ wParams;d@-1_ bParams];
@@ -285,7 +283,6 @@ fullyConnectedNet.loss:{[d]
     / first do afineBackwards on final layer
     / indexes of all the layers, starting from 1, e.g. if we have `w1`w2...`w9, then
     / layerInds are 1 2 3 ... 9
-    layerInds:getModelValue[d;`layerInds];
     / add on reg to last dw (store as dict of `dxN`dwN`dbN)
     dxDwDbDict:renameKey[last layerInds;] affineBackward[dscores;cacheScores];
 

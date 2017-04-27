@@ -258,7 +258,7 @@ lg "
 / this should get around 50%, much faster
 startd:(!) . flip ((`xTrain;xTrain);(`yTrain;yTrain);(`xVal;xVal);(`yVal;yVal);`model`fullyConnectedNet;(`dimHidden;100 75 50 25);(`nClass;10);(`wScale;5e-2);(`optimConfig;(enlist `learnRate)!enlist 1e-3);(`numEpochs;5);(`batchSize;200);(`printEvery;100);(`updateRule;`adam))
 
-/ alternatively, this should get around 54%, but takes much longer
+/ alternatively, this should get around 53%, but takes much longer
 / startd:(!) . flip ((`xTrain;xTrain);(`yTrain;yTrain);(`xVal;xVal);(`yVal;yVal);`model`fullyConnectedNet;(`dimHidden;4#100);(`nClass;10);(`wScale;2.461858e-02);(`optimConfig;(enlist `learnRate)!enlist 3.113669e-04);(`numEpochs;10);(`batchSize;25);(`printEvery;100);(`updateRule;`adam))
 
 lg "run adam with 100 75 50 25 hidden dimensions, validation accuracy should 
