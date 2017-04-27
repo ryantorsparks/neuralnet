@@ -144,34 +144,38 @@ lg "##############################
     Multi layer network
     ##############################"
 
+lg "we now set about implementing a fully connected net with aribtrary
+    number of hidden layers"
 `. upsert `N`D`H1`H2`C!2 15 20 30 10;
 d:`dimHidden`dimInput`nClass`reg`wScale!(H1,H2;D;C;0.0;5e-2)  
 x:randArray[N;D]
 y:N?C
 startd: d,`x`y`reg!(x;y;0.0)
 initd:fullyConnectedNet.init startd
-res: fullyConnectedNet.loss fullyConnectedNet.init startd
-lg "compare numerical gradients for reg in 0.0 3.14"
-gradCheckDict:@[((raze key[startd],initd[`wParams`bParams]),`wParams`bParams`layerInds`dropoutParam)#initd;`model;:;`fullyConnectedNet]
+
+lg "as a sanity check, compare numerical gradients for reg in 0.0 3.14"
+gradCheckDict:@[((raze key[startd],initd[`wParams`bParams]),`wParams`bParams)#initd;`model;:;`fullyConnectedNet]
 compareNumericalGradients[gradCheckDict]each 0.0 3.14;
 
-lg "Overfit a small data set using a 3-layer net"
+lg "second sanity check, overfit a small data set using a 3-layer net"
 numTrain:50
 smallData:`xTrain`yTrain`xVal`yVal!(numTrain#xTrain;numTrain#yTrain;xVal;yVal)
 startd:smallData,`model`dimHidden`nClass`reg`learnRateDecay`wScale`updateRule`optimConfig`numEpochs`batchSize`printEvery!(`fullyConnectedNet;100 100;10;0.0;0.95;0.01;`sgd;enlist[`learnRate]!enlist 0.01;20;25;10)
 res: solver.train startd
 
-lg "Use a 5 layer net to overfit 50 training examples"
+lg "final sanity check, use a 5 layer net to overfit 50 training examples"
 numTrain:50
 smallData:`xTrain`yTrain`xVal`yVal!(numTrain#xTrain;numTrain#yTrain;xVal;yVal)
 startd:smallData,`model`dimHidden`nClass`reg`learnRateDecay`wScale`updateRule`optimConfig`numEpochs`batchSize`printEvery!(`fullyConnectedNet;4#100;10;0.0;0.95;0.036;`sgd;enlist[`learnRate]!enlist 0.021;20;25;10)
 res:solver.train startd
 
-
-lg "#################################
+lg "##############################
     SGD and momentum
-    ##############################"###
+    ##############################"
 
+lg "Stochastic gradient descent with momentum is a widely used update 
+    rule that tends to make deep networks converge faster than vanilla 
+    stochstic gradient descent."
 N:4
 D:5
 w:(N,D)#linSpace[-0.4;0.6;N*D] 
@@ -201,7 +205,10 @@ lg "##############################
     rms prop and adam update
     ##############################"
 
-lg "test rmsProp implementatoin, error should be less than 1e-7"
+lg "RMSProp [1] and Adam [2] are update rules that set per-parameter learning rates 
+    by using a running average of the second moments of gradients"
+
+lg "test rmsProp implementation, error should be less than 1e-7"
 N:4
 D:5
 w:(N,D)#linSpace[-0.4;0.6;N*D]
@@ -237,7 +244,7 @@ resRmsProp:solver.train @[startd;`updateRule`optimConfig;:;(`rmsProp;enlist[`lea
 lg "running training with adam"
 resAdam:solver.train @[startd;`updateRule`optimConfig;:;(`adam;enlist[`learnRate]!enlist 1e-3)]
 
-lg "plot all 4 togehter, sgd, sgdMomentum, rmsProp, adam"
+lg "plot all 4 together, sgd, sgdMomentum, rmsProp, adam"
 lg"scatter plot of: ([]iteration:til 200;lossSgd:resSgd`lossHistory;lossSgdMomentum:resSgdMomentum`lossHistory;lossRmsProp:resRmsProp`lossHistory;lossAdam:resAdam `lossHistory)"
 lg"line chart of: ([]iteration:string til 1+count resRmsProp`valAccHistory;trainAccSgd:0.,resSgd`valAccHistory;lossSgdMomentum:0.,resSgdMomentum`trainAccHistory;trainAccSgd:0.,resRmsProp`valAccHistory;lossAdam:0.,resAdam`trainAccHistory)"
 lg"line chart of: ([]iteration:string til 1+count resRmsProp`valAccHistory;valAccSgd:0.,resSgd`valAccHistory;lossSgdMomentum:0.,resSgdMomentum`valAccHistory;valAccSgd:0.,resRmsProp`valAccHistory;lossAdam:0.,resAdam`valAccHistory)"
@@ -246,12 +253,19 @@ lg "##############################
     training a good model
     ##############################"
 
+lg "
+
+/ this should get around 50%, much faster
 startd:(!) . flip ((`xTrain;xTrain);(`yTrain;yTrain);(`xVal;xVal);(`yVal;yVal);`model`fullyConnectedNet;(`dimHidden;100 75 50 25);(`nClass;10);(`wScale;5e-2);(`optimConfig;(enlist `learnRate)!enlist 1e-3);(`numEpochs;5);(`batchSize;200);(`printEvery;100);(`updateRule;`adam))
 
-lg "run adam with 100 75 50 25 hidden dimensions"
+/ alternatively, this should get around 54%, but takes much longer
+/ startd:(!) . flip ((`xTrain;xTrain);(`yTrain;yTrain);(`xVal;xVal);(`yVal;yVal);`model`fullyConnectedNet;(`dimHidden;4#100);(`nClass;10);(`wScale;2.461858e-02);(`optimConfig;(enlist `learnRate)!enlist 3.113669e-04);(`numEpochs;10);(`batchSize;25);(`printEvery;100);(`updateRule;`adam))
+
+lg "run adam with 100 75 50 25 hidden dimensions, validation accuracy should 
+    be around 50% (varies slightly depending on random initialization):\n"
 res:solver.train startd
 
-lg "plot results"
+lg "plot results using a q IDE with charting tool"
 lg"scatter plot:  ([]iteration:til count res`lossHistory;loss:res`lossHistory)"
 lg"line chart: ([]iteration:string til 1+count res`valAccHistory;validationAccuracy:0.,res`valAccHistory)"
 
