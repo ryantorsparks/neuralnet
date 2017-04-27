@@ -135,9 +135,9 @@ fullyConnectedNet.params:{[d]
     if[not `dimHidden in key d;'"fullyConnectedNet.params: d is missing `dimHidden"];
     numLayers:1+count d`dimHidden;
     tnl:1+til numLayers;
-    bParams:`$"b",/:string tnl;
     wParams:`$"w",/:string tnl;
-    bParams,wParams
+    bParams:`$"b",/:string tnl;
+    wParams,bParams
  };
 
 / get the layer inds (e.g. if we have 2 hidden layers, it's 1 2 3)
@@ -231,7 +231,8 @@ fullyConnectedNet.loss:{[d]
     / d expects `dropoutParam`useBatchNorm`wParams(`w1`w2 ...`wN)`bParams(`b1`b2...`bN)
     /           `layerInds(1,2,3...N)
     / d possibly (???) needs `bnParams
-    mode:$[`y in key d;`train;`test];
+    / if we have y, then treat this as training
+    mode:`test`train@`y in key d;
  
     / set train test mode for batchnorm params and dropout param since they
     / behave differently during training and testing

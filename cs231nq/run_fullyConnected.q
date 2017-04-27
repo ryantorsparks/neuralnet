@@ -253,7 +253,9 @@ lg "##############################
     training a good model
     ##############################"
 
-lg "
+lg "we should be able to reach around 50% validation accuracy
+    with a simple 4 layer net, see comments for input params 
+    that achieve slightly higher accuracy, but much slower"
 
 / this should get around 50%, much faster
 startd:(!) . flip ((`xTrain;xTrain);(`yTrain;yTrain);(`xVal;xVal);(`yVal;yVal);`model`fullyConnectedNet;(`dimHidden;100 75 50 25);(`nClass;10);(`wScale;5e-2);(`optimConfig;(enlist `learnRate)!enlist 1e-3);(`numEpochs;5);(`batchSize;200);(`printEvery;100);(`updateRule;`adam))
