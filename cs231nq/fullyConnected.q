@@ -220,7 +220,7 @@ fullyConnectedNet.init:{[d]
     d[`bnParams]:$[d`useBatchNorm;
                      (numLayers-1)#enlist enlist[`mode]!enlist`train;
                      ()
-                   ];
+                  ];
     d
  };
 
@@ -555,7 +555,41 @@ rmsProp:{[x;dx;config]
 /   m - moving avg of gradient
 /   v - moving average of squared gradient
 /   t - iteration number
+/ note with this, we flatten matrixes x and dx as doing operations on these
+/ and then reshaping at the end is up to 30% faster
 adam:{[x;dx;config]
+    / d optionals `learnRate`beta1`beta2`epsilon`m`v`t
+    shapex:shape x;
+    cntx:prd shapex;
+    x:raze x;
+    dx:raze dx;
+    defaults:(!) . flip ((`learnRate;1e-3);(`beta1;0.9);(`beta2;0.999);
+             (`epsilon;1e-8);(`m;cntx#0f);(`v;cntx#0f);(`t;0));
+
+    / remove the null initialized ones (replace with default)
+    config:where[config~\:(::)] _ config;
+    config:defaults,config;
+    learnRate:config`learnRate;
+    beta1:config`beta1;
+    beta2:config`beta2;
+    epsilon:config`epsilon;
+    m:config`m;
+    v:config`v;
+    t:1+config`t;
+    m:(beta1*m)+dx*1-beta1;
+    v:(beta2*v)+(1-beta2)*dx*dx;
+
+    / bias correction
+    mb:m%1-beta1 xexp t;
+    vb:v%1-beta2 xexp t;
+    nextX:x-learnRate* mb % epsilon+sqrt vb;
+    config[`m`v`t]:(m;v;t);
+    (shapex#nextX;config)
+ };
+
+
+/ older, slower version of adam
+adamSlowerMatrix:{[x;dx;config]
     / d optionals `learnRate`beta1`beta2`epsilon`m`v`t
     defaults:(!) . flip ((`learnRate;1e-3);(`beta1;0.9);(`beta2;0.999);
              (`epsilon;1e-8);(`m;0f*x);(`v;0f*x);(`t;0));
@@ -572,7 +606,7 @@ adam:{[x;dx;config]
     t:1+config`t;
     m:(beta1*m)+dx*1-beta1;
     v:(beta2*v)+(1-beta2)*dx*dx;
-    
+   
     / bias correction
     mb:m%1-beta1 xexp t;
     vb:v%1-beta2 xexp t;
@@ -580,10 +614,3 @@ adam:{[x;dx;config]
     config[`m`v`t]:(m;v;t);
     (nextX;config)
  };
-
-
-
-
-
-
-
