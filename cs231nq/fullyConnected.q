@@ -1,5 +1,4 @@
 \l nn_util.q
-reshape:{[x;w](first[shape x],first shape w)#razeo x}
 
 affineForward:{[d]
     / d expects `x`w`b
@@ -15,7 +14,7 @@ affineBackward:{[dout;cached]
     x:cached `x;
     w:cached `w;
     b:cached `b;
-    dw:dot[flip reshape[x;w];dout];
+    dw:dot[flipReshape[x;w];dout];
     db:sum dout;
     dx:shape[x]#razeo dot[dout;flip w];
     `dx`dw`db!(dx;dw;db)

@@ -5,7 +5,7 @@ system"c 30 150"
 / then shift everything to the right two spaces
 lg:{-1 $[10h=type x;"\n" sv "  ",/:ltrim each "\n" vs $[x like "#*#";"\n",x,"\n";x];.Q.s x];};
 
-/ util to convert n dimentional q  matrix to python copy paste-able
+/ util to convert n dimentional q matrix to python copy paste-able
 / (useful for confirming results should match)
 bracket:{"[",x,"]"}
 toPythonArray:{{"np.array(",x,")"} {$[all 0h=type each x;bracket "," sv .z.s each x;bracket "," sv x]} {$[type x;bracket "," sv string x;.z.s each x]}x}
@@ -28,6 +28,12 @@ setPythonArray:{[name;dim;x](`$name) set dim#x}
 / (taken from nick psaris' funq github)
 shape:{$[0h>t:type x;();n:count x;n,.z.s x 0;1#0]} 
 
+/ reshape function
+reshape:{[x;w](count[x],count w)#razeo x}
+
+/ equivalient to flip rehsape[x;w], but about 10-15% faster for typical use case here
+flipReshape:{[x;w]razeo[x] @ ((cw*til cx:count x)+/:til cw:count w) }
+
 / matrix multiply, use qml if possible
 dot:@[{system"l qml.q";lg"setting dot as qml.mm";.qml.mm};();{"no qml, dot is mmu";mmu}];
 
@@ -44,7 +50,8 @@ psave:{[name;param] (`$":assignmentInputs/fullyConnected_",string name) set para
 
 / same as np.random.randn, generates random arrays with var and dev = 1.0
 / and avg=0.0
-randArray:{(x;y)#sqrt[-2*log n?1.]*cos[2*3.14159265359*(n:x*y)?1.]}
+pi:3.1415926535897931
+randArray:{(x;y)#sqrt[-2*log n?1.]*cos[2*pi*(n:x*y)?1.]}
 
 / raze over
 razeo:raze/
@@ -69,4 +76,10 @@ getModelValue:{[d;x]
     modelFunc: ` sv d[`model],x;
     if[not count key modelFunc;'"getModelValue: model function ",(-3!modelFunc)," does not exist"];
     modelFunc@d
+ };
+
+/ dictionary default get, try and get a value from a dictionary, 
+/ if it's not present, then use a default value
+dget:{[d;v;default]
+    $[v in key d;d v;default]
  };

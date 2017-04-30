@@ -220,19 +220,19 @@ lg "compare nextW and cache to expected results"
 relError[nextWConfig 0;get `:assignmentInputs/fullyConnected_expectedNextWRmsProp]
 relError[nextWConfig[1]`cache;get `:assignmentInputs/fullyConnected_expectedCacheRmsProp]
 
-lg "test adam implementation, error shoudl be ~ 1e-7 or less"
+lg "test adam implementation, error should be ~ 1e-7 or less"
 N:4
 D:5
 w:(N,D)#linSpace[-0.4;0.6;N*D]
 dw:(N,D)#linSpace[-0.6;0.4;N*D]
-m:(N,D)#linSpace[0.6;0.9;N*D]
-v:(N,D)#linSpace[0.7;0.5;N*D]
+m:linSpace[0.6;0.9;N*D]
+v:linSpace[0.7;0.5;N*D]
 config:`learnRate`m`v`t!(0.01;m;v;5)
 nextWConfig:adam[w;dw;config]
 lg "compare nextW, v and m to expected values"
 relError[nextWConfig 0;get`:assignmentInputs/fullyConnected_expectedNextWAdam]
-relError[nextWConfig[1;`v];get`:assignmentInputs/fullyConnected_expectedVAdam]
-relError[nextWConfig[1;`m];get`:assignmentInputs/fullyConnected_expectedMAdam]
+relError[nextWConfig[1;`v];raze get`:assignmentInputs/fullyConnected_expectedVAdam]
+relError[nextWConfig[1;`m];raze get`:assignmentInputs/fullyConnected_expectedMAdam]
 
 lg "now train some deep networks using rmsprop and adam"
 numTrain:4000
