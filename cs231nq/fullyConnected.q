@@ -38,6 +38,22 @@ affineReluForward:{[d]
     (out;cache)
  };
 
+/ used when we're doing batchNorm
+affineNormReluForward:{[d]
+    res:affineForward d;
+    a:res 0;
+    fcCache: res 1;
+    bnParam:d`bnParam;
+    resCache:batchNormForward[res 0;d`gamma;d`beta;d`bnParam];
+    bnRes:resCache 0;
+    bnCache:resCache 1;
+    res:reluForward[bnRes];
+    out:res 0;
+    reluCache:res 1;
+    cache:(fcCache;bnCache;reluCache);
+    (out;cache)
+ };
+
 affineReluBackward:{[dout;cache]
     / cache expects `x`w`b (affineBackward)
     fcCache:cache 0;
@@ -47,6 +63,16 @@ affineReluBackward:{[dout;cache]
     dxDwDb
  };
 
+affineNormReluBackward:{[dout;cache]
+    fcCache:cache 0;
+    bnCache:cache 1;
+    reluCache:cache 2;
+    reluRes:reluBackward[dout;reluCache];
+    dxnDgammaDbeta:batchNormBackwardAlt[reluRes;bnCache];
+    dxDwDb:affineBackward[dxnDgammaDbeta `dx;fcCache];
+    / (dx;dw;db;dgamma;dbeta)
+    dxDwDb,`dx _ dxnDgammaDbeta
+ };
 
 / ############ twoLayerNet class functions ############
 
@@ -202,7 +228,7 @@ fullyConnectedNet.init:{[d]
 
     / when using dropout, need to pass a dropoutParam dict to each dropout
     / layer so that the layer knows the dropout probability and the mode (train
-    / vs. test). You can pass teh same dropoutParam to each dropout layer
+    / vs. test). You can pass the same dropoutParam to each dropout layer
     d[`dropoutParam]:()!();
     if[d`useDropout;
         d[`dropoutParam]:`mode`p!(`train;d`dropout);
@@ -213,13 +239,18 @@ fullyConnectedNet.init:{[d]
 
     / for batch normalization, we need to keep track of running means and
     / variances, so need to pass a special bnParam object to each batch norm 
-    / layer. so we use d[`bnParams;0] for the forward pass of the first batch
+    / layer. so we use d[`bnParams;] for the forward pass of the first batch
     / norm layer, and d[`bnParams;1] for the forward pass of the second batch
     / norm layer, etc.
-    d[`bnParams]:$[d`useBatchNorm;
-                     (numLayers-1)#enlist enlist[`mode]!enlist`train;
-                     ()
-                  ];
+    if[d`useBatchNorm;        
+        bnLayers:-1_tnl;
+        bnZeros:(-1_1_dims)#\:0f;
+        d[`gammaParams]:`$"gamma",/:string bnLayers;
+        d[`betaParams]:`$"beta",/:string bnLayers;
+        d[d`gammaParams]:1+bnZeros;
+        d[d`betaParams]:bnZeros;
+        d[`bnParams]:([bnParamName:`$"bnParam",/:string bnLayers] mode:`train;runningMean:bnZeros;runningVar:bnZeros);
+      ];
     d
  };
 
@@ -247,7 +278,7 @@ fullyConnectedNet.loss:{[d]
     /   runningVar - shape (D,), running variance of features
     / ????? not sure about this update ?????
     if[1b~d`useBatchNorm;
-        d:.[d;(`bnParams;mode);:;mode];
+        d:.[d;(`bnParams;::;`mode);:;mode];
       ];
 
     / forward pass, compute class scores for x, store in scores
@@ -260,7 +291,11 @@ fullyConnectedNet.loss:{[d]
     layerInds:fullyConnectedNet.layerInds d;
 
     / forward pass on all but last layer (scan and store result as caches)
-    cacheLayers:{[outCache;w;b] affineReluForward @[d;`x`w`b;:;(outCache 0;w;b)]}\[(d`x;());d@-1_ wParams;d@-1_ bParams];
+    cacheLayers:
+        $[d`useBatchNorm;
+            cacheLayers:{[d;outCache;w;b;gamma;beta;bnParam] affineNormReluForward @[d;`x`w`b`gamma`beta`bnParam;:;(outCache 0;w;b;gamma;beta;bnParam)]}[d]\[(d`x;());d@-1_ wParams;d@-1_ bParams;d d`gammaParams;d d`betaParams;d `bnParams];
+            cacheLayers:{[d;outCache;w;b] affineReluForward @[d;`x`w`b;:;(outCache 0;w;b)]}[d]\[(d`x;());d@-1_ wParams;d@-1_ bParams]
+         ];
     layers: cacheLayers[;0];
     caches: cacheLayers[;1];
 
@@ -284,17 +319,31 @@ fullyConnectedNet.loss:{[d]
     / indexes of all the layers, starting from 1, e.g. if we have `w1`w2...`w9, then
     / layerInds are 1 2 3 ... 9
     / add on reg to last dw (store as dict of `dxN`dwN`dbN)
-    dxDwDbDict:renameKey[last layerInds;] affineBackward[dscores;cacheScores];
+    gradDict:renameKey[last layerInds;] affineBackward[dscores;cacheScores];
+    gradDict:fullyConnectedNet.backPropGrads[gradDict;1_ reverse layerInds;reverse caches;d`useBatchNorm];
+    gradDict[wParams]+:d[`reg]*d wParams;
+    (loss;gradDict)
+ };
 
+/ gradDict - is `dx`dw`db!(...), but also `dgamma`dbeta if we're doing batchNorm
+/ revInds - e.g. for a net with input - hidden1 - hidden2 - hidden3 - output, 3 2 1
+/ revCaches - list of caches corresponding to revInds, from afine(Norm)ReluForward
+/ wlist - list of w's, e.g. (w3;w2;w1)
+/ reg - regularization, e.g. 1e-5
+fullyConnectedNet.backPropGrads:{[gradDict;revInds;revCaches;useBatchNorm]
     / backprop into remaining layers (cacheLayers from above)
     / each iteration uses the `dx from the previous iteration (i.e if we're currently
     / doing layer=7, it will use the `dx from layer 8)
-    dxDwDbDict,:{[x;layer;cache;w;reg]
-        dxDwDb:affineReluBackward[x[`$"x",string layer+1];cache];
-        dxDwDb[`dw]+:reg*w;
-        x,renameKey[layer;]dxDwDb
-        }/[dxDwDbDict;1_ reverse layerInds;reverse caches;1_ reverse d wParams;d`reg];
-    (loss;dxDwDbDict)
+    gradDict,:{[x;layer;cache;useBatchNorm]
+        gradDict:$[useBatchNorm;affineNormReluBackward;affineReluBackward][x[`$"x",string layer+1];cache];
+        x,renameKey[layer;]gradDict
+        }/[gradDict;revInds;revCaches;useBatchNorm];
+
+    / for non batchnorm, it's
+    /     `dx`dw`db!(...)
+    / for batchnnorm, it's
+    /     `dx`dw`db`dgamma`dbeta
+    gradDict
  };
 
 
@@ -586,30 +635,3 @@ adam:{[x;dx;config]
     (shapex#nextX;config)
  };
 
-
-/ older, slower version of adam
-adamSlowerMatrix:{[x;dx;config]
-    / d optionals `learnRate`beta1`beta2`epsilon`m`v`t
-    defaults:(!) . flip ((`learnRate;1e-3);(`beta1;0.9);(`beta2;0.999);
-             (`epsilon;1e-8);(`m;0f*x);(`v;0f*x);(`t;0));
-
-    / remove the null initialized ones (replace with default)
-    config:where[config~\:(::)] _ config;
-    config:defaults,config;
-    learnRate:config`learnRate;
-    beta1:config`beta1;
-    beta2:config`beta2;
-    epsilon:config`epsilon;
-    m:config`m;
-    v:config`v;
-    t:1+config`t;
-    m:(beta1*m)+dx*1-beta1;
-    v:(beta2*v)+(1-beta2)*dx*dx;
-   
-    / bias correction
-    mb:m%1-beta1 xexp t;
-    vb:v%1-beta2 xexp t;
-    nextX:x-learnRate* mb % epsilon+sqrt vb;
-    config[`m`v`t]:(m;v;t);
-    (nextX;config)
- };

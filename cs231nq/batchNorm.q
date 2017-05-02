@@ -89,7 +89,7 @@ batchNormBackward:{[dout;cache]
         dxn:gamma*dout;
         dx:dxn%std;
       ];
-    (dx;dgamma;dbeta)
+    `dx`dgamma`dbeta!(dx;dgamma;dbeta)
  };
 
 / batchnorm using differentiation, alternate method,
@@ -99,6 +99,7 @@ batchNormBackward:{[dout;cache]
 / xhat is (x-\:mu)%sqrt variance+eps
 / variance is avg (x-\:mu) xexp 2
 batchNormBackwardAlt:{[dout;cache]
+    gamma:cache 2;
     xcorrected:cache 3;
     std:cache 4;
     xhat:cache 5;
@@ -107,7 +108,7 @@ batchNormBackwardAlt:{[dout;cache]
     dbeta:sum dout;
     dgamma:sum xhat*dout;
     dx:(gamma%std*N)*/:((N*dout)-\:dbeta)-xcorrected*\:ivarEps*sum dout*xcorrected;
-    (dx;dgamma;dbeta)
+    `dx`dgamma`dbeta!(dx;dgamma;dbeta)
  };
 
 

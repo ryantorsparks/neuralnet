@@ -3,8 +3,9 @@
 \l numerical_gradient.q
 \l softmax.q
 \l linear_svm.q
+\l batchNorm.q
 cifarMode:`unflattened
-\l load_cifar_data.q
+/\l load_cifar_data.q
 
 lg "##############################
     Neural nets with batch normalization
@@ -93,3 +94,28 @@ t2:system"t:100 res2:batchNormBackwardAlt[dout;outCache 1]"
 lg"dx, dgamma, dbeta relative differences are"
 relError'[res1;res2]
 lg"(time batchNormBackward)%time batchNormBackwardAlt was ",string t1%t2
+
+lg "##############################
+    Fully connected net with batchNorm
+    ##############################"
+
+`. upsert `N`D`H1`H2`C!2 15 20 30 10
+startd:(!). flip ((`dimHidden;H1,H2);(`dimInput;D);(`nClass;C);(`wScale;5e-2);(`useBatchNorm;1b);(`x;x);(`y;y));
+initd:fullyConnectedNet.init startd
+
+lossGrad:fullyConnectedNet.loss initd;
+lg "initial loss is ",string lossGrad 0
+
+lg "as a sanity check, compare numerical gradients for reg in 0.0 3.14"
+gradCheckDict:@[((raze key[startd],initd[`wParams`bParams`gammaParams`betaParams]),`wParams`bParams`gammaParams`betaParams`bnParams)#initd;`model;:;`fullyConnectedNet]
+compareNumericalGradients[gradCheckDict]each 0.0 3.14;
+
+
+
+
+
+
+
+
+
+
