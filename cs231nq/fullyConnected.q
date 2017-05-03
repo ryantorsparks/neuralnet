@@ -165,6 +165,18 @@ fullyConnectedNet.params:{[d]
     wParams,bParams
  };
 
+fullyConnectedNet.bnParams:{[d]
+    if[all `gammaParams`beta in key d;:raze d`gammaParams`betaParams];
+        
+    / otherwise, make sure dimHidden is in d, and use that to create
+    if[not `dimHidden in key d;'"fullyConnectedNet.params: d is missing `dimHidden"];
+    numLayers:1+count d`dimHidden;
+    tnl:1+til numLayers;
+    gammaParams:`$"gamma",/:string tnl;
+    betaParams:`$"beta",/:string tnl;
+    gammaParams,betaParams
+ };
+
 / get the layer inds (e.g. if we have 2 hidden layers, it's 1 2 3)
 fullyConnectedNet.layerInds:{[d]
     if[`layerInds in key d;:d`layerInds];
@@ -413,7 +425,9 @@ solver.step:{[d]
     modelParams:getModelValue[d;`params];
   
     / ??? about the stuff after `reg
-    lossGrad:getModelValue[ (inter[modelParams,`reg`dropoutParam`useBatchNorm`bnParams`wParams`bParams`layerInds`model;key d]#d),`x`y!(xBatch;yBatch);`loss];
+    lossGradKeys:modelParams,`reg`dropoutParam`useBatchNorm`bnParams`wParams`bParams`betaParams`gammaParams`layerInds`model;
+    if[d`useBatchNorm;lossGradKeys,:`gammaParams`betaParams,getModelValue[d;`bnParams]];
+    lossGrad:getModelValue[ (inter[lossGradKeys;key d]#d),`x`y!(xBatch;yBatch);`loss];
     loss:lossGrad 0;
     grads:lossGrad 1;
     if[null loss;break];
@@ -521,8 +535,10 @@ solver.i.train:{[d]
     / and at the end of every epoch
     modelParams:getModelValue[d;`params];
     if[any (cnt=0;cnt=numIterations+1;epochEnd);
-        trainAcc:solver.checkAccuracy (inter[modelParams,`bParams`wParams`layerInds;key d]#d),`model`x`y`batchSize`numSamples!d[`model`xTrain`yTrain`batchSize],1000;
-        valAcc:solver.checkAccuracy (inter[modelParams,`bParams`wParams`layerInds;key d]#d),`model`x`y`batchSize`numSamples!d[`model`xVal`yVal`batchSize],0N;
+        checkKeys:modelParams,`bParams`wParams`layerInds`useBatchNorm;
+        if[d`useBatchNorm;checkKeys,:`bnParams`betaParams`gammaParams,getModelValue[d;`bnParams]];
+        trainAcc:solver.checkAccuracy (inter[checkKeys;key d]#d),`model`x`y`batchSize`numSamples!d[`model`xTrain`yTrain`batchSize],1000;
+        valAcc:solver.checkAccuracy (inter[checkKeys;key d]#d),`model`x`y`batchSize`numSamples!d[`model`xVal`yVal`batchSize],0N;
         d[`trainAccHistory],:trainAcc;
         d[`valAccHistory],:valAcc;
         lg"Epoch: ",string[d`epoch],"/",string[d`numEpochs]," train acc: ",string[trainAcc]," val acc: ",string[valAcc];

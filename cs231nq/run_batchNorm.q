@@ -5,7 +5,7 @@
 \l linear_svm.q
 \l batchNorm.q
 cifarMode:`unflattened
-/\l load_cifar_data.q
+\l load_cifar_data.q
 
 lg "##############################
     Neural nets with batch normalization
@@ -43,7 +43,7 @@ w2:randArray[D2;D3]
 bnParam:(1#`mode)!1#`train
 gamma:D3#1f
 beta:D3#0f
-{[bnParam;x;w1;w2;gamma;beta] last batchNormForward[dot[0f|dot[x;w1];w2];gamma;beta;bnParam]}[;;w1;w2;gamma;beta]/[bnParam;tempx]
+//{[bnParam;x;w1;w2;gamma;beta] last batchNormForward[dot[0f|dot[x;w1];w2];gamma;beta;bnParam]}[;;w1;w2;gamma;beta]/[bnParam;tempx]
 res:50{[bnParam;x;w1;w2;gamma;beta] last batchNormForward[dot[0f|dot[x;w1];w2];gamma;beta;bnParam]}[;x;w1;w2;gamma;beta]/bnParam 
 
 x2:randArray[N;D1]
@@ -99,7 +99,9 @@ lg "##############################
     Fully connected net with batchNorm
     ##############################"
 
-`. upsert `N`D`H1`H2`C!2 15 20 30 10
+`. upsert `N`D`H1`H2`C!2 15 20 30 10;
+x:randArray[N;D]
+y:N?C
 startd:(!). flip ((`dimHidden;H1,H2);(`dimInput;D);(`nClass;C);(`wScale;5e-2);(`useBatchNorm;1b);(`x;x);(`y;y));
 initd:fullyConnectedNet.init startd
 
@@ -110,6 +112,17 @@ lg "as a sanity check, compare numerical gradients for reg in 0.0 3.14"
 gradCheckDict:@[((raze key[startd],initd[`wParams`bParams`gammaParams`betaParams]),`wParams`bParams`gammaParams`betaParams`bnParams)#initd;`model;:;`fullyConnectedNet]
 compareNumericalGradients[gradCheckDict]each 0.0 3.14;
 
+lg "##############################
+    Fully connected net with batchNorm
+    ##############################"
+//numTrain:50
+//smallData:`xTrain`yTrain`xVal`yVal!(numTrain#xTrain;numTrain#yTrain;xVal;yVal)
+//startd:smallData,`model`dimHidden`nClass`reg`learnRateDecay`wScale`updateRule`optimConfig`numEpochs`batchSize`printEvery!(`fullyConnectedNet;100 100;10;0.0;0.95;0.01;`sgd;enlist[`learnRate]!enlist 0.01;20;25;10)
+
+numTrain:100
+smallData:`xTrain`yTrain`xVal`yVal!(numTrain#xTrain;numTrain#yTrain;xVal;yVal)
+startd:smallData,(!). flip (`model`fullyConnectedNet;(`dimHidden;5#100);(`nClass;10);(`wScale;2e-2);(`numEpocs;10);(`batchSize;50);(`updateRule;`adam);(`optimConfig;enlist[`learnRate]!enlist 1e-3);(`printEvery;200));
+res:solver.train @[startd;`useBatchNorm;:;1b]
 
 
 
