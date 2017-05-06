@@ -233,7 +233,8 @@ fullyConnectedNet.init:{[d]
     / w2 has dimensions dims[1 2], etc., add to d
     wDims:flip  1_'(prev dims;dims);
     wParams:`$"w",/:string tnl;
-    d,:wParams!d[`wScale]*randArray ./:wDims;
+    tempd::d;
+    if[not all wParams in key d;show `addingw;d,:wParams!d[`wScale]*randArray ./:wDims];
     d[`bParams]:bParams;
     d[`wParams]:wParams;
     d[`layerInds]:fullyConnectedNet.layerInds[d];
@@ -275,6 +276,7 @@ fullyConnectedNet.loss:{[d]
     / d possibly (???) needs `bnParams
     / if we have y, then treat this as training
     mode:`test`train@`y in key d;
+    templossdict::d;
  
     / set train test mode for batchnorm params and dropout param since they
     / behave differently during training and testing
@@ -394,10 +396,12 @@ solver.init:{[d]
 solver.reset:{[d]
     / d expects `optimConfig`model
     / book-keeping variables
+    tempd14::d;
     optimd:d`optimConfig;
 
     / use [model].params[d] to get param list
     modelParams:getModelValue[d;`params];
+    if[d`useBatchNorm;modelParams,:raze d`betaParams`gammaParams];
     d,:(!) . flip (
         (`epoch;0);
         (`bestValAcc;0.0);
@@ -434,7 +438,9 @@ solver.step:{[d]
     d[`lossHistory],:loss;
 
     / parameter update
-    dchange:modelParams#d;
+    temp15::(modelParams;d;grads);
+    updateParams:modelParams,(();raze d`gammaParams`betaParams)d`useBatchNorm;
+    dchange:updateParams#d;
     d:{[d;p;w;grads] 
         dw:grads p;
         config:d[`optimConfigs]p;
@@ -458,7 +464,8 @@ solver.checkAccuracy:{[d]
     / d expects `x`y`model`numSamples`batchSize
     / possibly sumbsample the data
     N:count d`x;
-    batchSize:d`batchSize;
+//    batchSize:d`batchSize;
+    batchSize:100;
     x:d`x;
     y:d`y;
     if[(not null numSamples)&N>numSamples:d`numSamples;
@@ -480,6 +487,7 @@ solver.checkAccuracy:{[d]
     lossFunc:` sv d[`model],`loss;
 
     / also get index of each max entry in resulting loss array
+    tempinds::(inds;d;x);
     yPred:raze {[f;d;x]{x?max x}peach f @[d;`x;:;x]}[lossFunc;`y _ d] peach x inds;
 
     / finally, return accuracy
@@ -527,6 +535,7 @@ solver.i.train:{[d]
 
     / at end of every epoch, increment epoch counter, decay learnRate
     if[epochEnd:0=(1+cnt)mod d`iterationsPerEpoch;
+        temp18::d;
         d[`epoch]+:1;
         d[`optimConfigs;;`learnRate]*:d`learnRateDecay;
       ];
@@ -535,6 +544,8 @@ solver.i.train:{[d]
     / and at the end of every epoch
     modelParams:getModelValue[d;`params];
     if[any (cnt=0;cnt=numIterations+1;epochEnd);
+        lg"checking accuracies";
+        tempcheck::(modelParams;d);
         checkKeys:modelParams,`bParams`wParams`layerInds`useBatchNorm;
         if[d`useBatchNorm;checkKeys,:`bnParams`betaParams`gammaParams,getModelValue[d;`bnParams]];
         trainAcc:solver.checkAccuracy (inter[checkKeys;key d]#d),`model`x`y`batchSize`numSamples!d[`model`xTrain`yTrain`batchSize],1000;

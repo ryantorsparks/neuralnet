@@ -12,6 +12,7 @@
 /     runningMean - list length D, running mean of features
 /     runningVar - list length D, running variance of features
 / returns, (out;cache;bnParam), where out is shape (N;D)
+/ TODO: change cache output to be dict
 batchNormForward:{[x;gamma;beta;bnParam]
     mode:bnParam`mode;
     eps:dget[bnParam;`eps;1e-5];
@@ -24,11 +25,13 @@ batchNormForward:{[x;gamma;beta;bnParam]
     if[not mode in `train`test;'"batchNormForward: mode must be in `train`test"];
     
     / store updated running means 
-    if[mode=`train;
+//    if[mode=`train;
+    if[1b;
         mu:avg x;
         xcorrected:x-\:mu;
         variance:avg xcorrected xexp 2;
         std:sqrt variance+eps;
+        show"avg, var and std are ",-3!2 sublist '(mu;variance;std);
         xhat:xcorrected%\:std;
         out:beta+/:gamma*/:xhat;
         cache:(mode;x;gamma;xcorrected;std;xhat;out;variance+eps);
@@ -38,10 +41,12 @@ batchNormForward:{[x;gamma;beta;bnParam]
         runningVar*:momentum;
         runningVar+:variance*1-momentum;
       ];
-    if[mode=`test;
+//    if[mode=`test;
+    if[0b;
         std:sqrt runningVar+eps;
         xhat:(x-\:runningMean)%\:std;
         out:beta+/:gamma*/:xhat;
+        show"test:avg, var and std are ",-3!2 sublist '(avg x;runningVar+eps;std);
         cache:(mode;x;xhat;gamma;beta;std);
       ];
     
@@ -98,6 +103,7 @@ batchNormBackward:{[dout;cache]
 / i.e.  cache:(mode;x;gamma;xcorrected;std;xhat;out;variance+eps);
 / xhat is (x-\:mu)%sqrt variance+eps
 / variance is avg (x-\:mu) xexp 2
+/ TODO: change output of bath norm forward to use dict
 batchNormBackwardAlt:{[dout;cache]
     gamma:cache 2;
     xcorrected:cache 3;

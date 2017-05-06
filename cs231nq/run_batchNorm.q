@@ -1,3 +1,4 @@
+\p 5000
 \l nn_util.q
 \l fullyConnected.q
 \l numerical_gradient.q
@@ -111,20 +112,32 @@ lg "initial loss is ",string lossGrad 0
 lg "as a sanity check, compare numerical gradients for reg in 0.0 3.14"
 gradCheckDict:@[((raze key[startd],initd[`wParams`bParams`gammaParams`betaParams]),`wParams`bParams`gammaParams`betaParams`bnParams)#initd;`model;:;`fullyConnectedNet]
 compareNumericalGradients[gradCheckDict]each 0.0 3.14;
-
+/
 lg "##############################
     Fully connected net with batchNorm
     ##############################"
-//numTrain:50
-//smallData:`xTrain`yTrain`xVal`yVal!(numTrain#xTrain;numTrain#yTrain;xVal;yVal)
-//startd:smallData,`model`dimHidden`nClass`reg`learnRateDecay`wScale`updateRule`optimConfig`numEpochs`batchSize`printEvery!(`fullyConnectedNet;100 100;10;0.0;0.95;0.01;`sgd;enlist[`learnRate]!enlist 0.01;20;25;10)
 
-numTrain:100
+numTrain:1000
 smallData:`xTrain`yTrain`xVal`yVal!(numTrain#xTrain;numTrain#yTrain;xVal;yVal)
-startd:smallData,(!). flip (`model`fullyConnectedNet;(`dimHidden;5#100);(`nClass;10);(`wScale;2e-2);(`numEpocs;10);(`batchSize;50);(`updateRule;`adam);(`optimConfig;enlist[`learnRate]!enlist 1e-3);(`printEvery;200));
+startd:smallData,(!). flip (`model`fullyConnectedNet;(`dimHidden;5#100);(`nClass;10);(`wScale;2e-2);(`numEpocs;10);(`batchSize;50);(`updateRule;`adam);(`optimConfig;enlist[`learnRate]!enlist 1e-3);(`printEvery;200);(`learnRateDecay;0.95);(`useBatchNorm;1b));
 res:solver.train @[startd;`useBatchNorm;:;1b]
 
+/// temp stuff
 
+numTrain:1000
+smallData:`xTrain`yTrain`xVal`yVal!(numTrain#xTrain;numTrain#yTrain;xVal;yVal)
+
+startd:smallData,(!). flip ((`dimHidden;5#100);(`dimInput;3072);(`nClass;10);(`wScale;2e-2);(`useBatchNorm;1b);(`updateRule;`adam);(`batchSize;50);(`optimConfig;(!). 1#'`learnRate,1e-3);`model`fullyConnectedNet;(`numEpochs;10));
+startd,:`w1`w2`w3`w4`w5`w6!(W1;W2;W3;W4;W5;W6)
+initd:fullyConnectedNet.init startd
+d:solver.reset solver.init startd
+
+lossGrad:fullyConnectedNet.loss @[initd;`x`y;:;initd`xTrain`yTrain];
+lg "initial loss is ",string lossGrad 0
+
+lg "as a sanity check, compare numerical gradients for reg in 0.0 3.14"
+gradCheckDict:@[((raze key[startd],initd[`wParams`bParams`gammaParams`betaParams]),`wParams`bParams`gammaParams`betaParams`bnParams)#initd;`model;:;`fullyConnectedNet]
+compareNumericalGradients[gradCheckDict]each 0.0 3.14;
 
 
 
