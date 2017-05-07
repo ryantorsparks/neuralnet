@@ -17,7 +17,7 @@ dropoutForward:{[x;dropoutParam]
     p:dropoutParam`p;
     mode:dropoutParam`mode;
     if[not mode in `train`test;'"mode must be in `train`test, supplied was ",-3!mode];
-    if[`seed in key dropoutParam;system"S ",string d`seed];
+    if[`seed in key dropoutParam;system"S ",string dropoutParam`seed];
 
     / random mask list, used later for cache
     mask:();
@@ -25,8 +25,8 @@ dropoutForward:{[x;dropoutParam]
     / if training, randomly generate shape of x, check against p
     / otherwise, (if in `test mode), just return x as out 
     out:$[mode=`train;
-            [ mask:((prd[shapex:shape x]?1f)<p)%p;
-              x*shapex#mask
+            [ mask:shapex#((prd[shapex:shape x]?1f)<p)%p;
+              x*mask
             ];
             x
          ]; 
