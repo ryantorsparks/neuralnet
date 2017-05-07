@@ -93,7 +93,7 @@ startd:smallData,(!). flip (`model`fullyConnectedNet;(`dimHidden;1#500);(`nClass
 
 trainOneDropout:{[startd;dropout]
     lg "running training for dropout = ",string dropout;
-    res:solver.train @[startd;`dropout;:;dropout];
+    solver.train @[startd;`dropout;:;dropout]
  };
 
 res:trainOneDropout[startd;]each 0.0 0.75
