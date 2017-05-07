@@ -31,7 +31,7 @@ batchNormForward:{[x;gamma;beta;bnParam]
         xcorrected:x-\:mu;
         variance:avg xcorrected xexp 2;
         std:sqrt variance+eps;
-        show"avg, var and std are ",-3!2 sublist '(mu;variance;std);
+//        show"avg, var and std are ",-3!2 sublist '(mu;variance;std);
         xhat:xcorrected%\:std;
         out:beta+/:gamma*/:xhat;
         cache:(mode;x;gamma;xcorrected;std;xhat;out;variance+eps);
@@ -46,7 +46,7 @@ batchNormForward:{[x;gamma;beta;bnParam]
         std:sqrt runningVar+eps;
         xhat:(x-\:runningMean)%\:std;
         out:beta+/:gamma*/:xhat;
-        show"test:avg, var and std are ",-3!2 sublist '(avg x;runningVar+eps;std);
+//      show"test:avg, var and std are ",-3!2 sublist '(avg x;runningVar+eps;std);
         cache:(mode;x;xhat;gamma;beta;std);
       ];
     

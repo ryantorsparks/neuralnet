@@ -44,7 +44,6 @@ w2:randArray[D2;D3]
 bnParam:(1#`mode)!1#`train
 gamma:D3#1f
 beta:D3#0f
-//{[bnParam;x;w1;w2;gamma;beta] last batchNormForward[dot[0f|dot[x;w1];w2];gamma;beta;bnParam]}[;;w1;w2;gamma;beta]/[bnParam;tempx]
 res:50{[bnParam;x;w1;w2;gamma;beta] last batchNormForward[dot[0f|dot[x;w1];w2];gamma;beta;bnParam]}[;x;w1;w2;gamma;beta]/bnParam 
 
 x2:randArray[N;D1]
@@ -56,7 +55,6 @@ dev each flip postRes
 lg "##############################
     Batchnorm backward
     ##############################"
-
 
 N:4
 D:5
@@ -112,36 +110,69 @@ lg "initial loss is ",string lossGrad 0
 lg "as a sanity check, compare numerical gradients for reg in 0.0 3.14"
 gradCheckDict:@[((raze key[startd],initd[`wParams`bParams`gammaParams`betaParams]),`wParams`bParams`gammaParams`betaParams`bnParams)#initd;`model;:;`fullyConnectedNet]
 compareNumericalGradients[gradCheckDict]each 0.0 3.14;
-/
+
+
 lg "##############################
     Fully connected net with batchNorm
     ##############################"
 
 numTrain:1000
 smallData:`xTrain`yTrain`xVal`yVal!(numTrain#xTrain;numTrain#yTrain;xVal;yVal)
-startd:smallData,(!). flip (`model`fullyConnectedNet;(`dimHidden;5#100);(`nClass;10);(`wScale;2e-2);(`numEpocs;10);(`batchSize;50);(`updateRule;`adam);(`optimConfig;enlist[`learnRate]!enlist 1e-3);(`printEvery;200);(`learnRateDecay;0.95);(`useBatchNorm;1b));
-res:solver.train @[startd;`useBatchNorm;:;1b]
+startd:smallData,(!). flip (`model`fullyConnectedNet;(`dimHidden;5#100);(`nClass;10);(`wScale;2e-2);(`numEpocs;10);(`batchSize;50);(`updateRule;`adam);(`optimConfig;enlist[`learnRate]!enlist 1e-3);(`printEvery;200);(`learnRateDecay;0.95));
 
-/// temp stuff
+lg "run without batchnorm first"
+res1:solver.train @[startd;`useBatchNorm;:;0b]
+
+lg "now run with batchnorm, should converge faster"
+res2:solver.train @[startd;`useBatchNorm;:;1b]
+
+lg "plot results:
+  
+    scatter plot of:
+    ([]iteration:til 200;lossNoBatch:res1`lossHistory;lossBatch:res2`lossHistory)
+    line chart of: 
+    ([]iteration:string til 1+count res1`trainAccHistory;trainAccNoBatch:0.,res1`trainAccHistory;trainAccBatch:0.,res2`trainAccHistory)
+    line chart of: 
+    ([]iteration:string til 1+count res1`valAccHistory;valAccNoBatch:0.,res1`valAccHistory;valAccBatch:0.,res2`valAccHistory)"
+
+lg "##############################
+    Batch norm and initialization
+    ##############################"
 
 numTrain:1000
 smallData:`xTrain`yTrain`xVal`yVal!(numTrain#xTrain;numTrain#yTrain;xVal;yVal)
+startd:smallData,(!). flip (`model`fullyConnectedNet;(`dimHidden;7#100);(`nClass;10);(`numEpocs;10);(`batchSize;50);(`updateRule;`adam);(`optimConfig;enlist[`learnRate]!enlist 1e-3);(`printEvery;200);(`learnRateDecay;0.95));
 
-startd:smallData,(!). flip ((`dimHidden;5#100);(`dimInput;3072);(`nClass;10);(`wScale;2e-2);(`useBatchNorm;1b);(`updateRule;`adam);(`batchSize;50);(`optimConfig;(!). 1#'`learnRate,1e-3);`model`fullyConnectedNet;(`numEpochs;10));
-startd,:`w1`w2`w3`w4`w5`w6!(W1;W2;W3;W4;W5;W6)
-initd:fullyConnectedNet.init startd
-d:solver.reset solver.init startd
+wScales:logSpace[-4;0;20]
 
-lossGrad:fullyConnectedNet.loss @[initd;`x`y;:;initd`xTrain`yTrain];
-lg "initial loss is ",string lossGrad 0
+lg "We now run training on a deep (7 hidden layer) network
+    using batchnorm and non batchnorm, but we vary the weight 
+    scale, using 20 different weightScales spread out 
+    logarithmically between 1e-4 to 1, and then we plot results"
 
-lg "as a sanity check, compare numerical gradients for reg in 0.0 3.14"
-gradCheckDict:@[((raze key[startd],initd[`wParams`bParams`gammaParams`betaParams]),`wParams`bParams`gammaParams`betaParams`bnParams)#initd;`model;:;`fullyConnectedNet]
-compareNumericalGradients[gradCheckDict]each 0.0 3.14;
+compareOneWeightScale:{[d;wScales;ind]
+    wScale:wScales ind;
+    lg "running ",string[ind],"/",string[count wScales]," training for non batchnorm, then batchnorm, for weight ",string wScale;
+    d[`wScale]:wScale;
+    aggs:(last;max;max);
+    resKeys:`lossHistory`trainAccHistory`valAccHistory;
+    res:`baseline,wScale,aggs@'solver.train[@[d;`useBatchNorm;:;0b]]resKeys;
+    res2:`batchNorm,wScale,aggs@'solver.train[@[d;`useBatchNorm;:;1b]]resKeys;
+    flip `method`wScale`finalLoss`bestTrainAcc`bestValAcc!flip (res;res2)
+ }
 
+res:raze compareOneWeightScale[startd;wScales;] each til count wScales
+    
+lg "now plot each result, ignoring any 0w's for finalLoss (from non batchnorm)"
+res:update finalLoss:0n from res where finalLoss=0w
+/ define pivot lambda, strings wScale for the line chart in qstudio
+/ just input either `finalLoss, `bestTrainAcc or `bestValAcc
+piv:{[res;col]update string wScale from (`wScale,`$string[cs],\:"_",string col)xcol ?[res;();{x!x}1#`wScale;(#;enlist cs:`baseline`batchNorm;(!;`method;col))]}[res;]
 
-
-
+lg "use a line chart to plot:
+    piv `finalLoss
+    piv `bestTrainAcc
+    piv `bestValAcc"
 
 
 

@@ -45,6 +45,9 @@ relError:{[x;y]max/[abs[x-y]%1e-8|sum abs(x;y)]}
 / e.g. linSpace[-0.5;0.5;12]
 linSpace:{[start;end;n]start+((end-start)%n-1)*til n}
 
+/ log space function, like linspace but 10 xexp [linSpace]
+logSpace:{[start;end;n] 10 xexp linSpace[start;end;n]}
+
 / save assignment inputs
 psave:{[name;param] (`$":assignmentInputs/fullyConnected_",string name) set param}
 
@@ -83,3 +86,4 @@ getModelValue:{[d;x]
 dget:{[d;v;default]
     $[v in key d;d v;default]
  };
+
