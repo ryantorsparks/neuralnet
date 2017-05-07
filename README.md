@@ -3,10 +3,10 @@ I've tried to do/translate the Stanford cs231n assignment into kdb/q. Currently,
 * 2 layer neural nets
 * n-layer fully connected neural nets
 * different update functions:
-  ** sgd
-  ** sgd momentum
-  ** rms prop
-  ** adam 
+  * sgd
+  * sgd momentum
+  * rms prop
+  * adam 
 * batch normalization in fully connected nets
 
 Source is http://cs231n.github.io/assignments2016/assignment1/ 
