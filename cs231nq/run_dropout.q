@@ -80,4 +80,31 @@ lg "##############################
     Regularization experiment
     ##############################"
 
+lg "we will now train a pair of two layer networks on 500 training
+    examples:
+      1. with no dropout
+      2. with dropout propability = 0.75
+    then we will plot results"
+
+
+numTrain:500
+smallData:`xTrain`yTrain`xVal`yVal!(numTrain#xTrain;numTrain#yTrain;xVal;yVal)
+startd:smallData,(!). flip (`model`fullyConnectedNet;(`dimHidden;1#500);(`nClass;10);(`wScale;2e-2);(`numEpochs;25);(`batchSize;100);(`updateRule;`adam);(`optimConfig;enlist[`learnRate]!enlist 5e-4);(`printEvery;100));
+
+trainOneDropout:{[startd;dropout]
+    lg "running training for dropout = ",string dropout;
+    res:solver.train @[startd;`dropout;:;dropout];
+ };
+
+res:trainOneDropout[startd;]each 0.0 0.75
+plotRes:update iteration:til count i by method from ungroup (`method,k)!/:`noDropout`dropout,'res@\:k:`trainAccHistory`valAccHistory
+
+/ define pivot lambda, strings wScale for the line chart in qstudio
+/ just input either `trainAccHistory`valAccHistory
+piv:{[res;pivCol]?[res;();{x!x}1#`iteration;(#;enlist `noDropout`dropout;(!;`method;pivCol))]}[plotRes;]
+
+lg "use a scatter plot to chart:
+    piv `trainAccHistory
+    piv `valAccHistory"
+
 
