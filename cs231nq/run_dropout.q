@@ -49,6 +49,34 @@ dxNum:numericalGradientArray[(first dropoutForward[;dropoutParam]@);x;dout;`x]
 lg "dx relative error is ",string relError[dx;dxNum]
 
 lg "##############################
+    Fully connected nets with dropout
+    ##############################"
+
+lg "modify our implementation of fullyConnectedNet to use dropout, 
+    specifically if the net gets a non zero `dropout param, then the net
+    should add dropout immediately after ever ReLU nonlinearity. Then we
+    numerically check our implementation"
+
+`. upsert `N`D`H1`H2`C!2 15 20 30 10;
+x:randArray[N;D]
+y:N?C
+startd:(!). flip ((`dimHidden;H1,H2);(`dimInput;D);(`nClass;C);(`wScale;5e-2);(`seed;123);(`x;x);(`y;y));
+
+lossGradCheckOneDropout:{[startd;dropout]
+    lg "running check with dropout = ",string dropout;
+    initd:fullyConnectedNet.init @[startd;`dropout;:;dropout];
+    lossGrad:fullyConnectedNet.loss initd;
+
+    lg "initial loss is ",string lossGrad 0;
+    gradCheckDict:@[((raze key[startd],initd[`wParams`bParams]),`useBatchNorm`wParams`bParams`dropout)#initd;`model;:;`fullyConnectedNet];
+
+    lg "comparing numerical gradients, reg=0";
+    compareNumericalGradients[gradCheckDict;0]
+ };
+
+lossGradCheckOneDropout[startd;]each 0 0.25 0.5;
+
+lg "##############################
     Regularization experiment
     ##############################"
 
