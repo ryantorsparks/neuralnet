@@ -123,12 +123,43 @@ convNetNew:{[x;w;b;convParam]
 
  };
 
-/ e.g. zeroPadNDim[2 3 4#1f;2]
 zeroPad:{[x;pad]
+    shapex:shape x;
+    padf:{y,(til x),y}[;pad#0N];
+    c:2<count shapex;
+    newShape:(c#shapex),(2*pad)+c _ shape x;
+    cntList:$[c;enlist til shapex 0;()],padf each c _ shape x;
+    inds:{raze y+/:x*sum not null y}/[cntList];
+    newShape#0^razeo[x]@inds
+ };     
+    
+zeroPadSlow1:{[x;pad]
+    shapex:shape x;
+    f:{y,(x#1),y}[;pad#0N];
+    c:2<count shapex;
+    newShape:(c#shapex),(2*pad)+c _ shape x;
+    cntList:$[c;enlist first[shapex]#1;()],f each c _ shape x;
+    inds:{raze x*/:\:y}/[cntList];
+    newShape#0^razeo[x] @[inds;w;:;til count w:where not null inds]
+ };
+
+/ zeropad in n dimensions
+/ e.g. zeroPad[2 3 4 5#1f;2]
+zeroPadSlow2:{[x;pad]
+    shapex:shape x;
+    f:{y,til[x],y}[;pad#0N];
+    c:2<count shapex;
+    newShape:(c#shapex),(2*pad)+c _ shape x;
+    inds:cross/[$[c;enlist til shapex 0;()],f each c _ shape x];
+    newShape#0^razeo[x] @[pfi;where not null pfi:prd flip inds;:;til prd shape x]
+ };
+
+/ older, slower version
+zeroPadSlow3:{[x;pad]
     shapex:shape x;
     f:{y,til[x],y}[;pad#-1];
     c:2<count shapex;
     newShape:(c#shapex),(2*pad)+c _ shape x;
     inds:cross/[$[c;enlist til shapex 0;()],f each c _ shape x];
     newShape#0^x ./:inds
- }; 
+ };
