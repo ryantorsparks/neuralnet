@@ -102,27 +102,50 @@ poolOld:{[m;fSize;stride]
     (2#strides)#{[m;inds]max raze m . inds}[m]each inds
  }
 
-convNetNew:{[x;w;b;convParam]
+convNetNaive:{[x;w;b;convParam]
     stride:convParam`stride;
     pad:convParam`pad;
     xShape:shape x;
     N:xShape 0;C:xShape 1;H:xShape 2;W:xShape 3;
     wShape:shape w;
     F:wShape 0; HH:wShape 2;WW:wShape 3;
-    hout:1+(H+(2*pad)-HH)%stride;
-    wout:1+(W+(2*pad)-WW)%stride;
+    hout:`long$1+(H+(2*pad)-HH)%stride;
+    wout:`long$1+(W+(2*pad)-WW)%stride;
     out:("i"$N,F,hout,wout)#0f;
 
     / loop:
-    {[F;x;i]  
-      convIn:
-      {
-        
-      }each til count F
-    }[F;x;]each til count N;
-
+    / d is `F`x`hout`wout`HH`WW`stride`pad!(F;x;hout;wout;HH;WWstride;pad)
+    convLoop:{[d]
+        / ind is n
+        {[d;ind]  
+            d[`convIn]:zeroPad[d[`x] ind;d`pad];
+            / inds are (n;f)
+            {[d;inds]
+                d[`convW]:d[`w] last inds;
+                d[`convB]:d[`b] last inds;
+                / inds are (n;f;i)
+                {[d;inds]
+                    / inds are (n;f;i;j)
+                    {[d;inds]
+                        show "inds are ",.Q.s1 inds;
+                        tempd::d;tempinds::inds;
+                        convI:inds[2]*d`stride;
+                        convJ:inds[3]*d`stride;
+                        convArea:.[d`convIn;(::;convI+til d`HH;convJ+til d`WW)];
+                        (inds;0N! d[`convB]+sumo convArea*d`convW)
+                    }[d;] each 0N!inds,/:til d`wout
+                }[d;] each 0N!inds,/:til d`hout
+            }[d;] each 0N!ind,/:til d`F
+        }[d;]each til d`N
+    };
+    res:3 raze/convLoop `N`F`x`w`b`hout`wout`HH`WW`stride`pad!(N;F;x;w;b;hout;wout;HH;WW;stride;pad);
+    newOut:./[out;res[;0];:;res[;1]];
+    cache:(x;w;b;convParam);
+    (newOut;cache)
  };
 
+/ zeropad in n dimensions
+/ e.g. zeroPad[2 3 4 5#1f;2]
 zeroPad:{[x;pad]
     shapex:shape x;
     padf:{y,(til x),y}[;pad#0N];
@@ -143,8 +166,6 @@ zeroPadSlow1:{[x;pad]
     newShape#0^razeo[x] @[inds;w;:;til count w:where not null inds]
  };
 
-/ zeropad in n dimensions
-/ e.g. zeroPad[2 3 4 5#1f;2]
 zeroPadSlow2:{[x;pad]
     shapex:shape x;
     f:{y,til[x],y}[;pad#0N];
