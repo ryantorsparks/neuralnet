@@ -29,7 +29,7 @@ poolInds:{[mSize;fSize;stride;strides]
 conv:{[V;F;b;padSize;stride]
 
     / pad volume V
-    paddedV:zeroPad[padSize] each V;
+    paddedV:zeroPad[V;padSize];
 
     / size of padded V
     paddedVSize:last shape paddedV;
@@ -54,7 +54,7 @@ conv:{[V;F;b;padSize;stride]
 convOld:{[V;F;b;padSize;stride]
 
     / pad volume V
-    paddedV:zeroPad[padSize] each V;
+    paddedV:zeroPad[V;padSize];
 
     / size of padded V
     paddedVSize:last shape paddedV;
