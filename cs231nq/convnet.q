@@ -102,7 +102,7 @@ poolOld:{[m;fSize;stride]
     (2#strides)#{[m;inds]max raze m . inds}[m]each inds
  }
 
-convNetNaive:{[x;w;b;convParam]
+convNetNaiveOld:{[x;w;b;convParam]
     stride:convParam`stride;
     pad:convParam`pad;
     xShape:shape x;
@@ -127,22 +127,61 @@ convNetNaive:{[x;w;b;convParam]
                 {[d;inds]
                     / inds are (n;f;i;j)
                     {[d;inds]
-                        show "inds are ",.Q.s1 inds;
-                        tempd::d;tempinds::inds;
                         convI:inds[2]*d`stride;
                         convJ:inds[3]*d`stride;
                         convArea:.[d`convIn;(::;convI+til d`HH;convJ+til d`WW)];
-                        (inds;0N! d[`convB]+sumo convArea*d`convW)
-                    }[d;] each 0N!inds,/:til d`wout
-                }[d;] each 0N!inds,/:til d`hout
-            }[d;] each 0N!ind,/:til d`F
+                        (inds;d[`convB]+sumo convArea*d`convW)
+                    }[d;] each inds,/:til d`wout
+                }[d;] each inds,/:til d`hout
+            }[d;] each ind,/:til d`F
         }[d;]each til d`N
     };
     res:3 raze/convLoop `N`F`x`w`b`hout`wout`HH`WW`stride`pad!(N;F;x;w;b;hout;wout;HH;WW;stride;pad);
+    tempres::res;
     newOut:./[out;res[;0];:;res[;1]];
     cache:(x;w;b;convParam);
     (newOut;cache)
  };
+
+convForwardNaive:{[x;w;b;convParam]
+    stride:convParam`stride;
+    pad:convParam`pad;
+    xShape:shape x;
+    N:xShape 0;C:xShape 1;H:xShape 2;W:xShape 3;
+    wShape:shape w;
+    F:wShape 0; HH:wShape 2;WW:wShape 3;
+    hout:`long$1+(H+(2*pad)-HH)%stride;
+    wout:`long$1+(W+(2*pad)-WW)%stride;
+    outShape:"i"$N,F,hout,wout;
+
+    / convolution each func (many layers deep):
+    / d is `F`x`hout`wout`HH`WW`stride`pad!(F;x;hout;wout;HH;WWstride;pad)
+    convInner:{[d]
+        / ind is n
+        {[d;ind]
+            d[`convIn]:zeroPad[d[`x] ind;d`pad];
+            / inds are (n;f)
+            {[d;inds]
+                d[`convW]:d[`w] last inds;
+                d[`convB]:d[`b] last inds;
+                / inds are (n;f;i)
+                {[d;inds]
+                    / inds are (n;f;i;j)
+                    {[d;inds]
+                        convI:inds[2]*d`stride;
+                        convJ:inds[3]*d`stride;
+                        convArea:.[d`convIn;(::;convI+til d`HH;convJ+til d`WW)];
+                        d[`convB]+sumo convArea*d`convW
+                    }[d;] each inds,/:til d`wout
+                }[d;] each inds,/:til d`hout
+            }[d;] each ind,/:til d`F
+        }[d;]each til d`N
+    };
+    res:convInner `N`F`x`w`b`hout`wout`HH`WW`stride`pad!(N;F;x;w;b;hout;wout;HH;WW;stride;pad);
+    cache:(x;w;b;convParam);
+    (res;cache)
+ };
+
 
 / zeropad in n dimensions
 / e.g. zeroPad[2 3 4 5#1f;2]

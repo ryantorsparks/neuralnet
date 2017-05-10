@@ -48,8 +48,17 @@ linSpace:{[start;end;n]start+((end-start)%n-1)*til n}
 / log space function, like linspace but 10 xexp [linSpace]
 logSpace:{[start;end;n] 10 xexp linSpace[start;end;n]}
 
+/ e.g. ppath[`fullyConnected;`affineForward]
+/ -> `:assignmentInputs/fullyConnected_affineForward
+ppath:{[module;paramName] ` sv `:assignmentInputs,`$"_" sv string module,paramName}
+
 / save assignment inputs
-psave:{[name;param] (`$":assignmentInputs/fullyConnected_",string name) set param}
+/ e.g psave[`fullyConnected;`affineForward;affineForwardRes]
+/ -> saves affineForwardRes to `:assignmentInputs/fullyConnected_affineForward
+psave:{[module;paramName;paramValue] ppath[module;paramName] set paramValue}
+
+/ converse of psave, read in a kdb file from the assignment inputs dir
+pget:{[module;paramName] get ppath[module;paramName]}
 
 / same as np.random.randn, generates random arrays with var and dev = 1.0
 / and avg=0.0
