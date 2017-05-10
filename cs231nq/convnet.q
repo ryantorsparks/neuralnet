@@ -2,7 +2,7 @@
 \l nn_util.q
 
 / pad matrix m with n zeros
-zeroPad:{[n;m]p,((nz,/:m),\:nz:n#0.),p:n#enlist (count[first m]+2*n)#0.} 
+zeroPad2D:{[n;m]p,((nz,/:m),\:nz:n#0.),p:n#enlist (count[first m]+2*n)#0.} 
 
 / indice generating func (used for sriding across a matrix)
 strideInds:{[vSize;vDepth;fSize;stride;strides]
@@ -101,3 +101,34 @@ poolOld:{[m;fSize;stride]
     / run max across each sub quadrant
     (2#strides)#{[m;inds]max raze m . inds}[m]each inds
  }
+
+convNetNew:{[x;w;b;convParam]
+    stride:convParam`stride;
+    pad:convParam`pad;
+    xShape:shape x;
+    N:xShape 0;C:xShape 1;H:xShape 2;W:xShape 3;
+    wShape:shape w;
+    F:wShape 0; HH:wShape 2;WW:wShape 3;
+    hout:1+(H+(2*pad)-HH)%stride;
+    wout:1+(W+(2*pad)-WW)%stride;
+    out:("i"$N,F,hout,wout)#0f;
+
+    / loop:
+    {[F;x;i]  
+      convIn:
+      {
+        
+      }each til count F
+    }[F;x;]each til count N;
+
+ };
+
+/ e.g. zeroPadNDim[2 3 4#1f;2]
+zeroPad:{[x;pad]
+    shapex:shape x;
+    f:{y,til[x],y}[;pad#-1];
+    c:2<count shapex;
+    newShape:(c#shapex),(2*pad)+c _ shape x;
+    inds:cross/[$[c;enlist til shapex 0;()],f each c _ shape x];
+    newShape#0^x ./:inds
+ }; 
