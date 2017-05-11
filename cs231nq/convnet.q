@@ -1,81 +1,6 @@
 / from http://cs231n.github.io/convolutional-networks/
 \l nn_util.q
 
-/ pad matrix m with n zeros
-zeroPad2D:{[n;m]p,((nz,/:m),\:nz:n#0.),p:n#enlist (count[first m]+2*n)#0.} 
-
-/ indice generating func (used for sriding across a matrix)
-strideInds:{[vSize;vDepth;fSize;stride;strides]
-    yAxis:raze (raze til[fSize]+/:vSize*til fSize)+/:vSize*vSize*til vDepth;
-    xAxis:(raze (stride*til strides)+/:(vSize*stride)*til strides);
-    xAxis+/:yAxis
- };
-
-poolInds:{[mSize;fSize;stride;strides]
-    {x cross x} enlist each til[fSize]+/:stride*til strides
- };
-
-/ convolution function
-/ @param V - Volume (matrix, not padded yet, should be square)
-/ @param F - Filter (matrix, should be square)
-/ @param b - bias (list of floats, should be same as first[shape F])
-/ @param padSize - number of zeros to pad volume matrix V with 
-/ @param stride - the stride length across padded V
-/ e.g.
-/ V:((1 1 1 1 0f;0 1 2 1 1f;0 0 0 2 0f;1 2 0 0 2f;0 2 0 1 1f);(1 0 2 0 0f;0 2 2 2 0f;0 1 2 1 0f;1 1 0 0 1f;2 0 2 1 2f);(1 0 0 1 0f;2 1 1 2 0f;2 0 0 2 0f;2 0 0 0 0f;1 0 0 1 1f))
-/ F:(((0 1 0f;1 1 1f;0 -1 0f);(-1 0 -1f;-1 -1 1f;1 1 1f);(1 -1 0f;1 1 1f;0 -1 -1f));((0 -1 1f;1 1 0f;0 -1 0f);(1 0 1f;0 -1 0f;-1 1 1f);(1 0 1f;-1 1 0f;0 0 1f)))
-/ b:0 1f
-/ conv[V;F;b;1;2]
-conv:{[V;F;b;padSize;stride]
-
-    / pad volume V
-    paddedV:zeroPad[V;padSize];
-
-    / size of padded V
-    paddedVSize:last shape paddedV;
-
-    / filter size, F should have shape (#of filters;n;n;depth)
-    fSize:shape[F] 2;
-
-    / flatten filters
-    flatF:razeo each F;
-
-    / output dimension/total number of strides
-    strides:1+(paddedVSize-fSize)div stride;
-
-    / filter indices (used to index into volume V and create one matrix to multiply)
-    filterInds:strideInds[paddedVSize;shape[paddedV]0;fSize;stride;strides];
-
-    / perform the convolution/matrix multiplication
-    (2#strides)#/:b+dot[flatF;razeo[paddedV] filterInds]
- }
-
-/ old version, less efficient indexing/flip with filterInds
-convOld:{[V;F;b;padSize;stride]
-
-    / pad volume V
-    paddedV:zeroPad[V;padSize];
-
-    / size of padded V
-    paddedVSize:last shape paddedV;
-
-    / filter size, F should have shape (#of filters;n;n;depth)
-    fSize:shape[F] 2;
-
-    / flatten filters
-    flatF:razeo each F;
-
-    / output dimension/total number of strides
-    strides:1+(paddedVSize-fSize)div stride;
-
-    / filter indices (used to index into volume V and create one matrix to multiply)
-    filterInds:poolInds[paddedVSize;fSize;stride;strides];
-
-    / perform the convolution/matrix multiplication
-    / TODO: redo this more efficiently
-    (2#strides)#/:b+dot[flatF;flip {[m;i;j]2 raze/ .[m;(::;i;j)]}[paddedV] ./:filterInds]
- }
-
 / pool function
 / @param m - matrix that we want to decrease
 / @param fSize - filter size
@@ -90,59 +15,33 @@ pool:{[m;fSize;stride]
     (2#strides)#max razeo[m] (raze til[stride]+/:n*til stride)+\:raze (stride*til strides)+/:(n*stride)*til strides
  };
 
-/ older, less efficient version
-poolOld:{[m;fSize;stride]
-    convSize:count m 0;
-    strides:1+(convSize-fSize)div stride;
-
-    / pool indices
-    inds:poolInds[convSize;fSize;stride;strides];
-
-    / run max across each sub quadrant
-    (2#strides)#{[m;inds]max raze m . inds}[m]each inds
- }
-
-convNetNaiveOld:{[x;w;b;convParam]
-    stride:convParam`stride;
-    pad:convParam`pad;
-    xShape:shape x;
-    N:xShape 0;C:xShape 1;H:xShape 2;W:xShape 3;
-    wShape:shape w;
-    F:wShape 0; HH:wShape 2;WW:wShape 3;
-    hout:`long$1+(H+(2*pad)-HH)%stride;
-    wout:`long$1+(W+(2*pad)-WW)%stride;
-    out:("i"$N,F,hout,wout)#0f;
-
-    / loop:
-    / d is `F`x`hout`wout`HH`WW`stride`pad!(F;x;hout;wout;HH;WWstride;pad)
-    convLoop:{[d]
-        / ind is n
-        {[d;ind]  
-            d[`convIn]:zeroPad[d[`x] ind;d`pad];
-            / inds are (n;f)
-            {[d;inds]
-                d[`convW]:d[`w] last inds;
-                d[`convB]:d[`b] last inds;
-                / inds are (n;f;i)
-                {[d;inds]
-                    / inds are (n;f;i;j)
-                    {[d;inds]
-                        convI:inds[2]*d`stride;
-                        convJ:inds[3]*d`stride;
-                        convArea:.[d`convIn;(::;convI+til d`HH;convJ+til d`WW)];
-                        (inds;d[`convB]+sumo convArea*d`convW)
-                    }[d;] each inds,/:til d`wout
-                }[d;] each inds,/:til d`hout
-            }[d;] each ind,/:til d`F
-        }[d;]each til d`N
-    };
-    res:3 raze/convLoop `N`F`x`w`b`hout`wout`HH`WW`stride`pad!(N;F;x;w;b;hout;wout;HH;WW;stride;pad);
-    tempres::res;
-    newOut:./[out;res[;0];:;res[;1]];
-    cache:(x;w;b;convParam);
-    (newOut;cache)
+/ zeropad in n dimensions
+/ e.g. zeroPad[2 3 4 5#1f;2]
+zeroPad:{[x;pad]
+    shapex:shape x;
+    padf:{y,(til x),y}[;pad#0N];
+    c:2<count shapex;
+    newShape:(c#shapex),(2*pad)+c _ shape x;
+    cntList:$[c;enlist til shapex 0;()],padf each c _ shape x;
+    inds:{raze y+/:x*sum not null y}/[cntList];
+    newShape#0^razeo[x]@inds
  };
 
+/ convolution function - forward pass
+/ @param V - Volume (matrix, not padded yet, should be square)
+/ @param F - Filter (matrix, should be square)
+/ @param b - bias (list of floats, should be same as first[shape F])
+/ @param padSize - number of zeros to pad volume matrix V with
+/ @param stride - the stride length across padded V
+/ e.g.
+/ Shape:2 3 4 4
+/ wShape:3 3 4 4
+/ x:xShape#linSpace[-0.1;0.5;prd xShape]
+/ w:wShape#linSpace[-0.2;0.3;prd wShape]
+/ b:linSpace[-0.1;0.2;3]
+/ convParam:`stride`pad!2 1
+/ out:first convForwardNaive[x;w;b;convParam]
+/ TO DO: MAKE THIS FUNCTION LESS CRAP/SLOW!!
 convForwardNaive:{[x;w;b;convParam]
     stride:convParam`stride;
     pad:convParam`pad;
@@ -152,7 +51,7 @@ convForwardNaive:{[x;w;b;convParam]
     F:wShape 0; HH:wShape 2;WW:wShape 3;
     hout:`long$1+(H+(2*pad)-HH)%stride;
     wout:`long$1+(W+(2*pad)-WW)%stride;
-    outShape:"i"$N,F,hout,wout;
+    outShape:N,F,hout,wout;
 
     / convolution each func (many layers deep):
     / d is `F`x`hout`wout`HH`WW`stride`pad!(F;x;hout;wout;HH;WWstride;pad)
@@ -177,49 +76,93 @@ convForwardNaive:{[x;w;b;convParam]
             }[d;] each ind,/:til d`F
         }[d;]each til d`N
     };
-    res:convInner `N`F`x`w`b`hout`wout`HH`WW`stride`pad!(N;F;x;w;b;hout;wout;HH;WW;stride;pad);
+    out:convInner `N`F`x`w`b`hout`wout`HH`WW`stride`pad!(N;F;x;w;b;hout;wout;HH;WW;stride;pad);
     cache:(x;w;b;convParam);
-    (res;cache)
+    (out;cache)
  };
 
+/ convolution function, backward pass
+/ @param dout - upstream derivatives
+/ @param cache - (x;w;b;convParam), second output of convForwardNaive
+/ @return `dx`dw`db!(dx;dw;db) gradients with respect to x, w, b
+convBackwardNaive:{[dout;cache]
+    x:cache 0;
+    w:cache 1;
+    b:cache 2;
+    convParam:cache 3;
+    stride:convParam`stride;
+    pad:convParam`pad;
 
-/ zeropad in n dimensions
-/ e.g. zeroPad[2 3 4 5#1f;2]
-zeroPad:{[x;pad]
-    shapex:shape x;
-    padf:{y,(til x),y}[;pad#0N];
-    c:2<count shapex;
-    newShape:(c#shapex),(2*pad)+c _ shape x;
-    cntList:$[c;enlist til shapex 0;()],padf each c _ shape x;
-    inds:{raze y+/:x*sum not null y}/[cntList];
-    newShape#0^razeo[x]@inds
- };     
+    / shape of x - > (N;C;H;W)
+    xShape:shape x;
+    N:xShape 0; C:xShape 1; H:xShape 2;W:xShape 3;
+
+    / shape of w -> (F;C;HH;WW)
+    wShape:shape w;
+    F:wShape 0; HH:wShape 2;WW:wShape 3;
+
+    hout:`long$1+(H+(2*pad)-HH)%stride;
+    wout:`long$1+(W+(2*pad)-WW)%stride;
+    dx:shape[x]#0f;
+    dw:shape[w]#0f;
+    db:shape[b]#0f;
     
-zeroPadSlow1:{[x;pad]
-    shapex:shape x;
-    f:{y,(x#1),y}[;pad#0N];
-    c:2<count shapex;
-    newShape:(c#shapex),(2*pad)+c _ shape x;
-    cntList:$[c;enlist first[shapex]#1;()],f each c _ shape x;
-    inds:{raze x*/:\:y}/[cntList];
-    newShape#0^razeo[x] @[inds;w;:;til count w:where not null inds]
+    / horrible overs, 4 levels deep
+    convBackInner:{[d]
+       / ind is n
+       {[d;ind]
+           pad:d`pad;
+           d[`convIn]:zeroPad[d[`x] ind;pad];
+           cShape:shape d`convIn;
+           d[`dconvIn]:cShape#0f;
+           / inds are (n;f)
+          d:{[d;inds]
+               d[`convW]:d[`w] last inds;
+               d[`convB]:d[`b] last inds;
+               d[`df]:d[`dout] . inds;
+               / inds are (n;f;i)
+               {[d;inds]
+                   / inds are (n;f;i;j)
+                   {[d;inds]
+                       convI:inds[2]*d`stride;
+                       convJ:inds[3]*d`stride;
+                       convArea:.[d`convIn;(::;convI+til d`HH;convJ+til d`WW)];
+                       dconv:d[`df] . inds 2 3;
+                       d:.[d;(`db;inds 1);+;dconv];
+                       d:.[d;(`dw;inds 1);+;dconv*convArea];
+                       d:.[d;(`dconvIn;::;convI+til d`HH;convJ+til d`WW);+;dconv*d`convW];
+                       d
+                   }/[d;inds,/:til d`wout]
+               }/[d;inds,/:til d`hout]
+           }/[d;ind,/:til d`F];
+           .[d;(`dx;ind);+;.[d[`dconvIn];(::),(pad _neg[pad]_til@)each 1_ cShape]] 
+       }/[d;til d`N]
+    };
+   inputd:`dout`N`F`x`w`b`dx`dw`db`hout`wout`HH`WW`stride`pad!(dout;N;F;x;w;b;dx;dw;db;hout;wout;HH;WW;stride;pad);
+   res:convBackInner inputd;
+   `dx`dw`db#res
  };
 
-zeroPadSlow2:{[x;pad]
-    shapex:shape x;
-    f:{y,til[x],y}[;pad#0N];
-    c:2<count shapex;
-    newShape:(c#shapex),(2*pad)+c _ shape x;
-    inds:cross/[$[c;enlist til shapex 0;()],f each c _ shape x];
-    newShape#0^razeo[x] @[pfi;where not null pfi:prd flip inds;:;til prd shape x]
- };
 
-/ older, slower version
-zeroPadSlow3:{[x;pad]
-    shapex:shape x;
-    f:{y,til[x],y}[;pad#-1];
-    c:2<count shapex;
-    newShape:(c#shapex),(2*pad)+c _ shape x;
-    inds:cross/[$[c;enlist til shapex 0;()],f each c _ shape x];
-    newShape#0^x ./:inds
- };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
