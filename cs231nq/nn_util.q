@@ -65,6 +65,9 @@ pget:{[module;paramName] get ppath[module;paramName]}
 pi:3.1415926535897931
 randArray:{(x;y)#sqrt[-2*log n?1.]*cos[2*pi*(n:x*y)?1.]}
 
+/ (r)andom (a)rray n-(d)imensional
+rad:{[dims](dims)#sqrt[-2*log n?1.]*cos[2*pi*(n:prd dims)?1.]}
+
 / raze over
 razeo:raze/
 
