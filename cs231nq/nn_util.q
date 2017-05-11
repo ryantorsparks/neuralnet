@@ -77,6 +77,9 @@ adev:{dev razeo x}
 / sum over 
 sumo:sum/
 
+/ max over
+maxo:max/
+
 / null dictionary
 nulld:enlist[`]!enlist(::)
 

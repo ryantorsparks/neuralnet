@@ -143,6 +143,42 @@ convBackwardNaive:{[dout;cache]
    `dx`dw`db#res
  };
 
+maxPoolForwardNaive:{[x;poolParam]
+    stride:poolParam`stride;
+    HH:poolParam`poolHeight;
+    WW:poolParam`poolWidth;
+    xShape:shape x;
+    N:xShape 0;
+    C:xShape 1;
+    H:xShape 2;
+    W:xShape 3;
+    hout:`long$1+(H-HH)%stride;
+    wout:`long$1+(W-HH)%stride;
+    
+    poolForwardInner:{[d]
+        {[d;ind]
+            {[d;inds]
+                {[d;inds]
+                    / inds (n;c;i;j)
+                    {[d;inds]
+                        tempd::d;tempinds::inds;
+                        poolI:inds[2]*d`stride;
+                        poolJ:inds[3]*d`stride;
+                        maxo .[d`x;(inds 0;inds 1;poolI+til d`HH;poolJ+til d`WW)]
+                    }[d;]each inds,/:til d`wout
+                }[d;]each inds,/:til d`hout
+            }[d;]each ind,/:til d`C
+        }[d;]each til d`N
+    };
+   
+   inputd:`x`N`C`hout`wout`stride`HH`WW!(x;N;C;hout;wout;stride;HH;WW);
+   out:poolForwardInner inputd;
+   cache:(x;poolParam);
+   (out;cache)
+ };
+
+
+
 
 
 
