@@ -178,11 +178,40 @@ maxPoolForwardNaive:{[x;poolParam]
  };
 
 
+maxPoolBackwardNaive:{[dout;cache]
+    stride:poolParam`stride;
+    HH:poolParam`poolHeight;
+    WW:poolParam`poolWidth;
+    xShape:shape x;
+    N:xShape 0;
+    C:xShape 1;
+    H:xShape 2;
+    W:xShape 3;
+    hout:`long$1+(H-HH)%stride;
+    wout:`long$1+(W-HH)%stride;
+    dx:xShape#0f;
 
-
-
-
-
+    poolBackwardInner:{[d]
+        {[d;ind]
+            {[d;inds]
+                {[d;inds]
+                    / inds (n;c;i;j)
+                    {[d;inds]
+                        poolI:inds[2]*d`stride;
+                        poolJ:inds[3]*d`stride;
+                        poolArea:.[d`x;(inds 0;inds 1;poolI+til d`HH;poolJ+til d`WW)];
+                        poolMax:maxo poolArea;
+                        poolMaxMask:poolMax=poolArea;
+                        .[d;(`dx;inds 0;inds 1;poolI+til d`HH;poolJ+til d`WW);+;poolMaxMask*dout . inds]
+                    }/[d;inds,/:til d`wout]
+                }/[d;inds,/:til d`hout]
+            }/[d;ind,/:til d`C]
+        }/[d;til d`N]
+    };
+    
+    res:poolBackwardInner[`dx`x`N`C`hout`wout`stride`HH`WW!(dx;x;N;C;hout;wout;stride;HH;WW)];
+    res`dx
+ };
 
 
 

@@ -59,7 +59,7 @@ lg "numerical errors for `dx`dw`db are: "
 relError'[value dxDwDb;(dxNum;dwNum;dbNum)]
 
 lg "##############################
-    Convolution: max pool layer
+    Convolution: max pool naive forward
     ##############################"
 
 lg "we now implement a naive forward pass for max pool layer"
@@ -71,3 +71,19 @@ outCache:maxPoolForwardNaive[x;poolParam]
 
 lg "check relative error from expected output"
 relError[outCache 0;pget[`convNets;`expectedForwardMaxPool]] 
+
+lg "##############################
+    Convolution: max pool naive backward
+    ##############################"
+
+lg "we now implement the naive backward pass for max pool layer"
+
+x: rad 3 2 8 8 
+dout:rad 3 2 4 4 
+poolParam:`poolHeight`poolWidth`stride!2 2 2
+outCache:maxPoolForwardNaive[x;poolParam]
+dx:maxPoolBackwardNaive[dout;outCache 1]
+dxNum:numericalGradientArray[(first maxPoolForwardNaive[;poolParam]@);x;dout;`x]
+
+lg "check relative error against numerical gradient"
+relError[dx;dxNum]
