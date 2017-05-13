@@ -87,3 +87,51 @@ dxNum:numericalGradientArray[(first maxPoolForwardNaive[;poolParam]@);x;dout;`x]
 
 lg "check relative error against numerical gradient"
 relError[dx;dxNum]
+
+lg "##############################
+    Convolutional 'sandwich' layers
+    ##############################"
+
+lg "##############################
+    Testing conv relu pool forward
+    ##############################"
+
+x:rad 2 3 16 16
+w:rad 3 3 3 3 
+b:rad 3
+dout:rad 2 3 8 8
+convParam:`stride`pad!1 1
+poolParam:`poolHeight`poolWidth`stride!2 2 2
+
+outCache:convReluPoolForward[x;w;b;convParam;poolParam]
+out:outCache 0;cache:outCache 1;
+dxDwDb:convReluPoolBackward[dout;cache]
+
+lg "now get numerical grads for comparison"
+dxNum:numericalGradientArray[(first convReluPoolForward[;w;b;convParam;poolParam]@);x;dout;`x]
+dwNum:numericalGradientArray[(first convReluPoolForward[x;;b;convParam;poolParam]@);w;dout;`w]
+dbNum:numericalGradientArray[(first convReluPoolForward[x;w;;convParam;poolParam]@);b;dout;`b]
+lg "check relative error against numerical gradient"
+relError'[value dxDwDb;(dxNum;dwNum;dbNum)]
+
+lg "##############################
+    Testing conv relu forward
+    ##############################"
+
+x:rad 2 3 8 8
+w:rad 3 3 3 3
+b:rad 3
+dout:rad 2 3 8 8
+convParam:`stride`pad!1 1
+
+outCache:convReluForward[x;w;b;convParam]
+cache:outCache 1
+dxDwDb:convReluBackward[dout;cache]
+
+lg "now get numerical grads for comparison"
+dxNum:numericalGradientArray[(first convReluForward[;w;b;convParam]@);x;dout;`x]
+dwNum:numericalGradientArray[(first convReluForward[x;;b;convParam]@);w;dout;`w]
+dbNum:numericalGradientArray[(first convReluForward[x;w;;convParam]@);b;dout;`b]
+
+lg "check relative error against numerical gradient"
+relError'[value dxDwDb;(dxNum;dwNum;dbNum)]

@@ -177,8 +177,62 @@ maxPoolForwardNaive:{[x;poolParam]
    (out;cache)
  };
 
+maxPoolForwardFast:{[x;poolParam]
+    xShape:shape x;
+    N:xShape 0;
+    C:xShape 1;
+    H:xShape 2;
+    W:xShape 3;   
+   
+    sameSize:1_(~':)poolParam`poolHeight`poolWidth`stride;
+    tiles:(0=H mod  x`poolHeight) and 0=W mod x`poolWidth;
+    if[r:sameSize and tiles;
+        outReshapeCache:maxPoolForwardReshape[x;poolParam];
+        cache:(`reshape;outReshapeCache 1);
+        out:outReshapeCache 0; 
+      ];
+    if[not r;
+        outIm2colCache:maxPoolForwardIm2Col[x;poolParam];
+        out:outIm2colCache 0;
+        cache:(`im2col;outIm2colCache 1);
+      ];
+    (out;cache)
+ };
 
-maxPoolBackwardNaive:{[dout;cache]
+maxPoolForwardReshape:{[x;poolParam]
+    xShape:shape x;
+    N:xShape 0;
+    C:xShape 1;
+    H:xShape 2;
+    W:xShape 3;
+    poolHeight:poolParam`poolHeight;
+    poolWidth:poolParam`poolWidth;
+    stride:poolParam`stride;
+    if[any 1_differ poolHeight,poolWidth,stride;'"pool params invalid"];
+    xReshaped:(N;C;H div poolHeight;poolHeight;W div poolWidth;poolWidth)#razeo x;
+    out:maxAxes[xReshaped;3 4];
+    cache:(x;xReshaped;out);
+    (out;cache)
+ };
+
+maxPoolForwardIm2Col:{[x;poolParam]
+    xShape:shape x;
+    N:xShape 0;
+    C:xShape 1;
+    H:xShape 2;
+    W:xShape 3;
+    poolHeight:poolParam`poolHeight;
+    poolWidth:poolParam`poolWidth;
+    stride:poolParam`stride;
+    if[not 0=(H-poolHeight)mod stride;'"invalid pool height"];
+    if[not 0=(W-poolWidth)mod stride;'"invalid pool width"];
+    outHeight:1+(H-poolHeight)div stride;
+    outWidth:1+(W-poolWidth)div stride;
+
+    xSplit:(N*C;1;H;W)#x;
+    xCols:
+
+mxPoolBackwardNaive:{[dout;cache]
     stride:poolParam`stride;
     HH:poolParam`poolHeight;
     WW:poolParam`poolWidth;
@@ -213,8 +267,60 @@ maxPoolBackwardNaive:{[dout;cache]
     res`dx
  };
 
+/ faster version
 
 
+
+/ @param x - input array
+/ @param w - weight param for conv layer
+/ @param b - bias param
+/ @param convParam - dict
+convReluForward:{[x;w;b;convParam]
+    aConvCache:convForwardNaive[x;w;b;convParam];
+    a:aConvCache 0;
+    convCache:aConvCache 1;
+    outReluCache:reluForward a;
+    out:outReluCache 0;
+    reluCache:outReluCache 1;
+    cache:(convCache;reluCache);
+    (out;cache)
+ };
+
+/ @param dout - array
+/ @param cache - (convCache;reluCache)
+/ @return `dx`dx`db!(grads ...)
+convReluBackward:{[dout;cache]
+    convCache:cache 0;
+    reluCache:cache 1;
+    da:reluBackward[dout;reluCache];
+    dxDwDb:convBackwardNaive[da;convCache];
+    dxDwDb
+ };
+
+convReluPoolForward:{[x;w;b;convParam;poolParam]
+    a_convCache:convForwardNaive[x;w;b;convParam];
+    a:a_convCache 0;
+    convCache:a_convCache 1;
+    s_reluCache:reluForward[a];
+    s:s_reluCache 0;
+    reluCache:s_reluCache 1;
+    out_poolCache:maxPoolForwardNaive[s;poolParam];
+    out:out_poolCache 0;
+    poolCache:out_poolCache 1;
+    cache:(convCache;reluCache;poolCache);
+    (out;cache)
+    };
+
+
+convReluPoolBackward:{[dout;cache]
+    convCache:cache 0;
+    reluCache:cache 1;
+    poolCache:cache 2;
+    ds:maxPoolBackwardNaive[dout;poolCache];
+    da:reluBackward[ds;reluCache];
+    dxDwDb:convBackwardNaive[da;convCache];
+    dxDwDb
+ };
 
 
 
