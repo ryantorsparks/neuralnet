@@ -186,16 +186,17 @@ maxPoolForwardFast:{[x;poolParam]
    
     sameSize:1_(~':)poolParam`poolHeight`poolWidth`stride;
     tiles:(0=H mod  x`poolHeight) and 0=W mod x`poolWidth;
-    if[r:sameSize and tiles;
+    if[not sameSize and tiles;'"must have sameSize and tiles as true"];
+/    if[r:sameSize and tiles;
         outReshapeCache:maxPoolForwardReshape[x;poolParam];
         cache:(`reshape;outReshapeCache 1);
         out:outReshapeCache 0; 
-      ];
-    if[not r;
-        outIm2colCache:maxPoolForwardIm2Col[x;poolParam];
-        out:outIm2colCache 0;
-        cache:(`im2col;outIm2colCache 1);
-      ];
+/      ];
+/    if[not r;
+/        outIm2colCache:maxPoolForwardIm2Col[x;poolParam];
+/        out:outIm2colCache 0;
+/        cache:(`im2col;outIm2colCache 1);
+/      ];
     (out;cache)
  };
 
@@ -215,6 +216,25 @@ maxPoolForwardReshape:{[x;poolParam]
     (out;cache)
  };
 
+maxPoolBackwardFast:{[dout;cache]
+    method:cache 0;
+    realCache:cache 1;
+    if[not method~`reshape;'"pool method must be reshape"];
+    maxPoolBackwardReshape[dout;realCache]
+ };
+
+maxPoolBackwardReshape:{[dout;cache]
+    x:cache 0;
+    xReshaped:cache 1;
+    out:cache 2;
+
+    dxReshaped:xReshaped*0f;
+    outNewaxis:out[
+
+/ currently ditched, python version uses cython/c, too much effort 
+/ to translate to c, too slow to do in q (a million for loops), so
+/ just going to force having pool height+width+stride the same
+/
 maxPoolForwardIm2Col:{[x;poolParam]
     xShape:shape x;
     N:xShape 0;
@@ -231,8 +251,10 @@ maxPoolForwardIm2Col:{[x;poolParam]
 
     xSplit:(N*C;1;H;W)#x;
     xCols:
+\
 
-mxPoolBackwardNaive:{[dout;cache]
+
+maxPoolBackwardNaive:{[dout;cache]
     stride:poolParam`stride;
     HH:poolParam`poolHeight;
     WW:poolParam`poolWidth;

@@ -80,6 +80,48 @@ sumo:sum/
 / max over
 maxo:max/
 
+/ max across axes
+/ e.g.
+/ m is dim 3 4 5 6 7 8
+/ maxAxes[m;3 4] is equivalent to m.max(axis=3).max(axis=4) in python
+maxAxes:{[m;axes] {[x;ind].[x;ind#(::);max]}/[m;axes]} 
+
+/ creating newAxes, similar to numpy newaxis
+/ e.g. a=np.random.randn(5,4,4,4,4,6)
+/      resa=a[:, :, :, np.newaxis, :, np.newaxis]
+/ is equivalent to 
+/      a: rad 5 4 4 4 4 6
+/      resa: newAxis[a;3 5]
+newAxes:{[m;newAxesInds] {[x;ind] .[x;ind#(::);enlist]}/[m;asc newAxesInds]}
+
+/ expand a dimension of a tensor
+expandDim:{[m;ind;newShape].[m;ind#(::);newShape#]}
+
+/ similar to np.broadcast_arrays, e.g. takes matrixes of shape
+/ x: 2 3 1 3; y: 2 1 4 3; and expands x in the 3rd dimension to be
+/ 2 3 4 3, and the y in the 2nd dimension to be 2 3 4 3
+broadcastArrays:{[x;y]
+    xShape:shape x;
+    yShape:shape y;
+    xCnt:count xShape;
+    yCnt:count yShape;
+    $[xCnt>yCnt;
+        [y:(newshape:(xCnt-yCnt)#xShape)#enlist y;yShape:newshape,yShape];
+      yCnt>xCnt;
+        [x:(newshape:(yCnt-xCnt)#yShape)#enlist x;xShape:newshape,xShape];
+        ];
+
+    xIs1:xShape=1;
+    yIs1:yShape=1;
+
+    xChanges:(wx;yShape wx:where xIs1 and not yIs1);
+    yChanges:(wy;xShape wy:where yIs1 and not xIs1);
+    
+    xNew:expandDim/[x;xChanges 0;xChanges 1];
+    yNew:expandDim/[y;yChanges 0;yChanges 1];
+    (xNew;yNew) 
+  };
+
 / null dictionary
 nulld:enlist[`]!enlist(::)
 
