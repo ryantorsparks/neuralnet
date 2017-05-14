@@ -8,6 +8,11 @@ I've tried to do/translate the Stanford cs231n assignment into kdb/q. Currently,
   * rms prop
   * adam 
 * batch normalization in fully connected nets
+* dropout in fully connected nets
+* simple convolutional neural networks:
+  * max pooling layers
+  * convolutional layers
+  * convolutional relu/pool layers (sandwich layers)
 
 Source is http://cs231n.github.io/assignments2016/assignment1/ 
 
