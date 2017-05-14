@@ -25,11 +25,15 @@ toPythonArray:{{"np.array(",x,")"} {$[all 0h=type each x;bracket "," sv .z.s eac
 / >>> setQVar('dx_num',dx_num)
 setPythonArray:{[name;dim;x](`$name) set dim#x}
 
+/ matrix overload of where, from nick psaris' funq
+mwhere:{$[type x;where x;(,') over til[count x]{enlist[count[first y]#x],y:$[type y;enlist y;y]}'.z.s each x]}
+
 / (taken from nick psaris' funq github)
 shape:{$[0h>t:type x;();n:count x;n,.z.s x 0;1#0]} 
 
 / reshape function
 reshape:{[x;w](count[x],count w)#razeo x}
+reshapeM:{[m1;m2Shape] m2Shape#razeo m1}
 
 / equivalient to flip rehsape[x;w], but about 10-15% faster for typical use case here
 flipReshape:{[x;w]razeo[x] @ ((cw*til cx:count x)+/:til cw:count w) }
@@ -92,7 +96,8 @@ maxAxes:{[m;axes] {[x;ind].[x;ind#(::);max]}/[m;axes]}
 / is equivalent to 
 /      a: rad 5 4 4 4 4 6
 /      resa: newAxis[a;3 5]
-newAxes:{[m;newAxesInds] {[x;ind] .[x;ind#(::);enlist]}/[m;asc newAxesInds]}
+newAxes:{[m;newAxesInds] {[x;ind] .[x;ind#(::);$[ind=count shape x;(enlist each@);enlist]]}/[m;asc newAxesInds]}
+newAxes:{[m;newAxesInds] {[x;ind] sx:shape x;f:$[ind=count sx;(enlist each);enlist];i:$[ind=count sx;ind-1;ind];.[x;i#(::);f]}/[m;asc newAxesInds]}
 
 / expand a dimension of a tensor
 expandDim:{[m;ind;newShape].[m;ind#(::);newShape#]}
@@ -121,6 +126,11 @@ broadcastArrays:{[x;y]
     yNew:expandDim/[y;yChanges 0;yChanges 1];
     (xNew;yNew) 
   };
+
+/ sum Axes function, equivalent to np.sum(m,axis=(inds),keepdims=True)
+/ e.g. m=rad 2 3 4 5 6 7
+/ sumAxes[m;3 5] is equivlanet to np.sum(m,axis=(3,5),keepdims=True)
+sumAxes:{[m;axes] {[x;ind].[x;ind#(::);(enlist sum@)]}/[m;asc axes]}
 
 / null dictionary
 nulld:enlist[`]!enlist(::)

@@ -77,7 +77,7 @@ convForwardNaive:{[x;w;b;convParam]
         }[d;]each til d`N
     };
     out:convInner `N`F`x`w`b`hout`wout`HH`WW`stride`pad!(N;F;x;w;b;hout;wout;HH;WW;stride;pad);
-    cache:(x;w;b;convParam);
+    cache:`x`w`b`convParam!(x;w;b;convParam);
     (out;cache)
  };
 
@@ -86,10 +86,10 @@ convForwardNaive:{[x;w;b;convParam]
 / @param cache - (x;w;b;convParam), second output of convForwardNaive
 / @return `dx`dw`db!(dx;dw;db) gradients with respect to x, w, b
 convBackwardNaive:{[dout;cache]
-    x:cache 0;
-    w:cache 1;
-    b:cache 2;
-    convParam:cache 3;
+    x:cache`x;
+    w:cache`w;
+    b:cache`b;
+    convParam:cache`convParam;
     stride:convParam`stride;
     pad:convParam`pad;
 
@@ -173,7 +173,7 @@ maxPoolForwardNaive:{[x;poolParam]
    
    inputd:`x`N`C`hout`wout`stride`HH`WW!(x;N;C;hout;wout;stride;HH;WW);
    out:poolForwardInner inputd;
-   cache:(x;poolParam);
+   cache:`x`poolParam!(x;poolParam);
    (out;cache)
  };
 
@@ -184,12 +184,13 @@ maxPoolForwardFast:{[x;poolParam]
     H:xShape 2;
     W:xShape 3;   
    
-    sameSize:1_(~':)poolParam`poolHeight`poolWidth`stride;
-    tiles:(0=H mod  x`poolHeight) and 0=W mod x`poolWidth;
+    sameSize:all 1_(~':)poolParam`poolHeight`poolWidth`stride;
+    tiles:(0=H mod  poolParam`poolHeight) and 0=W mod poolParam`poolWidth;
     if[not sameSize and tiles;'"must have sameSize and tiles as true"];
 /    if[r:sameSize and tiles;
         outReshapeCache:maxPoolForwardReshape[x;poolParam];
-        cache:(`reshape;outReshapeCache 1);
+        reshapeCache:outReshapeCache 1;
+        cache:`method`reshapeCache!(`reshape;reshapeCache);
         out:outReshapeCache 0; 
 /      ];
 /    if[not r;
@@ -212,24 +213,34 @@ maxPoolForwardReshape:{[x;poolParam]
     if[any 1_differ poolHeight,poolWidth,stride;'"pool params invalid"];
     xReshaped:(N;C;H div poolHeight;poolHeight;W div poolWidth;poolWidth)#razeo x;
     out:maxAxes[xReshaped;3 4];
-    cache:(x;xReshaped;out);
+    cache:`x`xReshaped`out!(x;xReshaped;out);
     (out;cache)
  };
 
 maxPoolBackwardFast:{[dout;cache]
-    method:cache 0;
-    realCache:cache 1;
+    method:cache`method;
+    realCache:cache`reshapeCache;
     if[not method~`reshape;'"pool method must be reshape"];
     maxPoolBackwardReshape[dout;realCache]
  };
 
 maxPoolBackwardReshape:{[dout;cache]
-    x:cache 0;
-    xReshaped:cache 1;
-    out:cache 2;
+    x:cache`x;
+    xReshaped:cache`xReshaped;
+    out:cache`out;
 
     dxReshaped:xReshaped*0f;
-    outNewaxis:out[
+    outNewaxis:newAxes[out;3 5];
+    mask:flip mwhere (=). broadcastArrays[xreshapedp;outnewaxisp];
+    mask:(=). broadcastArrays[xreshapedp;outnewaxisp];
+    maskInds:flip mwhere mask;
+    doutNewaxis:newAxes[dout;3 5];
+    doutBroadcast: first broadcastArrays[doutNewaxis;dxReshaped];
+    dxReshaped:./[dxReshaped;maskInds;:;doutBroadcast ./: maskInds];
+    dxReshaped%:last broadcastArrays[dxReshaped;sumAxes[mask;3 5]];
+    dx:reshapeM[dxReshaped;shape x];
+    dx
+ };
 
 / currently ditched, python version uses cython/c, too much effort 
 / to translate to c, too slow to do in q (a million for loops), so
@@ -289,10 +300,6 @@ maxPoolBackwardNaive:{[dout;cache]
     res`dx
  };
 
-/ faster version
-
-
-
 / @param x - input array
 / @param w - weight param for conv layer
 / @param b - bias param
@@ -304,7 +311,7 @@ convReluForward:{[x;w;b;convParam]
     outReluCache:reluForward a;
     out:outReluCache 0;
     reluCache:outReluCache 1;
-    cache:(convCache;reluCache);
+    cache:`convCache`reluCache!(convCache;reluCache);
     (out;cache)
  };
 
@@ -312,8 +319,8 @@ convReluForward:{[x;w;b;convParam]
 / @param cache - (convCache;reluCache)
 / @return `dx`dx`db!(grads ...)
 convReluBackward:{[dout;cache]
-    convCache:cache 0;
-    reluCache:cache 1;
+    convCache:cache`convCache;
+    reluCache:cache`reluCache;
     da:reluBackward[dout;reluCache];
     dxDwDb:convBackwardNaive[da;convCache];
     dxDwDb
@@ -326,19 +333,19 @@ convReluPoolForward:{[x;w;b;convParam;poolParam]
     s_reluCache:reluForward[a];
     s:s_reluCache 0;
     reluCache:s_reluCache 1;
-    out_poolCache:maxPoolForwardNaive[s;poolParam];
+    out_poolCache:maxPoolForwardFast[s;poolParam];
     out:out_poolCache 0;
     poolCache:out_poolCache 1;
-    cache:(convCache;reluCache;poolCache);
+    cache:`convCache`reluCache`poolCache!(convCache;reluCache;poolCache);
     (out;cache)
     };
 
 
 convReluPoolBackward:{[dout;cache]
-    convCache:cache 0;
-    reluCache:cache 1;
-    poolCache:cache 2;
-    ds:maxPoolBackwardNaive[dout;poolCache];
+    convCache:cache`convCache;
+    reluCache:cache`reluCache;
+    poolCache:cache`poolCache;
+    ds:maxPoolBackwardFast[dout;poolCache];
     da:reluBackward[ds;reluCache];
     dxDwDb:convBackwardNaive[da;convCache];
     dxDwDb
