@@ -1,5 +1,7 @@
+/ ######### simple neural net ###########
+\l load_all.q
+
 if[not 0>system"s";-1"this script should be run with multi process, so start with negative s, e.g. \"q run.q -s -2\"";exit 0];
-system"l neural_net.q"
 system"l load_cifar_data.q"
 
 lg "First, we run a toy model with small data sets, 

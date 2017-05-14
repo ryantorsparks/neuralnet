@@ -1,4 +1,4 @@
-\l nn_util.q
+/ ########## softmax functions ############
 
 / softmax loss in kdb
 / reg:0.1

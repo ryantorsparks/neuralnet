@@ -1,4 +1,4 @@
-\l nn_util.q
+/ dropout funcs
 
 / dropout forward pass function
 / inputs:

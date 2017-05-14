@@ -1,5 +1,4 @@
 / from http://cs231n.github.io/convolutional-networks/
-\l nn_util.q
 
 / pool function
 / @param m - matrix that we want to decrease
@@ -231,8 +230,7 @@ maxPoolBackwardReshape:{[dout;cache]
 
     dxReshaped:xReshaped*0f;
     outNewaxis:newAxes[out;3 5];
-    mask:flip mwhere (=). broadcastArrays[xreshapedp;outnewaxisp];
-    mask:(=). broadcastArrays[xreshapedp;outnewaxisp];
+    mask:(=). broadcastArrays[xReshaped;outNewaxis];
     maskInds:flip mwhere mask;
     doutNewaxis:newAxes[dout;3 5];
     doutBroadcast: first broadcastArrays[doutNewaxis;dxReshaped];

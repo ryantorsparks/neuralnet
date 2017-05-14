@@ -1,4 +1,4 @@
-\l nn_util.q
+/ linear svm funcs
 
 svmLossVectorized:{[w;x;y;delta]
     scores:dot[x;w];

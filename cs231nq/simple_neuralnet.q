@@ -1,5 +1,4 @@
-\l nn_util.q
-\l numerical_gradient.q
+/ ############ simple neural net funcs ###########
 
 / like np.random.randn
 wInit:randArray
@@ -13,7 +12,7 @@ checkInputs:{[d;specials]
  };
 
 / relu second layer, softmax output layer 
-twoLayerNet:{[d]
+simpleTwoLayerNet:{[d]
     checkInputs[d;()];
     w1:d`w1;
     w2:d`w2;
@@ -54,7 +53,7 @@ twoLayerNet:{[d]
 / e.g.
 / res:{[d;inds]sgd[@[d;`sampleIndices;:;inds]]}/[get`:assignmentData/inputd;get`:assignmentData/randomInds]  
 / res:sgd/[1000;d:`inputTrain`outputTrain`nHidden`nClass`reg`learnRate`learnRateDecay`std`batchSize!(xTrain;yTrain;50;10;0.5;1e-4;0.95;1e-4;200)]
-sgd:{[d]
+simpleSgd:{[d]
     if[not `numTrain in key d;d[`numTrain]:count d`inputTrain];
     if[not `numFeatures in key d;d[`numFeatures]:count d[`inputTrain] 0];
     if[not `cnt in key d;d[`cnt]:0];
@@ -76,7 +75,7 @@ sgd:{[d]
     d[`x`y]:d[`inputTrain`outputTrain]@\:sampleIndices;
     checkInputs[d;`learnRate];
     
-    lossGrad:twoLayerNet[d];
+    lossGrad:simpleTwoLayerNet[d];
     d[`loss],:lossGrad 0;
     grad:lossGrad 1;
     d[vars]-:abs[d`learnRate]*grad vars:`w1`b1`w2`b2;
@@ -105,7 +104,7 @@ varyHyperParams:{[startDict;iterations;numRandoms;lrRange;regRange]
           d[`learnRate`reg`inputTrain`outputTrain]:(lr;reg;xTrain;yTrain);
           lgToken:" lr = ",string[lr],", reg = ",string reg;
           lg "running ",string[n]," iterations of sgd for ",lgToken;
-          res:n sgd/d;
+          res:n simpleSgd/d;
           valAccuracy: avg yVal=predict `x`w1`w2`b1`b2!enlist[xVal],res`w1`w2`b1`b2;
           lg "validation accuracy for ",lgToken," is ",string valAccuracy;
           (lr;reg;valAccuracy;res`w1`w2`b1`b2)
@@ -127,7 +126,7 @@ varyHyperParams:{[startDict;iterations;numRandoms;lrRange;regRange]
 / list of length N, predicted labels of elements of x (should
 /   be between 0 and C inclusive, e.g digits will be from 0 to 9).
 / e.g:
-/    res:sgd/[1000;d:`inputTrain`outputTrain`nHidden`nClass`reg`learnRate`learnRateDecay`std`batchSize!(xTrain;yTrain;50;10;0.5;1e-4;0.95;1e-4;200)]
+/    res:simpleSgd/[1000;d:`inputTrain`outputTrain`nHidden`nClass`reg`learnRate`learnRateDecay`std`batchSize!(xTrain;yTrain;50;10;0.5;1e-4;0.95;1e-4;200)]
 /    predict `x`w1`w2`b1`b2!enlist[xVal],res`w1`w2`b1`b2;
 predict:{[d]
     a1:0|z1:dot[d`x;d`w1]+\:d`b1;

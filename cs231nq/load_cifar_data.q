@@ -1,4 +1,8 @@
-\l nn_util.q
+/ loading in cifar data
+/ set cifarMode to be `unflattened if you want to preserve
+/ the original dimensions, otherwise it will default to 
+/ `flattened, which turns into 49000 examples, each of a 3072 long vector
+
 cifarMode:@[value;`cifarMode;{`flattened}]
 
 dataDir: `:CIFAR_data;

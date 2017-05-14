@@ -1,4 +1,4 @@
-\l nn_util.q
+/ batch normalisation funcs
 
 / forward pass for batch normalization
 / inputs: 

@@ -1,3 +1,6 @@
+/ functions for evalutating the (slow) numerical gradients
+/ which we use as sanity checks
+
 h:0.00001;
 
 evalNumericalGradient:{[f;input]

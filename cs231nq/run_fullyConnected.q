@@ -1,8 +1,4 @@
-\l nn_util.q
-\l fullyConnected.q
-\l numerical_gradient.q
-\l softmax.q
-\l linear_svm.q
+\l load_all.q
 cifarMode:`unflattened
 \l load_cifar_data.q
 
