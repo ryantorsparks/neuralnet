@@ -175,7 +175,8 @@ zeroPad:{[x;pad]
 
 / dot indexing funtion, doing  (deep matrix) ./:inds is slow, so this
 / just creates the list of inds we need for doing razeo[deep matrix] @list of inds
-dotIndexesAsList:{[m;dotInds] sum flip dotInds*\:reverse prds 1,-1_reverse shape m}
+//dotIndexesAsList:{[m;dotInds] sum flip dotInds*\:reverse prds 1,-1_reverse shape m}
+dotIndexesAsList:{[m;dotInds] sum flip[dotInds]*reverse prds 1,-1_reverse shape m}
 
 / faster version of doing deepMatrix ./: dotInds
 matrixDotInds:{[m;dotInds] razeo[m]@dotIndexesAsList[m;dotInds]}

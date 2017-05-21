@@ -337,7 +337,35 @@ convReluPoolBackward:{[dout;cache]
     dxDwDb
  };
 
+/ when doing conv backward fast, we need to initialize a few variables
+/ that are very slow to create, but are used again and again
+/ @params d - dict, should have `N`C`H`W`HH`WW`pad`stride`outh`outw
+/ @example .conv.initBackwardVars[`N`C`H`W`HH`WW`pad`stride!50 3 32 32 7 7 3 1]
+.conv.initBackwardVars:{[d]
+    stride:d`stride;
+    pad:d`pad;
+    Hpad:d[`H]+2*pad;
+    Wpad:d[`W]+2*pad;
+    d[`outh`outw]:1+(Hpad-d`HH;Wpad-d`WW)div stride;
+    inds:{raze x,/:\:y}/[til each d`N`C`HH`WW`outh`outw];
+    .conv.colValInds:inds[;1 2 3 0 4 5];
 
+    xpadInds:(inds[;0];inds[;1];inds[;2]+inds[;4]*stride;inds[;3]+stride*inds[;5]);
+    .conv.gxpadInds:group flip xpadInds;
+
+    .conv.padResIndOrder:key[.conv.gxpadInds]?cross/[til each (d`N;d`C;Hpad;Wpad)];
+    .conv.padResDims:(d`N;d`C;Hpad;Wpad);
+    .conv.finalIndex:(::;::;pad _ neg[pad]_ til Hpad;pad _ neg[pad] _ til Wpad);
+ };
+ 
+/ used by convBackwardFast, needs to have .conv.initBackwardVars run first
+col2Im6d:{[dxCols]   
+    colVals:matrixDotInds[dxCols;.conv.colValInds];
+    gRes:sum each colVals@.conv.gxpadInds;
+    padResFlat:value[gRes]@.conv.padResIndOrder;
+    padRes:.conv.padResDims#padResFlat;
+    .[padRes;.conv.finalIndex] 
+ };
 
 
 
