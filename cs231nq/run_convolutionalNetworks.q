@@ -128,3 +128,17 @@ dbNum:numericalGradientArray[(first convReluForward[x;w;;convParam]@);b;dout;`b]
 
 lg "check relative error against numerical gradient"
 relError'[value dxDwDb;(dxNum;dwNum;dbNum)]
+
+lg "##############################
+    Three layer convnet
+    ##############################"
+
+x:rad 50 3 32 32
+y:50?10
+initd:threeLayerConvNet.init `x`y!(x;y)
+lossGrad:threeLayerConvNet.loss initd
+lg "initial loss (no regularization):"
+lossGrad 0
+lossGrad2:threeLayerConvNet.loss @[initd;`reg;:;0.5]
+lg "initial loss (with regularization):"
+lossGrad2 0

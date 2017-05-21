@@ -135,8 +135,15 @@ sumAxes:{[m;axes] {[x;ind].[x;ind#(::);(enlist sum@)]}/[m;asc axes]}
 / null dictionary
 nulld:enlist[`]!enlist(::)
 
+/ append layer number to each item in key d
+renameKey:{[layer;dict] (`$string[key dict],\:string layer)!value dict}
+
 / transform dict `dx`dw`db!(a;b;c) -> `dx3`dw3`db3!(a;b;c) (for input layer 3)
-renameKey:{[layer;dict] (`$1_'string[key dict],\:string layer)!value dict};
+removeDFromDictKey:{[dict] (`$1_'string key dict)!value dict}
+renameGradKey:{[layer;dict]renameKey[layer;removeDFromDictKey dict]}
+
+
+
 
 / get model params
 / e.g. getModelValue[d;`params]
@@ -153,4 +160,27 @@ getModelValue:{[d;x]
 dget:{[d;v;default]
     $[v in key d;d v;default]
  };
+
+/ zeropad in n dimensions
+/ e.g. zeroPad[2 3 4 5#1f;2]
+zeroPad:{[x;pad]
+    shapex:shape x;
+    padf:{y,(til x),y}[;pad#0N];
+    c:2<count shapex;
+    newShape:(c#shapex),(2*pad)+c _ shape x;
+    cntList:$[c;enlist til shapex 0;()],padf each c _ shape x;
+    inds:{raze y+/:x*sum not null y}/[cntList];
+    newShape#0^razeo[x]@inds
+ };
+
+/ dot indexing funtion, doing  (deep matrix) ./:inds is slow, so this
+/ just creates the list of inds we need for doing razeo[deep matrix] @list of inds
+dotIndexesAsList:{[m;dotInds] sum flip dotInds*\:reverse prds 1,-1_reverse shape m}
+
+/ faster version of doing deepMatrix ./: dotInds
+matrixDotInds:{[m;dotInds] razeo[m]@dotIndexesAsList[m;dotInds]}
+
+
+
+
 

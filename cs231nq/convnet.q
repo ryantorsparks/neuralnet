@@ -14,18 +14,6 @@ pool:{[m;fSize;stride]
     (2#strides)#max razeo[m] (raze til[stride]+/:n*til stride)+\:raze (stride*til strides)+/:(n*stride)*til strides
  };
 
-/ zeropad in n dimensions
-/ e.g. zeroPad[2 3 4 5#1f;2]
-zeroPad:{[x;pad]
-    shapex:shape x;
-    padf:{y,(til x),y}[;pad#0N];
-    c:2<count shapex;
-    newShape:(c#shapex),(2*pad)+c _ shape x;
-    cntList:$[c;enlist til shapex 0;()],padf each c _ shape x;
-    inds:{raze y+/:x*sum not null y}/[cntList];
-    newShape#0^razeo[x]@inds
- };
-
 / convolution function - forward pass
 / @param V - Volume (matrix, not padded yet, should be square)
 / @param F - Filter (matrix, should be square)
