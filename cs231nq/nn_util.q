@@ -38,6 +38,15 @@ reshapeM:{[m1;m2Shape] m2Shape#razeo m1}
 / equivalient to flip rehsape[x;w], but about 10-15% faster for typical use case here
 flipReshape:{[x;w]razeo[x] @ ((cw*til cx:count x)+/:til cw:count w) }
 
+/ generate dot index versions of a matrix shape
+/ e.g. a 2x3 matrix -> (0 0;0 1;0 2;...;2 0;2 1;2 2)
+matrixInds:(cross/)til each
+
+/ very slow dumb way of an ndimensional transpose,
+/ probably not a necessary function, if really need to do this, should implement
+/ in c
+flipn:{[m;flipInds] newshape#razeo[m] @.[matrixInds shapem;(::;flipInds)]?matrixInds[newshape:(shapem:shape m)@flipInds]}
+
 / matrix multiply, use qml if possible
 dot:@[{system"l qml.q";lg"setting dot as qml.mm";.qml.mm};();{"no qml, dot is mmu";mmu}];
 

@@ -1,8 +1,7 @@
-
 #include"k.h"
 #include <stdio.h>
 // args are (dx_cols [6 dim matrix]; xpad [4 dim matrix]; arg1shape (list of 6 longs, shape of arg1);pad (long); stride (long))
-K f6e(K arg1, K arg2, K arg1shape, K padsize, K stridesize){
+K col2im6d(K arg1, K arg2, K arg1shape, K padsize, K stridesize){
     // arg1 has shape (C;HH;WW;N;H;W), extract into vars
     long shape[arg1->n];
     int i;
@@ -27,7 +26,7 @@ K f6e(K arg1, K arg2, K arg1shape, K padsize, K stridesize){
               for(ww=0;ww<WW;++ww){
                   for(h=0;h<out_h;++h){
                       for(w=0;w<out_w;++w){
-                          kJ(kK(kK(kK(arg2)[n])[c])[(stride*h+hh)])[stride*w+ww] += kJ(kK(kK(kK(kK(kK(arg1)[c])[hh])[ww])[n])[h])[w];
+                          kF(kK(kK(kK(arg2)[n])[c])[(stride*h+hh)])[stride*w+ww] += kF(kK(kK(kK(kK(kK(arg1)[c])[hh])[ww])[n])[h])[w];
                       }
                   }
               }
