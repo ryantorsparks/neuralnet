@@ -190,7 +190,12 @@ dotIndexesAsList:{[m;dotInds] sum flip[dotInds]*reverse prds 1,-1_reverse shape 
 / faster version of doing deepMatrix ./: dotInds
 matrixDotInds:{[m;dotInds] razeo[m]@dotIndexesAsList[m;dotInds]}
 
-
-
-
-
+// stride stuff
+/ strides, the number of bytes to step when going through matrix
+/ hard coded to only work for longs and floats (8 byte)
+/ example
+/ m:{x#prd[x]?1000.}50 3 38 38
+/ newshape: 3 7 7 50 32 32
+/ strides: 1444 38 1 4332 38 1
+/ asStrided[m;newshape;strides]
+asStrided:{[m;newshape;strides] revshape:reverse newshape;revstrides:reverse strides;newshape#{raze x+/:raze y}/[revstrides[0]*til revshape[0];(1_revstrides)*'til each 1_revshape]}

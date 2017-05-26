@@ -68,6 +68,22 @@ convForwardNaive:{[x;w;b;convParam]
     (out;cache)
  };
 
+/ also known as, convForwardStrides
+convForwardFast:{[x;w;b;convParam]
+    stride:convParam`stride;
+    pad:convParam`pad;
+    xShape:shape x;
+    N:xShape 0;C:xShape 1;H:xShape 2;W:xShape 3;
+    wShape:shape w;
+    F:wShape 0; HH:wShape 2;WW:wShape 3;
+    hout:`long$1+(H+(2*pad)-HH)%stride;
+    wout:`long$1+(W+(2*pad)-WW)%stride;
+    outShape:N,F,hout,wout;
+    / assumes x is 4 dimensions
+    xPad:.[x;(::;::);zeroPad[;pad]];
+    
+
+
 / convolution function, backward pass
 / @param dout - upstream derivatives
 / @param cache - (x;w;b;convParam), second output of convForwardNaive
@@ -312,7 +328,8 @@ convReluBackward:{[dout;cache]
     dxDwDb
  };
 
-convReluPoolForward:{[x;w;b;convParam;poolParam]
+/ to be phased out
+convReluPoolForwardNaive:{[x;w;b;convParam;poolParam]
     a_convCache:convForwardNaive[x;w;b;convParam];
     a:a_convCache 0;
     convCache:a_convCache 1;
@@ -326,6 +343,19 @@ convReluPoolForward:{[x;w;b;convParam;poolParam]
     (out;cache)
     };
 
+convReluPoolForward:{[x;w;b;convParam;poolParam]
+    a_convCache:convForwardFast[x;w;b;convParam;
+    a:a_convCache 0;
+    convCache:a_convCache 1;
+    s_reluCache:reluForward[a];
+    s:s_reluCache 0;
+    reluCache:s_reluCache 1;
+    out_poolCache:maxPoolForwardFast[s;poolParam];
+    out:out_poolCache 0;
+    poolCache:out_poolCache 1;
+    cache:`convCache`reluCache`poolCache!(convCache;reluCache;poolCache);
+    (out;cache)
+    };
 
 convReluPoolBackward:{[dout;cache]
     convCache:cache`convCache;
