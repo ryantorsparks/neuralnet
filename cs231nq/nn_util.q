@@ -138,8 +138,13 @@ broadcastArrays:{[x;y]
 
 / sum Axes function, equivalent to np.sum(m,axis=(inds),keepdims=True)
 / e.g. m=rad 2 3 4 5 6 7
-/ sumAxes[m;3 5] is equivlanet to np.sum(m,axis=(3,5),keepdims=True)
-sumAxes:{[m;axes] {[x;ind].[x;ind#(::);(enlist sum@)]}/[m;asc axes]}
+/ sumAxesKeepDims[m;3 5] is equivlanet to np.sum(m,axis=(3,5),keepdims=True)
+sumAxesKeepDims:{[m;axes] {[x;ind].[x;ind#(::);(enlist sum@)]}/[m;asc axes]}
+
+/ collapse axes version of sumAxes
+/ e.g. m=rad 2 3 4 5 6 7
+/ sumAxesKeepDims[m;3 5] is equivlanet to np.sum(m,axis=(3,5))
+sumAxes:{[m;axes]{[x;ind].[x;ind#(::);sum]}/[m;desc axes]} 
 
 / null dictionary
 nulld:enlist[`]!enlist(::)
@@ -184,7 +189,6 @@ zeroPad:{[x;pad]
 
 / dot indexing funtion, doing  (deep matrix) ./:inds is slow, so this
 / just creates the list of inds we need for doing razeo[deep matrix] @list of inds
-//dotIndexesAsList:{[m;dotInds] sum flip dotInds*\:reverse prds 1,-1_reverse shape m}
 dotIndexesAsList:{[m;dotInds] sum flip[dotInds]*reverse prds 1,-1_reverse shape m}
 
 / faster version of doing deepMatrix ./: dotInds
@@ -193,9 +197,14 @@ matrixDotInds:{[m;dotInds] razeo[m]@dotIndexesAsList[m;dotInds]}
 // stride stuff
 / strides, the number of bytes to step when going through matrix
 / hard coded to only work for longs and floats (8 byte)
-/ example
-/ m:{x#prd[x]?1000.}50 3 38 38
-/ newshape: 3 7 7 50 32 32
-/ strides: 1444 38 1 4332 38 1
-/ asStrided[m;newshape;strides]
-asStrided:{[m;newshape;strides] revshape:reverse newshape;revstrides:reverse strides;newshape#{raze x+/:raze y}/[revstrides[0]*til revshape[0];(1_revstrides)*'til each 1_revshape]}
+/ example:
+/   m:{x#prd[x]?1000.}50 3 38 38
+/   newshape: 3 7 7 50 32 32
+/   strides: 1444 38 1 4332 38 1
+/   asStrided[m;newshape;strides]
+asStrided:{[m;newshape;strides] newshape#razeo[m]@{raze x+/:raze y}/[reverse[strides]*'til each reverse newshape]}
+
+/ load in col2im c funtion
+lg "attempting to load col2im6dInner function, must be a col2im6dInner.so object in $QHOME";
+@[{`col2im6dInner set `col2im6dInner 2:(`col2im6dInner;5)};();{lg"Warning: failed to load col2im6dInner c function"}];
+

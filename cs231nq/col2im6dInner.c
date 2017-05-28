@@ -1,7 +1,7 @@
 #include"k.h"
 #include <stdio.h>
 // args are (dx_cols [6 dim matrix]; xpad [4 dim matrix]; arg1shape (list of 6 longs, shape of arg1);pad (long); stride (long))
-K col2im6d(K arg1, K arg2, K arg1shape, K padsize, K stridesize){
+K col2im6dInner(K arg1, K arg2, K arg1shape, K padsize, K stridesize){
     // arg1 has shape (C;HH;WW;N;H;W), extract into vars
     long shape[arg1->n];
     int i;

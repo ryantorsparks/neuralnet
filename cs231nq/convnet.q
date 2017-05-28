@@ -1,5 +1,6 @@
 / from http://cs231n.github.io/convolutional-networks/
 
+
 / pool function
 / @param m - matrix that we want to decrease
 / @param fSize - filter size
@@ -70,6 +71,8 @@ convForwardNaive:{[x;w;b;convParam]
 
 / also known as, convForwardStrides
 convForwardFast:{[x;w;b;convParam]
+   
+    / unpack variables
     stride:convParam`stride;
     pad:convParam`pad;
     xShape:shape x;
@@ -79,9 +82,33 @@ convForwardFast:{[x;w;b;convParam]
     hout:`long$1+(H+(2*pad)-HH)%stride;
     wout:`long$1+(W+(2*pad)-WW)%stride;
     outShape:N,F,hout,wout;
+
     / assumes x is 4 dimensions
+    if[not 4= count xShape;'"convForwardFast requires x to be 4 dimensions"];
     xPad:.[x;(::;::);zeroPad[;pad]];
+    H+:2*pad;
+    W+:2*pad;
+    outh:1+(H-HH)div stride;
+    outw:1+(W-WW)div stride;
     
+    / perform an im2col operation by picking clever strides
+    strideShape:C,HH,W,N,outh,outw;
+    strides:(H*W; W; 1; C*H*W; strideShape*W;strideShape);
+    xCols: asStrides[xPad;strideShape;strides];
+    
+    / reshape from a 6D into a 2D matrix
+    xCols:reshapeM[xCols;(C*HH*WW;N*outh*outw)];
+
+    / now all our convolutions become one big matrix multiply
+    res:((F;0N)#razeo wreshape1)
+    res:dot[reshapeM[w;(F;0N)];xCols]+b;
+
+    / reshape the output
+    out:flip reshapeM[res;(F;N;outh;outw)];
+
+    cache:`x`w`b`convParam`xCols!(x;w;b;convParam;xCols);
+    (out;cache)
+ };
 
 
 / convolution function, backward pass
@@ -239,7 +266,7 @@ maxPoolBackwardReshape:{[dout;cache]
     doutNewaxis:newAxes[dout;3 5];
     doutBroadcast: first broadcastArrays[doutNewaxis;dxReshaped];
     dxReshaped:./[dxReshaped;maskInds;:;doutBroadcast ./: maskInds];
-    dxReshaped%:last broadcastArrays[dxReshaped;sumAxes[mask;3 5]];
+    dxReshaped%:last broadcastArrays[dxReshaped;sumAxesKeepDims[mask;3 5]];
     dx:reshapeM[dxReshaped;shape x];
     dx
  };
@@ -357,7 +384,8 @@ convReluPoolForward:{[x;w;b;convParam;poolParam]
     (out;cache)
     };
 
-convReluPoolBackward:{[dout;cache]
+/ to be phased out
+convReluPoolBackwardNaive:{[dout;cache]
     convCache:cache`convCache;
     reluCache:cache`reluCache;
     poolCache:cache`poolCache;
@@ -366,6 +394,18 @@ convReluPoolBackward:{[dout;cache]
     dxDwDb:convBackwardNaive[da;convCache];
     dxDwDb
  };
+
+/ fast version
+convReluPoolBackward:{[dout;cache]
+    convCache:cache`convCache;
+    reluCache:cache`reluCache;
+    poolCache:cache`poolCache;
+    ds:maxPoolBackwardFast[dout;poolCache];
+    da:reluBackward[ds;reluCache];
+    dxDwDb:convBackwardFast[da;convCache];
+    dxDwDb
+ };
+
 
 / when doing conv backward fast, we need to initialize a few variables
 / that are very slow to create, but are used again and again
@@ -388,6 +428,59 @@ convReluPoolBackward:{[dout;cache]
     .conv.finalIndex:(::;::;pad _ neg[pad]_ til Hpad;pad _ neg[pad] _ til Wpad);
  };
  
+/ used by convReluPoolBackward
+/ dout/da, cache/convCache
+convBackwardFast:{[dout;cache]
+    x:cache`x;
+    w:cache`w;
+    b:cache`b;
+    convParam:cache`convParam;
+    xCols:cache`xCols;
+  
+    xShape:shape x;
+    N:xShape 0;
+    C:xShape 1;
+    H:xShape 2;
+    W:xShape 3;  
+
+    wShape:shape w;
+    F:wShape 0;
+    HH:wShape 2;   
+    WW:wShape 3;
+   
+    doutShape:shape dout;
+    outh:doutShape 0;
+    outw:doutShape 1;
+
+    db:sumAxes[dout;0 2 3];
+    doutReshaped:reshapeM[flip dout;(F;0N)];
+    /CHECK!!!
+    dw:reshapeM[dot[doutReshaped;flip xCols];wShape];
+    
+    dxCols:dot[flip reshapeM[w;(F;0N)];doutReshaped];
+    dxCols:reshapeM[dxCols;C,HH,W,N,outh,outw];
+
+    dx:col2imd[dxCols;
+    `dx`dw`db!(dx;dw;db)
+ };
+
+col2im6d:{[d]
+    stride:d`stride;
+    pad:d`pad;
+    outh:1+(d[`H]+(2*pad)-d`HH)div stride;
+    outw:1+(d[`W]+(2*pad)-d`WW)div stride;
+    xPadded:(d`N;d`C;d[`H]+2*pad;d[`W]+2*pad)#0f;
+    xCols:d`xCols;    
+    col2im6dShape:(d`N;d`C;d`HH;d`WW;outh;outw);
+
+    / call out to c for this function, muuuch too slow in q unfortunately 
+    res:col2im6dInner[xCols;xPadded;col2im6dShape;pad;stride];
+
+    / if we've padded, index out
+    if[pad>0;res:.[res;(::;::;pad _ neg[pad]_ til Hpad;pad _ neg[pad] _ til Wpad)]];
+    res
+ };
+
 / used by convBackwardFast, needs to have .conv.initBackwardVars run first
 col2Im6d:{[dxCols]   
     colVals:matrixDotInds[dxCols;.conv.colValInds];
