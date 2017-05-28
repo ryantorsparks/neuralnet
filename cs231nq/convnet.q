@@ -93,14 +93,13 @@ convForwardFast:{[x;w;b;convParam]
     
     / perform an im2col operation by picking clever strides
     strideShape:C,HH,W,N,outh,outw;
-    strides:(H*W; W; 1; C*H*W; strideShape*W;strideShape);
-    xCols: asStrides[xPad;strideShape;strides];
+    strides:(H*W; W; 1; C*H*W; stride*W;stride);
+    xCols: asStrided[xPad;strideShape;strides];
     
     / reshape from a 6D into a 2D matrix
     xCols:reshapeM[xCols;(C*HH*WW;N*outh*outw)];
 
     / now all our convolutions become one big matrix multiply
-    res:((F;0N)#razeo wreshape1)
     res:dot[reshapeM[w;(F;0N)];xCols]+b;
 
     / reshape the output
@@ -371,7 +370,7 @@ convReluPoolForwardNaive:{[x;w;b;convParam;poolParam]
     };
 
 convReluPoolForward:{[x;w;b;convParam;poolParam]
-    a_convCache:convForwardFast[x;w;b;convParam;
+    a_convCache:convForwardFast[x;w;b;convParam];
     a:a_convCache 0;
     convCache:a_convCache 1;
     s_reluCache:reluForward[a];
@@ -382,7 +381,7 @@ convReluPoolForward:{[x;w;b;convParam;poolParam]
     poolCache:out_poolCache 1;
     cache:`convCache`reluCache`poolCache!(convCache;reluCache;poolCache);
     (out;cache)
-    };
+ };
 
 / to be phased out
 convReluPoolBackwardNaive:{[dout;cache]
@@ -460,20 +459,23 @@ convBackwardFast:{[dout;cache]
     dxCols:dot[flip reshapeM[w;(F;0N)];doutReshaped];
     dxCols:reshapeM[dxCols;C,HH,W,N,outh,outw];
 
-    dx:col2imd[dxCols;
+    dx:col2im6d `xCols`stride`pad`H`HH`W`WW`N`C!(xCols;convParam`stride;convParam`pad;H;HH;W;WW;N;C);
     `dx`dw`db!(dx;dw;db)
  };
 
 col2im6d:{[d]
     stride:d`stride;
     pad:d`pad;
-    outh:1+(d[`H]+(2*pad)-d`HH)div stride;
-    outw:1+(d[`W]+(2*pad)-d`WW)div stride;
-    xPadded:(d`N;d`C;d[`H]+2*pad;d[`W]+2*pad)#0f;
+    Hpad:d[`H]+2*pad;
+    Wpad:d[`W]+2*pad;
+    outh:1+(Hpad-d`HH)div stride;
+    outw:1+(Wpad-d`WW)div stride;
+    xPadded:(d`N;d`C;Hpad;Wpad)#0f;
     xCols:d`xCols;    
-    col2im6dShape:(d`N;d`C;d`HH;d`WW;outh;outw);
+    col2im6dShape:(d`C;d`HH;d`WW;d`N;outh;outw);
 
     / call out to c for this function, muuuch too slow in q unfortunately 
+    xCols:reshapeM[xCols;col2im6dShape];
     res:col2im6dInner[xCols;xPadded;col2im6dShape;pad;stride];
 
     / if we've padded, index out
