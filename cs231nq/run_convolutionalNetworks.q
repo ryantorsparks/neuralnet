@@ -142,3 +142,27 @@ lossGrad 0
 lossGrad2:threeLayerConvNet.loss @[initd;`reg;:;0.5]
 lg "initial loss (with regularization):"
 lossGrad2 0
+
+lg "##############################
+    Gradient Check
+    ##############################"
+
+lg "After the loss looks reasonable, use numeric gradient checking to make sure 
+    that your backward pass is correct. When you use numeric gradient checking 
+    you should use a small amount of artifical data and a small number of 
+    neurons at each layer"
+
+numInputs:2
+dimInput:3 16 16
+reg:0.0
+nClass:10
+x:rad numInputs,dimInput
+y:numInputs?nClass
+
+startd:`numFilters`filterSize`dimInput`dimHidden`x`y!(3;3;dimInput;7;x;y)
+initd: threeLayerConvNet.init startd
+lossGrad:threeLayerConvNet.loss initd
+
+lg "as a sanity check, compare numerical gradients for reg in 0.0 3.14"
+gradCheckDict:@[(raze key[startd],`useBatchNorm`wScale`w1`w2`w3`b1`b2`b3)#initd;`model;:;`threeLayerConvNet]
+compareNumericalGradients[gradCheckDict;0f];

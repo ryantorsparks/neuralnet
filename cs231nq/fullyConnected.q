@@ -505,18 +505,18 @@ threeLayerConvNet.loss:{[d]
     loss:dataLoss+regLoss;
 
     / back propagation into output layer
-    grads:renameKey[3;] affineBackward[dscores;cacheScores];
-    grads[`dw3]+:d[`reg]*d`w3;
+    grads:renameGradKey[3;] affineBackward[dscores;cacheScores];
+    grads[`w3]+:d[`reg]*d`w3;
 
     / backprop into first layer
     / both return `dx`dw`db, batchnorm also has `dbeta`dgamma
-    grads,:renameKey[2;] $[d`useBatchNorm;affineNormReluBackward;affineReluBackward][grads`dx3;cacheHiddenLayer];
-    grads[`dw2]+:d[`reg]*d`w2;
+    grads,:renameGradKey[2;] $[d`useBatchNorm;affineNormReluBackward;affineReluBackward][grads`x3;cacheHiddenLayer];
+    grads[`w2]+:d[`reg]*d`w2;
 
     / finally, backprop into conv layer
     / same return as grads2
-    grads,:renameKey[1;] $[d`useBatchNorm;convNormReluPoolBackward;convReluPoolBackward][reshapeM[grads`dx2;convShape];cacheConvLayer];
-    grads[`dw1]+:d[`reg]*d`w1;
+    grads,:renameGradKey[1;] $[d`useBatchNorm;convNormReluPoolBackward;convReluPoolBackward][reshapeM[grads`x2;convShape];cacheConvLayer];
+    grads[`w1]+:d[`reg]*d`w1;
 
     / `dx1`dw1`db1 .... `dx3`dw3`db3 (and possibly `beta1/2`gamma1/2)
     (loss;grads)
