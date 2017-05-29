@@ -240,7 +240,7 @@ maxPoolForwardReshape:{[x;poolParam]
     poolWidth:poolParam`poolWidth;
     stride:poolParam`stride;
     if[any 1_differ poolHeight,poolWidth,stride;'"pool params invalid"];
-    xReshaped:(N;C;H div poolHeight;poolHeight;W div poolWidth;poolWidth)#razeo x;
+    xReshaped:reshapeM[x;(N;C;H div poolHeight;poolHeight;W div poolWidth;poolWidth)];
     out:maxAxes[xReshaped;3 4];
     cache:`x`xReshaped`out!(x;xReshaped;out);
     (out;cache)
@@ -261,10 +261,10 @@ maxPoolBackwardReshape:{[dout;cache]
     dxReshaped:xReshaped*0f;
     outNewaxis:newAxes[out;3 5];
     mask:(=). broadcastArrays[xReshaped;outNewaxis];
-    maskInds:flip mwhere mask;
+    maskInds:where razeo mask;
     doutNewaxis:newAxes[dout;3 5];
     doutBroadcast: first broadcastArrays[doutNewaxis;dxReshaped];
-    dxReshaped:./[dxReshaped;maskInds;:;doutBroadcast ./: maskInds];
+    dxReshaped:shape[dxReshaped]#@[razeo dxReshaped;maskInds;:;razeo[doutBroadcast]@maskInds];
     dxReshaped%:last broadcastArrays[dxReshaped;sumAxesKeepDims[mask;3 5]];
     dx:reshapeM[dxReshaped;shape x];
     dx
@@ -448,8 +448,8 @@ convBackwardFast:{[dout;cache]
     WW:wShape 3;
    
     doutShape:shape dout;
-    outh:doutShape 0;
-    outw:doutShape 1;
+    outh:doutShape 2;
+    outw:doutShape 3;
 
     db:sumAxes[dout;0 2 3];
     doutReshaped:reshapeM[flip dout;(F;0N)];
@@ -457,7 +457,7 @@ convBackwardFast:{[dout;cache]
     dw:reshapeM[dot[doutReshaped;flip xCols];wShape];
     
     dxCols:dot[flip reshapeM[w;(F;0N)];doutReshaped];
-    dxCols:reshapeM[dxCols;C,HH,W,N,outh,outw];
+    dxCols:reshapeM[dxCols;C,HH,WW,N,outh,outw];
 
     dx:col2im6d `xCols`stride`pad`H`HH`W`WW`N`C!(xCols;convParam`stride;convParam`pad;H;HH;W;WW;N;C);
     `dx`dw`db!(dx;dw;db)

@@ -16,7 +16,7 @@ affineBackward:{[dout;cached]
     b:cached `b;
     dw:dot[flipReshape[x;w];dout];
     db:sum dout;
-    dx:shape[x]#razeo dot[dout;flip w];
+    dx:reshapeM[dot[dout;flip w];shape x];
     `dx`dw`db!(dx;dw;db)
  };
 
@@ -479,7 +479,7 @@ threeLayerConvNet.loss:{[d]
 
     / forward pass into hidden layera
     / rshape x
-    x:(convShape 0;prd convShape 1 2 3)#razeo convLayer;
+    x:reshapeM[convLayer;(convShape 0;prd convShape 1 2 3)];
     hiddenCache:$[d`useBatchNorm;
                     affineNormReluForward `x`w`b`gamma`beta`bnParam!(x;d`w2;d`b2;d`gamma2;d`beta2;d`bnParam2);
                     affineReluForward`x`w`b!(x;d`w2;d`b2)
@@ -515,7 +515,7 @@ threeLayerConvNet.loss:{[d]
 
     / finally, backprop into conv layer
     / same return as grads2
-    grads,:renameKey[1;] $[d`useBatchNorm;convNormReluPoolBackward;convReluPoolBackward][convShape#razeo grads`dx2;cacheConvLayer];
+    grads,:renameKey[1;] $[d`useBatchNorm;convNormReluPoolBackward;convReluPoolBackward][reshapeM[grads`dx2;convShape];cacheConvLayer];
     grads[`dw1]+:d[`reg]*d`w1;
 
     / `dx1`dw1`db1 .... `dx3`dw3`db3 (and possibly `beta1/2`gamma1/2)
