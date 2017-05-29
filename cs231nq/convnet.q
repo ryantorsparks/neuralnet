@@ -92,7 +92,7 @@ convForwardFast:{[x;w;b;convParam]
     outw:1+(W-WW)div stride;
     
     / perform an im2col operation by picking clever strides
-    strideShape:C,HH,W,N,outh,outw;
+    strideShape:C,HH,WW,N,outh,outw;
     strides:(H*W; W; 1; C*H*W; stride*W;stride);
     xCols: asStrided[xPad;strideShape;strides];
     
@@ -190,7 +190,6 @@ maxPoolForwardNaive:{[x;poolParam]
                 {[d;inds]
                     / inds (n;c;i;j)
                     {[d;inds]
-                        tempd::d;tempinds::inds;
                         poolI:inds[2]*d`stride;
                         poolJ:inds[3]*d`stride;
                         maxo .[d`x;(inds 0;inds 1;poolI+til d`HH;poolJ+til d`WW)]
@@ -333,6 +332,17 @@ maxPoolBackwardNaive:{[dout;cache]
 / @param b - bias param
 / @param convParam - dict
 convReluForward:{[x;w;b;convParam]
+    aConvCache:convForwardFast[x;w;b;convParam];
+    a:aConvCache 0;
+    convCache:aConvCache 1;
+    outReluCache:reluForward a;
+    out:outReluCache 0;
+    reluCache:outReluCache 1;
+    cache:`convCache`reluCache!(convCache;reluCache);
+    (out;cache)
+ };
+
+convReluForwardNaive:{[x;w;b;convParam]
     aConvCache:convForwardNaive[x;w;b;convParam];
     a:aConvCache 0;
     convCache:aConvCache 1;
@@ -399,7 +409,9 @@ convReluPoolBackward:{[dout;cache]
     convCache:cache`convCache;
     reluCache:cache`reluCache;
     poolCache:cache`poolCache;
+    / suss
     ds:maxPoolBackwardFast[dout;poolCache];
+    / correct
     da:reluBackward[ds;reluCache];
     dxDwDb:convBackwardFast[da;convCache];
     dxDwDb
@@ -459,7 +471,7 @@ convBackwardFast:{[dout;cache]
     dxCols:dot[flip reshapeM[w;(F;0N)];doutReshaped];
     dxCols:reshapeM[dxCols;C,HH,WW,N,outh,outw];
 
-    dx:col2im6d `xCols`stride`pad`H`HH`W`WW`N`C!(xCols;convParam`stride;convParam`pad;H;HH;W;WW;N;C);
+    dx:col2im6d `xCols`stride`pad`H`HH`W`WW`N`C!(dxCols;convParam`stride;convParam`pad;H;HH;W;WW;N;C);
     `dx`dw`db!(dx;dw;db)
  };
 
@@ -470,13 +482,13 @@ col2im6d:{[d]
     Wpad:d[`W]+2*pad;
     outh:1+(Hpad-d`HH)div stride;
     outw:1+(Wpad-d`WW)div stride;
-    xPadded:(d`N;d`C;Hpad;Wpad)#0f;
+    xPaddedShape:(d`N;d`C;Hpad;Wpad);
     xCols:d`xCols;    
-    col2im6dShape:(d`C;d`HH;d`WW;d`N;outh;outw);
+    col2im6dShape:(d`C;d`HH;d`WW;d`N;d`H;d`W);
 
     / call out to c for this function, muuuch too slow in q unfortunately 
     xCols:reshapeM[xCols;col2im6dShape];
-    res:col2im6dInner[xCols;xPadded;col2im6dShape;pad;stride];
+    res:col2im6dInner[xCols;xPaddedShape#0f;col2im6dShape;pad;stride];
 
     / if we've padded, index out
     if[pad>0;res:.[res;(::;::;pad _ neg[pad]_ til Hpad;pad _ neg[pad] _ til Wpad)]];
@@ -484,7 +496,7 @@ col2im6d:{[d]
  };
 
 / used by convBackwardFast, needs to have .conv.initBackwardVars run first
-col2Im6d:{[dxCols]   
+col2im6dOld:{[dxCols]   
     colVals:matrixDotInds[dxCols;.conv.colValInds];
     gRes:sum each colVals@.conv.gxpadInds;
     padResFlat:value[gRes]@.conv.padResIndOrder;
