@@ -166,3 +166,19 @@ lossGrad:threeLayerConvNet.loss initd
 lg "as a sanity check, compare numerical gradients for reg in 0.0 3.14"
 gradCheckDict:@[(raze key[startd],`useBatchNorm`wScale`w1`w2`w3`b1`b2`b3)#initd;`model;:;`threeLayerConvNet]
 compareNumericalGradients[gradCheckDict;0f];
+
+lg "##############################
+    Overfit small data
+    ##############################"
+
+lg "A nice trick is to train your model with just a few training samples.
+    You should be able to overfit small datasets, which will result in very 
+    high training accuracy and comparatively low validation accuracy."
+
+lg "start with only 100 data points"
+
+numTrain:100
+smallData:`xTrain`yTrain`xVal`yVal!(numTrain#xTrain;numTrain#yTrain;xVal;yVal)
+startd:smallData,(!). flip (`model`threeLayerConvNet;(`wScale;1e-2);(`numEpocs;10);(`batchSize;50);(`updateRule;`adam);(`optimConfig;enlist[`learnRate]!enlist 1e-3);(`printEvery;1));
+
+res:solver.train startd

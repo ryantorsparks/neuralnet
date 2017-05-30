@@ -522,7 +522,7 @@ threeLayerConvNet.loss:{[d]
     (loss;grads)
  };
 
-
+threeLayerConvNet.params:{[d] `w1`b1`w2`b2`w3`b3}
 
 
 
