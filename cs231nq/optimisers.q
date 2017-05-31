@@ -69,8 +69,8 @@ adam:{[x;dx;config]
     / d optionals `learnRate`beta1`beta2`epsilon`m`v`t
     shapex:shape x;
     cntx:prd shapex;
-    x:raze x;
-    dx:raze dx;
+    x:razeo x;
+    dx:razeo dx;
     defaults:(!) . flip ((`learnRate;1e-3);(`beta1;0.9);(`beta2;0.999);
              (`epsilon;1e-8);(`m;cntx#0f);(`v;cntx#0f);(`t;0));
 
