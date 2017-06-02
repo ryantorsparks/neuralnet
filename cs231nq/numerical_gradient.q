@@ -1,11 +1,17 @@
 / functions for evalutating the (slow) numerical gradients
 / which we use as sanity checks
 
-h:0.00001;
+defaultGradStep:1e-5
+
+getGradStep:{[d]
+   $[99h=type d;dget[d;`h;defaultGradStep];defaultGradStep]
+ };
 
 evalNumericalGradient:{[f;input]
     fx:f input;
     grad:0*fx;
+    / TODO: remove hard coding here
+    h:defaultGradStep;
     fxPlusH:f input+h;
     fxMinusH:f input-h;
     grad:(sum/)(fxPlusH-fxMinusH)%2*h;
@@ -15,11 +21,13 @@ evalNumericalGradient:{[f;input]
 
 numGradInnerFunc:{[f;d;param;ind;plusMinus]
     index:$[99h=type d;param,ind;(),ind];
+    h:getGradStep d;
     f .[d;index;plusMinus;h]
  };
 
 numGradOneIndChange:{[f;d;param;ind]
     proj:numGradInnerFunc[f;d;param;ind;];
+    h:getGradStep d;
     (proj[+]-proj[-])%2*h
  };
 
