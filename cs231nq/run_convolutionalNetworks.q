@@ -164,14 +164,13 @@ initd: threeLayerConvNet.init startd
 lossGrad:threeLayerConvNet.loss initd
 
 lg "as a sanity check, compare numerical gradients for reg in 0.0 3.14"
-gradCheckDict:@[(raze key[startd],`useBatchNorm`wScale`w1`w2`w3`b1`b2`b3)#initd;`model;:;`threeLayerConvNet]
-h:1e-6
+gradCheckDict:@[(raze key[startd],`useBatchNorm`wScale`w1`w2`w3`b1`b2`b3)#initd;`model`h;:;`threeLayerConvNet,1e-6]
 compareNumericalGradients[gradCheckDict;0f];
 
 lg "##############################
     Overfit small data
     ##############################"
-
+/
 lg "A nice trick is to train your model with just a few training samples.
     You should be able to overfit small datasets, which will result in very 
     high training accuracy and comparatively low validation accuracy."
@@ -186,7 +185,17 @@ lg "removing xTrain/Test etc. to save RAM for 32 bit"
 {![`.;();0b;enlist x]}each `xTrain`yTrain`xTest`yTest
 .Q.gc[]
 
-lg "running 10 epochs of overfitting""
+lg "running 10 epochs of overfitting"
 startd:smallData,(!). flip (`model`threeLayerConvNet;(`wScale;1e-2);(`numEpocs;10);(`batchSize;50);(`updateRule;`adam);(`optimConfig;enlist[`learnRate]!enlist 1e-3);(`printEvery;1));
 
 res:solver.train startd
+
+lg "##############################
+    Train the net
+    ##############################"
+
+lg "We now train a three layer convolutional networkfor one epoch"
+startd:(!). flip ((`x;xTrain);(`y;yTrain);`model`threeLayerConvNet;(`wScale;1e-3);(`numEpocs;1);(`batchSize;50);(`updateRule;`adam);(`optimConfig;enlist[`learnRate]!enlist 1e-3);(`printEvery;20));
+
+res:solver.train startd
+
