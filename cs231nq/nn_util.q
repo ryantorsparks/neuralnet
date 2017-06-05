@@ -139,11 +139,12 @@ broadcastArrays:{[x;y]
 / sum Axes function, equivalent to np.sum(m,axis=(inds),keepdims=True)
 / e.g. m=rad 2 3 4 5 6 7
 / sumAxesKeepDims[m;3 5] is equivlanet to np.sum(m,axis=(3,5),keepdims=True)
+// sumAxesKeepDimsC:{[m;axes] {[m;axis] sumAxesKeepDims6d[m;@[mShape;axis;:;1]#0f;mShape:shape m;axis]}/[m;asc axes]} 
 sumAxesKeepDims:{[m;axes] {[x;ind].[x;ind#(::);(enlist sum@)]}/[m;asc axes]}
 
 / collapse axes version of sumAxes
 / e.g. m=rad 2 3 4 5 6 7
-/ sumAxesKeepDims[m;3 5] is equivlanet to np.sum(m,axis=(3,5))
+/ sumAxes[m;3 5] is equivlanet to np.sum(m,axis=(3,5))
 sumAxes:{[m;axes]{[x;ind].[x;ind#(::);sum]}/[m;desc axes]} 
 
 / null dictionary

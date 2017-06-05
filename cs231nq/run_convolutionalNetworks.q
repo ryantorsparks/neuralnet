@@ -195,7 +195,7 @@ lg "##############################
     ##############################"
 
 lg "We now train a three layer convolutional networkfor one epoch"
-startd:(!). flip ((`x;xTrain);(`y;yTrain);`model`threeLayerConvNet;(`wScale;1e-3);(`numEpocs;1);(`batchSize;50);(`updateRule;`adam);(`optimConfig;enlist[`learnRate]!enlist 1e-3);(`printEvery;20));
+startd:(!). flip ((`xTrain;xTrain);(`yTrain;yTrain);(`xVal;xVal);(`yVal;yVal);`model`threeLayerConvNet;(`wScale;1e-3);(`numEpocs;1);(`batchSize;50);(`updateRule;`adam);(`optimConfig;enlist[`learnRate]!enlist 1e-3);(`printEvery;20));
 
 res:solver.train startd
 

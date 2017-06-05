@@ -253,6 +253,7 @@ maxPoolBackwardFast:{[dout;cache]
  };
 
 maxPoolBackwardReshape:{[dout;cache]
+    temp1::(dout;cache);
     x:cache`x;
     xReshaped:cache`xReshaped;
     out:cache`out;
