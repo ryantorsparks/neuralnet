@@ -139,8 +139,12 @@ broadcastArrays:{[x;y]
 / sum Axes function, equivalent to np.sum(m,axis=(inds),keepdims=True)
 / e.g. m=rad 2 3 4 5 6 7
 / sumAxesKeepDims[m;3 5] is equivlanet to np.sum(m,axis=(3,5),keepdims=True)
-// sumAxesKeepDimsC:{[m;axes] {[m;axis] sumAxesKeepDims6d[m;@[mShape;axis;:;1]#0f;mShape:shape m;axis]}/[m;asc axes]} 
-sumAxesKeepDims:{[m;axes] {[x;ind].[x;ind#(::);(enlist sum@)]}/[m;asc axes]}
+/lg "attempting to load sumAxesKeepDims6d c function, must be a sumAxesKeepDims6d.so object in $QHOME"
+/@[{`sumAxesKeepDims6d set `sumAxesKeepDims6d 2:(`sumAxesKeepDims6d;4)};();{lg"Warning: failed to load sumAxesKeepDims6d.so, will revert to all q version"}];
+/sumAxesKeepDimsC:{[m;axes] {[m;axis] sumAxesKeepDims6d[m;@[mShape;axis;:;1]#0f;mShape:shape m;axis]}/[m;asc axes]} 
+sumAxesKeepDimsQ:{[m;axes] {[x;ind].[x;ind#(::);(enlist sum@)]}/[m;asc axes]}
+sumAxesKeepDims:$[not ()~key `sumAxesKeepDims6d;sumAxesKeepDimsC;sumAxesKeepDimsQ];
+
 
 / collapse axes version of sumAxes
 / e.g. m=rad 2 3 4 5 6 7
@@ -209,3 +213,10 @@ asStrided:{[m;newshape;strides] newshape#razeo[m]@{raze x+/:raze y}/[reverse[str
 lg "attempting to load col2im6dInner function, must be a col2im6dInner.so object in $QHOME";
 @[{`col2im6dInner set `col2im6dInner 2:(`col2im6dInner;5)};();{lg"Warning: failed to load col2im6dInner c function"}];
 
+/ load in maskBroadcast6dAxes35  c funtion
+lg "attempting to load maskBroadcast6dAxes35 function, must be a maskBroadcast6dAxes35.so object in $QHOME";
+@[{`maskBroadcast6dAxes35 set `maskBroadcast6dAxes35 2:(`maskBroadcast6dAxes35;4)};();{lg"Warning: failed to load maskBroadcast6dAxes35 c function"}];
+
+/ load in sumAxes35KeepDims6dBroadcast c funtion
+lg "attempting to load sumAxes35KeepDims6dBroadcast function, must be a sumAxes35KeepDims6dBroadcast.so object in $QHOME";
+@[{`sumAxes35KeepDims6dBroadcast set `sumAxes35KeepDims6dBroadcast 2:(`sumAxes35KeepDims6dBroadcast;2)};();{lg"Warning: failed to load sumAxes35KeepDims6dBroadcast c function"}];

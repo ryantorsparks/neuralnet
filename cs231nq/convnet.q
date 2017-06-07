@@ -252,7 +252,7 @@ maxPoolBackwardFast:{[dout;cache]
     maxPoolBackwardReshape[dout;realCache]
  };
 
-maxPoolBackwardReshape:{[dout;cache]
+maxPoolBackwardReshapeQ:{[dout;cache]
     temp1::(dout;cache);
     x:cache`x;
     xReshaped:cache`xReshaped;
@@ -265,10 +265,41 @@ maxPoolBackwardReshape:{[dout;cache]
     doutNewaxis:newAxes[dout;3 5];
     doutBroadcast: first broadcastArrays[doutNewaxis;dxReshaped];
     dxReshaped:shape[dxReshaped]#@[razeo dxReshaped;maskInds;:;razeo[doutBroadcast]@maskInds];
-    dxReshaped%:last broadcastArrays[dxReshaped;sumAxesKeepDims[mask;3 5]];
+    temp1a::last broadcastArrays[dxReshaped;sumAxesKeepDims[mask;3 5]];
+    dxReshaped%:temp1a;
+//    dxReshaped%:last broadcastArrays[dxReshaped;sumAxesKeepDims[mask;3 5]];
+//    temp1b::dxReshaped;
     dx:reshapeM[dxReshaped;shape x];
     dx
  };
+
+maxPoolBackwardReshapeC:{[dout;cache]
+//    temp2::(dout;cache);
+    x:cache`x;
+    xReshaped:cache`xReshaped;
+    out:cache`out;
+
+    dxReshaped:xReshaped*0f;
+    outNewaxis:newAxes[out;3 5];
+    floatMask:maskBroadcast6dAxes35[outNewaxis;xReshaped;shape outNewaxis;shape xReshaped];
+    maskInds:where `boolean$razeo floatMask;
+    doutNewaxis:newAxes[dout;3 5];
+    doutBroadcast: first broadcastArrays[doutNewaxis;dxReshaped];
+    dxReshaped:shape[dxReshaped]#@[razeo dxReshaped;maskInds;:;razeo[doutBroadcast]@maskInds];
+    floatRes:sumAxes35KeepDims6dBroadcast[floatMask;shape floatMask];
+    dxReshaped%:floatRes;
+//    dxReshaped%:sumAxes35KeepDims6dBroadcast[floatMask;shape floatMask];
+//    temp2b::dxReshaped;
+    dx:reshapeM[dxReshaped;shape x];
+    dx
+ };
+
+maxPoolBackwardReshape:$[all {not ()~key x} each `maskBroadcast6dAxes35`sumAxes35KeepDims6dBroadcast;
+                           maxPoolBackwardReshapeC;
+                           maxPoolBackwardReshapeQ
+                        ];
+
+lg "maxPoolBackwardReshape set as ",.Q.s maxPoolBackwardReshape
 
 / currently ditched, python version uses cython/c, too much effort 
 / to translate to c, too slow to do in q (a million for loops), so

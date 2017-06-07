@@ -88,7 +88,7 @@ lg "##############################
 lg "##############################
     Testing conv relu pool forward
     ##############################"
-
+/
 x:rad 2 3 16 16
 w:rad 3 3 3 3 
 b:rad 3
@@ -132,7 +132,7 @@ relError'[value dxDwDb;(dxNum;dwNum;dbNum)]
 lg "##############################
     Three layer convnet
     ##############################"
-
+/
 x:rad 50 3 32 32
 y:50?10
 initd:threeLayerConvNet.init `x`y!(x;y)
@@ -170,7 +170,7 @@ compareNumericalGradients[gradCheckDict;0f];
 lg "##############################
     Overfit small data
     ##############################"
-/
+
 lg "A nice trick is to train your model with just a few training samples.
     You should be able to overfit small datasets, which will result in very 
     high training accuracy and comparatively low validation accuracy."
