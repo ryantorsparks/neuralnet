@@ -3,6 +3,8 @@
 cifarMode:`unflattened
 \l load_cifar_data.q
 
+lg "temporarily set max pool backward func as q version, TODO: automate this"
+maxPoolBackwardReshape:maxPoolBackwardReshapeQ
 
 lg "##############################
     Convolutional Networks
@@ -88,7 +90,7 @@ lg "##############################
 lg "##############################
     Testing conv relu pool forward
     ##############################"
-/
+
 x:rad 2 3 16 16
 w:rad 3 3 3 3 
 b:rad 3
@@ -132,7 +134,7 @@ relError'[value dxDwDb;(dxNum;dwNum;dbNum)]
 lg "##############################
     Three layer convnet
     ##############################"
-/
+
 x:rad 50 3 32 32
 y:50?10
 initd:threeLayerConvNet.init `x`y!(x;y)
@@ -185,6 +187,9 @@ lg "removing xTrain/Test etc. to save RAM for 32 bit"
 {![`.;();0b;enlist x]}each `xTrain`yTrain`xTest`yTest
 .Q.gc[]
 
+lg "set maxPoolBackwardReshape back to c version"
+maxPoolBackwardReshape:maxPoolBackwardReshapeC
+
 lg "running 10 epochs of overfitting"
 startd:smallData,(!). flip (`model`threeLayerConvNet;(`wScale;1e-2);(`numEpocs;10);(`batchSize;50);(`updateRule;`adam);(`optimConfig;enlist[`learnRate]!enlist 1e-3);(`printEvery;1));
 
@@ -193,7 +198,7 @@ res:solver.train startd
 lg "##############################
     Train the net
     ##############################"
-
+/
 lg "We now train a three layer convolutional networkfor one epoch"
 startd:(!). flip ((`xTrain;xTrain);(`yTrain;yTrain);(`xVal;xVal);(`yVal;yVal);`model`threeLayerConvNet;(`wScale;1e-3);(`numEpocs;1);(`batchSize;50);(`updateRule;`adam);(`optimConfig;enlist[`learnRate]!enlist 1e-3);(`printEvery;20));
 

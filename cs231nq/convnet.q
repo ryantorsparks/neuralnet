@@ -253,7 +253,6 @@ maxPoolBackwardFast:{[dout;cache]
  };
 
 maxPoolBackwardReshapeQ:{[dout;cache]
-    temp1::(dout;cache);
     x:cache`x;
     xReshaped:cache`xReshaped;
     out:cache`out;
@@ -265,16 +264,13 @@ maxPoolBackwardReshapeQ:{[dout;cache]
     doutNewaxis:newAxes[dout;3 5];
     doutBroadcast: first broadcastArrays[doutNewaxis;dxReshaped];
     dxReshaped:shape[dxReshaped]#@[razeo dxReshaped;maskInds;:;razeo[doutBroadcast]@maskInds];
-    temp1a::last broadcastArrays[dxReshaped;sumAxesKeepDims[mask;3 5]];
-    dxReshaped%:temp1a;
-//    dxReshaped%:last broadcastArrays[dxReshaped;sumAxesKeepDims[mask;3 5]];
-//    temp1b::dxReshaped;
+    broadcastRes:last broadcastArrays[dxReshaped;sumAxesKeepDims[mask;3 5]];
+    dxReshaped%:broadcastRes;
     dx:reshapeM[dxReshaped;shape x];
     dx
  };
 
 maxPoolBackwardReshapeC:{[dout;cache]
-//    temp2::(dout;cache);
     x:cache`x;
     xReshaped:cache`xReshaped;
     out:cache`out;
@@ -288,18 +284,16 @@ maxPoolBackwardReshapeC:{[dout;cache]
     dxReshaped:shape[dxReshaped]#@[razeo dxReshaped;maskInds;:;razeo[doutBroadcast]@maskInds];
     floatRes:sumAxes35KeepDims6dBroadcast[floatMask;shape floatMask];
     dxReshaped%:floatRes;
-//    dxReshaped%:sumAxes35KeepDims6dBroadcast[floatMask;shape floatMask];
-//    temp2b::dxReshaped;
     dx:reshapeM[dxReshaped;shape x];
     dx
  };
 
-maxPoolBackwardReshape:$[all {not ()~key x} each `maskBroadcast6dAxes35`sumAxes35KeepDims6dBroadcast;
-                           maxPoolBackwardReshapeC;
-                           maxPoolBackwardReshapeQ
-                        ];
-
-lg "maxPoolBackwardReshape set as ",.Q.s maxPoolBackwardReshape
+maxPoolFunc:$[all {not ()~key x} each `maskBroadcast6dAxes35`sumAxes35KeepDims6dBroadcast;
+                `maxPoolBackwardReshapeC;
+                `maxPoolBackwardReshapeQ
+             ];
+maxPoolBackwardReshape:value maxPoolFunc;
+lg "maxPoolBackwardReshape set as ",-3!maxPoolFunc;
 
 / currently ditched, python version uses cython/c, too much effort 
 / to translate to c, too slow to do in q (a million for loops), so
@@ -535,17 +529,3 @@ col2im6dOld:{[dxCols]
     padRes:.conv.padResDims#padResFlat;
     .[padRes;.conv.finalIndex] 
  };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
