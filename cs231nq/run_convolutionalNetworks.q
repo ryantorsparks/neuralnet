@@ -4,7 +4,7 @@ cifarMode:`unflattened
 \l load_cifar_data.q
 
 lg "temporarily set max pool backward func as q version, TODO: automate this"
-maxPoolBackwardReshape:maxPoolBackwardReshapeQ
+//maxPoolBackwardReshape:maxPoolBackwardReshapeQ
 
 lg "##############################
     Convolutional Networks
@@ -187,8 +187,8 @@ lg "removing xTrain/Test etc. to save RAM for 32 bit"
 {![`.;();0b;enlist x]}each `xTrain`yTrain`xTest`yTest
 .Q.gc[]
 
-lg "set maxPoolBackwardReshape back to c version"
-maxPoolBackwardReshape:maxPoolBackwardReshapeC
+//lg "set maxPoolBackwardReshape back to c version"
+//maxPoolBackwardReshape:maxPoolBackwardReshapeC
 
 lg "running 10 epochs of overfitting"
 startd:smallData,(!). flip (`model`threeLayerConvNet;(`wScale;1e-2);(`numEpocs;10);(`batchSize;50);(`updateRule;`adam);(`optimConfig;enlist[`learnRate]!enlist 1e-3);(`printEvery;1));

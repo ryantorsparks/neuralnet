@@ -249,10 +249,11 @@ maxPoolBackwardFast:{[dout;cache]
     method:cache`method;
     realCache:cache`reshapeCache;
     if[not method~`reshape;'"pool method must be reshape"];
-    maxPoolBackwardReshape[dout;realCache]
+    / TODO: fix bug in maxPoolBackwardReshapeFast6D where it seg faults for realCache of count <= 4
+    $[4<count realCache`xReshaped;maxPoolBackwardReshapeFast6D;maxPoolBackwardReshapeSlow][dout;realCache]
  };
 
-maxPoolBackwardReshapeQ:{[dout;cache]
+maxPoolBackwardReshapeSlow:{[dout;cache]
     x:cache`x;
     xReshaped:cache`xReshaped;
     out:cache`out;
@@ -270,7 +271,7 @@ maxPoolBackwardReshapeQ:{[dout;cache]
     dx
  };
 
-maxPoolBackwardReshapeC:{[dout;cache]
+maxPoolBackwardReshapeFast6D:{[dout;cache]
     x:cache`x;
     xReshaped:cache`xReshaped;
     out:cache`out;
@@ -287,13 +288,6 @@ maxPoolBackwardReshapeC:{[dout;cache]
     dx:reshapeM[dxReshaped;shape x];
     dx
  };
-
-maxPoolFunc:$[all {not ()~key x} each `maskBroadcast6dAxes35`sumAxes35KeepDims6dBroadcast;
-                `maxPoolBackwardReshapeC;
-                `maxPoolBackwardReshapeQ
-             ];
-maxPoolBackwardReshape:value maxPoolFunc;
-lg "maxPoolBackwardReshape set as ",-3!maxPoolFunc;
 
 / currently ditched, python version uses cython/c, too much effort 
 / to translate to c, too slow to do in q (a million for loops), so
