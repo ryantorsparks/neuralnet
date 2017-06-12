@@ -1,7 +1,8 @@
 \p 5000
 \l load_all.q
 cifarMode:`unflattened
-\l load_cifar_data.q
+//\l load_cifar_data.q
+\l load_cifar_data_convnet.q
 
 lg "temporarily set max pool backward func as q version, TODO: automate this"
 //maxPoolBackwardReshape:maxPoolBackwardReshapeQ
@@ -177,18 +178,12 @@ lg "A nice trick is to train your model with just a few training samples.
     You should be able to overfit small datasets, which will result in very 
     high training accuracy and comparatively low validation accuracy."
 
-lg "start with only 100 data points"
-lg "first call .Q.gc:"
+lg "first release some RAM with .Q.gc"
 .Q.gc[]
 
+lg "We start with only 100 data points"
 numTrain:100
 smallData:`xTrain`yTrain`xVal`yVal!(numTrain#xTrain;numTrain#yTrain;xVal;yVal)
-lg "removing xTrain/Test etc. to save RAM for 32 bit"
-{![`.;();0b;enlist x]}each `xTrain`yTrain`xTest`yTest
-.Q.gc[]
-
-//lg "set maxPoolBackwardReshape back to c version"
-//maxPoolBackwardReshape:maxPoolBackwardReshapeC
 
 lg "running 10 epochs of overfitting"
 startd:smallData,(!). flip (`model`threeLayerConvNet;(`wScale;1e-2);(`numEpocs;10);(`batchSize;50);(`updateRule;`adam);(`optimConfig;enlist[`learnRate]!enlist 1e-3);(`printEvery;1));
@@ -198,9 +193,12 @@ res:solver.train startd
 lg "##############################
     Train the net
     ##############################"
-/
-lg "We now train a three layer convolutional networkfor one epoch"
-startd:(!). flip ((`xTrain;xTrain);(`yTrain;yTrain);(`xVal;xVal);(`yVal;yVal);`model`threeLayerConvNet;(`wScale;1e-3);(`numEpocs;1);(`batchSize;50);(`updateRule;`adam);(`optimConfig;enlist[`learnRate]!enlist 1e-3);(`printEvery;20));
+
+lg "We now train a three layer convolutional network for one epoch.
+    First call garbage collect"
+.Q.gc[]
+
+startd:(!). flip ((`xTrain;xTrain);(`yTrain;yTrain);(`xVal;xVal);(`yVal;yVal);`model`threeLayerConvNet;(`wScale;1e-3);(`numEpochs;1);(`batchSize;50);(`updateRule;`adam);(`optimConfig;enlist[`learnRate]!enlist 1e-3);(`printEvery;20));
 
 res:solver.train startd
 

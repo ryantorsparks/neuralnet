@@ -51,15 +51,32 @@ solver.reset:{[d]
     d
  };
 
-/ step function???
-solver.step:{[d]
-    / d expects `xTrain`yTrain`batchSize`lossHistory`optimConfigs`updateRule
-    / possibly (???( 
-    / create mini batch
+
+solver.genBatch:{[d]
     numTrain:count d`xTrain;
     batchMask:neg[d`batchSize]?numTrain;
     xBatch:d[`xTrain] batchMask;
     yBatch:d[`yTrain] batchMask;
+    (xBatch;yBatch)
+ };
+
+/ allow for xTrain to be either read from mapped array, or already an in-mem blob
+solver.xTrainParser:{[x]
+    $[3072=count x 0;3 32 32#/:x;x]
+ };
+
+/ step function
+solver.step:{[d]
+    / d expects `xTrain`yTrain`batchSize`lossHistory`optimConfigs`updateRule
+    / possibly (???( 
+    / create mini batch
+    /numTrain:count d`xTrain;
+    /batchMask:neg[d`batchSize]?numTrain;
+    /xBatch:d[`xTrain] batchMask;
+    /yBatch:d[`yTrain] batchMask;
+    batches:solver.genBatch[d];
+    xBatch:solver.xTrainParser batches 0;
+    yBatch:batches 1;
 
     / compute loss and grad of mini batch
     modelParams:getModelValue[d;`params];
@@ -109,6 +126,7 @@ solver.checkAccuracy:{[d]
         x@:mask;
         y@:mask;
       ];
+    x:solver.xTrainParser x;
     numBatches:N div batchSize;
 
     / make sure we do at least enough batches
@@ -164,7 +182,7 @@ solver.i.train:{[d]
     d:solver.step d;
 
     if[0=cnt mod d`printEvery;
-        lg"Iteration: ",string[d`cnt],"/",string[numIterations]," loss: ",string last d`lossHistory;
+        lgts"Iteration: ",string[d`cnt],"/",string[numIterations]," loss: ",string last d`lossHistory;
       ];
 
     / at end of every epoch, increment epoch counter, decay learnRate
@@ -184,7 +202,7 @@ solver.i.train:{[d]
         valAcc:solver.checkAccuracy (inter[checkKeys;key d]#d),`model`x`y`batchSize`numSamples!d[`model`xVal`yVal`batchSize],0N;
         d[`trainAccHistory],:trainAcc;
         d[`valAccHistory],:valAcc;
-        lg"Epoch: ",string[d`epoch],"/",string[d`numEpochs]," train acc: ",string[trainAcc]," val acc: ",string[valAcc];
+        lgts"Epoch: ",string[d`epoch],"/",string[d`numEpochs]," train acc: ",string[trainAcc]," val acc: ",string[valAcc];
         
         / keep track of the best model
         if[valAcc>d`bestValAcc;
