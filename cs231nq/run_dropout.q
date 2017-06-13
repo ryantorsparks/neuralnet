@@ -1,7 +1,6 @@
-\p 5000
 \l load_all.q
 cifarMode:`unflattened
-/\l load_cifar_data.q
+\l load_cifar_data.q
 
 lg "##############################
     Neural nets with dropout

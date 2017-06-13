@@ -150,7 +150,7 @@ startd: d,`x`y`reg!(x;y;0.0)
 initd:fullyConnectedNet.init startd
 
 lg "as a sanity check, compare numerical gradients for reg in 0.0 3.14"
-gradCheckDict:@[((raze key[startd],initd[`wParams`bParams]),`wParams`bParams)#initd;`model;:;`fullyConnectedNet]
+gradCheckDict:@[((raze key[startd],initd[`wParams`bParams]),`wParams`bParams`useBatchNorm)#initd;`model;:;`fullyConnectedNet]
 compareNumericalGradients[gradCheckDict]each 0.0 3.14;
 
 lg "second sanity check, overfit a small data set using a 3-layer net"

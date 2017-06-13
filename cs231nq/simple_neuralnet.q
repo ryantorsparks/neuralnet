@@ -1,7 +1,7 @@
 / ############ simple neural net funcs ###########
 
 / like np.random.randn
-wInit:randArray
+wInit:{[x;y] rad x,y}
 
 / just to make sure we don't forget keys in our input dicts
 checkInputs:{[d;specials]
@@ -101,11 +101,11 @@ varyHyperParams:{[startDict;iterations;numRandoms;lrRange;regRange]
     lg "running varyHyperParams with: \n",.Q.s(randomLearnRates;randomRegs);
     ( {[d;n;lr;reg]
           lg"changing learnRate and reg, adding xTrain and yTrain (mem issues)";
-          d[`learnRate`reg`inputTrain`outputTrain]:(lr;reg;xTrain;yTrain);
+          d[`learnRate`reg`inputTrain`outputTrain]:(lr;reg;`float$xTrain;yTrain);
           lgToken:" lr = ",string[lr],", reg = ",string reg;
           lg "running ",string[n]," iterations of sgd for ",lgToken;
           res:n simpleSgd/d;
-          valAccuracy: avg yVal=predict `x`w1`w2`b1`b2!enlist[xVal],res`w1`w2`b1`b2;
+          valAccuracy: avg yVal=predict `x`w1`w2`b1`b2!enlist[`float$xVal],res`w1`w2`b1`b2;
           lg "validation accuracy for ",lgToken," is ",string valAccuracy;
           (lr;reg;valAccuracy;res`w1`w2`b1`b2)
       }[startDict;iterations;;] . 
