@@ -1,7 +1,7 @@
 # neuralnet
 I've tried to do/translate the Stanford cs231n assignment into kdb/q. Currently, I've only looked at assignments 1 and 2, which cover:
 * 2 layer neural networks
-* n-layer fully connected neural networks
+* n-layer fully connected neural networks (10 layer example)
 * different update functions:
   * sgd
   * sgd momentum
@@ -13,8 +13,9 @@ I've tried to do/translate the Stanford cs231n assignment into kdb/q. Currently,
   * max pooling layers
   * convolutional layers
   * convolutional relu/pool layers (sandwich layers)
+  * three layer convnet
 
-Source is http://cs231n.github.io/assignments2016/assignment1/ 
+Source is http://cs231n.github.io/assignments2016/
 
 This looks at classifying the CIFAR 10 image dataset (https://www.cs.toronto.edu/~kriz/cifar.html). 
 
