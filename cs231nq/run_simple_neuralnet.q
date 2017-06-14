@@ -1,4 +1,4 @@
-if[not 0>system"s";-1"this script should be run with multi process, so start with negative s, e.g. \"q run.q -s -2\"";exit 0];
+if[not 0>system"s";-1"this script should be run with multi process, so either comment this out (if you're RAM scarce) or restart with negative s, e.g. \"q run.q -s -2\"";exit 0];
 system"l load_all.q"
 system"l load_cifar_data.q"
 
@@ -59,8 +59,8 @@ lg "Now CIFAR_10 data is already loaded - so we train our network
     In addition, we will adjust the learning rate with an exponential 
     learning rate schedule as optimization proceeds; after each epoch, 
     we will reduce the learning rate by multiplying it by a decay rate."
-lg "run 1000 iterations with starting parameters:"
-lg trainStartDict:`inputTrain`outputTrain`nHidden`nClass`reg`learnRate`learnRateDecay`std`batchSize!(`float$xTrain;yTrain;50;10;0.5;1e-4;0.95;1e-4;200)
+lg "run 1000 iterations"
+trainStartDict:`inputTrain`outputTrain`nHidden`nClass`reg`learnRate`learnRateDecay`std`batchSize!(`float$xTrain;yTrain;50;10;0.5;1e-4;0.95;1e-4;200)
 trainRes:1000 simpleSgd/trainStartDict
 
 lg "##############################

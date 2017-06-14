@@ -1,12 +1,7 @@
 / loading in cifar data
-/ set cifarMode to be `unflattened if you want to preserve
-/ the original dimensions, otherwise it will default to 
-/ `flattened, which turns into 49000 examples, each of a 3072 long vector
+\l nn_util.q
 
-cifarMode:@[value;`cifarMode;{`flattened}]
-
-dataDir: `:CIFAR_data;
-dataDirUnflattened: `:CIFAR_data_unflattened;
+dataDir: `:CIFAR_data_razed;
 binDataDir: ` sv dataDir,`$"cifar-10-batches-bin";
 cifarDataUrl: "http://www.cs.toronto.edu/~kriz/cifar-10-binary.tar.gz";
 binData:`data_batch_1.bin`data_batch_2.bin`data_batch_3.bin`data_batch_4.bin`data_batch_5.bin`test_batch.bin
@@ -22,12 +17,12 @@ loadCIFARBinaryData:{[]
             lg "no ",string[binFile]," file found, begin download of cifar 10 data, this may take a while (162 MB)";
             (` sv dataDir,binFile) 1: .Q.hg hsym `$cifarDataUrl;
           ];
-        lg "extracting data using ",cmd:"tar -xzvf ",(1_ string ` sv dataDir,binFile)," -C CIFAR_data/";
+        lg "extracting data using ",cmd:"tar -xzvf ",(1_ string ` sv dataDir,binFile)," -C ",1_string ` sv dataDir,`;
         system cmd;
       ];
     lg "loading in CIFAR binary data, reshaping into objects of 3073 length";
     allData::raze {0N 3073#read1 ` sv binDataDir,x} each binData;
-
+    
     lg "get training and validation data";
     yTrain::`int$49000#allData[;0];
     xTrain::{flip 0N 1024#x}each `real$1_'49000#allData;
@@ -60,31 +55,17 @@ loadCIFARBinaryData:{[]
     xTest::raze each xTest;
     delete avgRes from `.;
 
+    reshapeTab each vars where vars like "x*"; 
     saveTab[dataDir;] each vars;
  };
 
 
+/ reshape, one at a time to save RAM
 reshapeTab:{[tabName]
     lg "reshaping ",string tabName;
     {[tabName;x]if[0=x mod 500;show x];
-       .[`.;(tabName;x);{32 32#/:x@(3*til 1024)+/:til 3}];
+       .[`.;(tabName;x);{x@razeo (3*til 1024)+/:til 3}];
     }[tabName;] each til count value tabName;
- };
-
-loadCIFARBinaryDataUnflattened:{[]
-    lg "loading unflattened cifar binary data";
-    / first see what's missing    
-    missingXVars:`xTrain`xTest`xVal except key dataDirUnflattened;
-    missingYVars:`yTrain`yTest`yVal except key dataDirUnflattened;
-    if[count missingYVars;
-        lg"copying over y objects: ",-3!missingYVars;
-        {lg cmd:"cp "," " sv {1_string ` sv x,y}[;x]each dataDir,dataDirUnflattened;system cmd} each missingYVars
-      ];
-    lg "not all unflattened data found, lets reshape from the flat versions: ",-3!missingXVars;
-    loadAllTabs[dataDir];
-    reshapeTab each missingXVars;
-    saveTab[dataDirUnflattened;]each missingXVars;
-
  };
 
 / save and load functions
@@ -92,7 +73,7 @@ saveTab:{[dir;x]lg "saving ",string[x]," to ",string[dir]," for future quick loa
 loadAllTabs:{[dir]{[x;dir]lg "loading ",string x;load ` sv dir,x}[;dir] each vars where not vars in key `.} 
 
 lg "first check if data exists in CIFAR_data folder, if so we don't need to download and process";
-loadDir:$[cifarMode~`unflattened;dataDirUnflattened;dataDir];
+loadDir:dataDir;
 lg "load dir set as ",string loadDir;
 
 $[all (vars:`xTrain`yTrain`xTest`yTest`xVal`yVal) in key loadDir;
@@ -100,7 +81,6 @@ $[all (vars:`xTrain`yTrain`xTest`yTest`xVal`yVal) in key loadDir;
       loadAllTabs[loadDir];
     ];
     [ if[not all vars in key dataDir;loadCIFARBinaryData[]];
-      if[cifarMode~`unflattened;loadCIFARBinaryDataUnflattened[]];
       loadAllTabs[loadDir]
     ]
   ];

@@ -1,8 +1,7 @@
 \p 5000
 \l load_all.q
-cifarMode:`unflattened
-//\l load_cifar_data.q
-\l load_cifar_data_convnet.q
+\l load_cifar_data.q
+
 
 lg "temporarily set max pool backward func as q version, TODO: automate this"
 //maxPoolBackwardReshape:maxPoolBackwardReshapeQ
