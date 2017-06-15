@@ -1,10 +1,8 @@
 \p 5000
 \l load_all.q
 \l load_cifar_data.q
-
-
-lg "temporarily set max pool backward func as q version, TODO: automate this"
-//maxPoolBackwardReshape:maxPoolBackwardReshapeQ
+/ set runAll to 1b only if you want to run everything
+runAll:0b
 
 lg "##############################
     Convolutional Networks
@@ -187,7 +185,7 @@ smallData:`xTrain`yTrain`xVal`yVal!(numTrain#xTrain;numTrain#yTrain;xVal;yVal)
 lg "running 10 epochs of overfitting"
 startd:smallData,(!). flip (`model`threeLayerConvNet;(`wScale;1e-2);(`numEpocs;10);(`batchSize;50);(`updateRule;`adam);(`optimConfig;enlist[`learnRate]!enlist 1e-3);(`printEvery;1));
 
-res:solver.train startd
+if[runAll;res:solver.train startd]
 
 lg "##############################
     Train the net
@@ -197,7 +195,22 @@ lg "We now train a three layer convolutional network for one epoch.
     First call garbage collect"
 .Q.gc[]
 
+lg "##############################
+    Base case
+    ##############################"
+
+lg "for the base case, should expect to see approx 20% accuracy"
+
 startd:(!). flip ((`xTrain;xTrain);(`yTrain;yTrain);(`xVal;xVal);(`yVal;yVal);`model`threeLayerConvNet;(`wScale;1e-3);(`numEpochs;1);(`batchSize;50);(`updateRule;`adam);(`optimConfig;enlist[`learnRate]!enlist 1e-3);(`printEvery;20));
 
-res:solver.train startd
+if[runAll;res:solver.train startd]
 
+lg "##############################
+    Decrease the filter size
+    ##############################"
+
+lg "instead of the default filter size of 7, use 3. Should get around 45-50% accuracy"
+
+startd:(!). flip ((`xTrain;xTrain);(`yTrain;yTrain);(`xVal;xVal);(`yVal;yVal);`model`threeLayerConvNet;(`wScale;1e-3);(`numEpochs;1);(`batchSize;50);(`updateRule;`adam);(`optimConfig;enlist[`learnRate]!enlist 1e-3);(`printEvery;20);(`dimHidden;500);(`filterSize;3));
+
+if[runAll;res:solver.train startd]

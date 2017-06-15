@@ -20,6 +20,8 @@ modifyFunc:{[funcName]
     funcName set (')[{[f;n;p] memlg "calling function ",-3!n;f . p}[value funcName;funcName];enlist]
  };
 
+/ lifted the following funcs from nick psaris' qtips github 
+
 / util to remove dots from front of a sym
 dropDots:{`$((s in .Q.an)?1b)_s:string x}
 
