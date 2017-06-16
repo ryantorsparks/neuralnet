@@ -523,3 +523,16 @@ col2im6dOld:{[dxCols]
     padRes:.conv.padResDims#padResFlat;
     .[padRes;.conv.finalIndex] 
  };
+
+/ convenience layer that performs a convolution
+convNormReluForward:{[x;w;b;convParam;gamma;beta;bnParam]
+   
+ };
+
+
+
+
+
+
+
+
