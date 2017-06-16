@@ -75,6 +75,7 @@ spatialBatchNormBackward:{[dout;cache]
     W:xShape 3;
     cShape:1,C,1 1;
     xhat:cache`xhat;
+    xcorrected:cache`xcorrected;
     gamma:reshapeM[cache`gamma;cShape];
     beta:reshapeM[cache`beta;cShape];
     bnParam:cache`bnParam;
