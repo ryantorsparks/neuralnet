@@ -140,6 +140,19 @@ broadcastArrays:{[x;y]
     (xNew;yNew) 
   };
 
+/ extension on broadcastArrays, for when you have 2 matrixes, one that is already expanded, 
+/ another that needs to be expanded to the first ones shape, and an operation you want to do
+/ on them (e.g. * or %)
+/ e.g. m:50 3 32 32#100000?10.;m2:1 3 1 1#100?10.;
+/      broadcastArraysFunc[m;m2;*]
+broadcastArraysFunc:{[m;mToExpand;func] func[m;last broadcastArrays[m;mToExpand]]}
+/ shortcuts
+/ (b)roadcast (a)rray (m)ultiply/(d)ivide/(s)ubtract/(a)dd
+bam:broadcastArraysFunc[;;*]
+bad:broadcastArraysFunc[;;%]
+bas:broadcastArraysFunc[;;-]
+baa:broadcastArraysFunc[;;+]
+
 / sum Axes function, equivalent to np.sum(m,axis=(inds),keepdims=True)
 / e.g. m=rad 2 3 4 5 6 7
 / sumAxesKeepDims[m;3 5] is equivlanet to np.sum(m,axis=(3,5),keepdims=True)
