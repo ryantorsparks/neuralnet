@@ -524,10 +524,110 @@ col2im6dOld:{[dxCols]
     .[padRes;.conv.finalIndex] 
  };
 
-/ convenience layer that performs a convolution
+/ convenience layer that performs a convolution, spatial batch norm,
+/ relu
+/ inputs:
+/ x - input to convolution layer
+/ w - weight list for conv layer
+/ b - bias list for conv layer
+/ convParam - param dict for conv layer
+/ beta - spatial batchnorm params
+/ gamma - spatial batchnorm params
+/ bnParam - param dict for batchnorm
 convNormReluForward:{[x;w;b;convParam;gamma;beta;bnParam]
-   
+    / convolution layer
+    conv_convCache:convForwardFast[x;w;b;convParam];
+    conv:conv_convCache 0;
+    convCache:conv_convCache 1;
+
+    / spatial batchnorm layer
+    norm_normCache:spatialBatchNormForward[conv;gamma;beta;bnParam];
+    norm:norm_normCache 0;
+    normCache:norm_normCache 1;
+
+    / final, relu layer
+    out_reluCache:reluForward[norm];
+    out:out_reluCache 0;
+    reluCache:out_reluCache 1;
+
+    / cache for back pass
+    cache:`convCache`normCache`reluCache!(convCache;normCache;reluCache);
+    (out;cache)
  };
+
+/ backward pass for conv-batchnorm-relu convenience layer
+convNormReluBackward:{[dout;cache]
+    / backwards relu layer
+    drelu:reluBackward[dout;cache`reluCache];
+
+    / backwards spatial batchnorm layer
+    / will be a dict of `dx`dgamma`dbeta
+    dnormDgammaDbeta:spatialBatchNormBackward[drelu;cache`normCache];
+
+    / backwards convolution layer
+    / will be a dict of `dx`dw`db
+    dxDwDb:convBackwardFast[dnormDgammaDbeta`dx;cache`convCache];
+
+    / return `dx`dw`db`dgamma`dbeta! ...
+    dxDwDb,`dgamma`dbeta#dnormDgammaDbeta
+ };
+
+/ convenience layer that performs a convolution, spatial batch norm,
+/ relu, then a pool
+/ inputs:
+/ x - input to convolution layer
+/ w - weight list for conv layer
+/ b - bias list for conv layer
+/ convParam - param dict for conv layer
+/ poolParam - param dicdt for pool layer
+/ beta - spatial batchnorm params
+/ gamma - spatial batchnorm params
+/ bnParam - param dict for batchnorm 
+convNormReluPoolForward:{[x;w;b;convParam;poolParam;gamma;beta;bnParam]
+    / convolution layer
+    conv_convCache:convForwardFast[x;w;b;convParam];
+    conv:conv_convCache 0;
+    convCache:conv_convCache 1;
+
+    / spatial batchnorm layer
+    norm_normCache:spatialBatchNormForward[conv;gamma;beta;bnParam];
+    norm:norm_normCache 0;
+    normCache:norm_normCache 1;
+
+    / relu layer
+    relu_reluCache:reluForward[norm];
+    relu:relu_reluCache 0;
+    reluCache:relu_reluCache 1;
+  
+    / pool layer
+    out_poolCache:maxPoolForwardFast[relu;poolParam]
+
+    / cache for backward pass
+    cache:`convCache`normCache`reluCache`poolCache!(convCache;normCache;reluCache;poolCache);
+    (out;cache)
+ };
+
+/ backward pass for conv-batchnorm-relu-pool convenience layer
+convNormReluPoolBackward:{[dout;cache]
+    / backwards pool layer
+    dpool:maxPoolBackwardFast[dout;cache`poolCache];
+
+    / backwards relu
+    drelu:reluBackward[dpool;cache`reluCache];
+
+    / backwards batchnorm
+    / will be a dict of `dx`dgamma`dbeta
+    dnormDgammaDbeta:spatialBatchNormBackward[drelu;cache`normCache];
+
+    / backwards conv layer
+    / will be a dict of `dx`dw`db
+    dxDwDb:convBackwardFast[dnormDgammaDbeta`dx;cache`convCache];
+
+    / return `dx`dw`db`dgamma`dbeta! ...
+    dxDwDb,`dgamma`dbeta#dnormDgammaDbeta
+ };
+
+
 
 
 
