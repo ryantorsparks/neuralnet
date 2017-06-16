@@ -214,3 +214,66 @@ lg "instead of the default filter size of 7, use 3. Should get around 45-50% acc
 startd:(!). flip ((`xTrain;xTrain);(`yTrain;yTrain);(`xVal;xVal);(`yVal;yVal);`model`threeLayerConvNet;(`wScale;1e-3);(`numEpochs;1);(`batchSize;50);(`updateRule;`adam);(`optimConfig;enlist[`learnRate]!enlist 1e-3);(`printEvery;20);(`dimHidden;500);(`filterSize;3));
 
 if[runAll;res:solver.train startd]
+
+lg "##############################
+    Experiment with spatial batchnorm
+    ##############################"
+
+lg "##############################
+    Testing conv-norm-relu
+    ##############################"
+
+lg "first test out conv-norm-relu layers, by getting grads and then 
+    comparing to numerical grads"
+
+x:rad 2 3 16 16
+w:rad 3 3 3 3
+b:rad 3
+gamma:3#1f
+beta:3#1f
+bnParam:`mode`runningMean`runningVar!(`train;3#0f;3#0f)
+dout:rad 2 3 16 16
+convParam:`stride`pad!2#1
+
+outCache:convNormReluForward[x;w;b;convParam;gamma;beta;bnParam]
+dxDwDbDgammaDbeta:convNormReluBackward[dout;outCache 1]
+
+lg "now get numerical grads"
+dxNum:numericalGradientArray[(first convNormReluForward[;w;b;convParam;gamma;beta;bnParam]@);x;dout;`x]
+dwNum:numericalGradientArray[(first convNormReluForward[x;;b;convParam;gamma;beta;bnParam]@);w;dout;`w]
+dbNum:numericalGradientArray[(first convNormReluForward[x;w;;convParam;gamma;beta;bnParam]@);b;dout;`b]
+dgammaNum:numericalGradientArray[(first convNormReluForward[x;w;b;convParam;;beta;bnParam]@);gamma;dout;`x]
+dbetaNum:numericalGradientArray[(first convNormReluForward[x;w;b;convParam;gamma;;bnParam]@);beta;dout;`beta]
+
+lg "relative errors are"
+relError'[(dxNum;dwNum;dbNum;dgammaNum;dbetaNum);dxDwDbDgammaDbeta]
+
+lg "##############################
+    Testing conv-norm-relu-pool
+    ##############################"
+
+lg "now, similar to just above, but we add in pool layer"
+
+x:rad 2 3 16 16
+w:rad 3 3 3 3
+b:rad 3
+gamma:3#1f
+beta:3#1f
+bnParam:`mode`runningMean`runningVar!(`train;3#0f;3#0f)
+dout:rad 2 3 8 8
+convParam:`stride`pad!2#1
+poolParam:`poolHeight`poolWidth`stride!3#2
+
+outCache:convNormReluPoolForward[x;w;b;convParam;poolParam;gamma;beta;bnParam]
+dxDwDbDgammaDbeta:convNormReluPoolBackward[dout;outCache 1]
+
+lg "now get numerical grads"
+dxNum:numericalGradientArray[(first convNormReluPoolForward[;w;b;convParam;poolParam;gamma;beta;bnParam]@);x;dout;`x]
+dwNum:numericalGradientArray[(first convNormReluPoolForward[x;;b;convParam;poolParam;gamma;beta;bnParam]@);w;dout;`w]
+dbNum:numericalGradientArray[(first convNormReluPoolForward[x;w;;convParam;poolParam;gamma;beta;bnParam]@);b;dout;`b]
+dgammaNum:numericalGradientArray[(first convNormReluPoolForward[x;w;b;convParam;poolParam;;beta;bnParam]@);gamma;dout;`x]
+dbetaNum:numericalGradientArray[(first convNormReluPoolForward[x;w;b;convParam;poolParam;gamma;;bnParam]@);beta;dout;`beta]
+
+lg "relative errors are"
+relError'[(dxNum;dwNum;dbNum;dgammaNum;dbetaNum);dxDwDbDgammaDbeta]
+

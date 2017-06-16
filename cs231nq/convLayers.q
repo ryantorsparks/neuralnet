@@ -600,7 +600,9 @@ convNormReluPoolForward:{[x;w;b;convParam;poolParam;gamma;beta;bnParam]
     reluCache:relu_reluCache 1;
   
     / pool layer
-    out_poolCache:maxPoolForwardFast[relu;poolParam]
+    out_poolCache:maxPoolForwardFast[relu;poolParam];
+    out:out_poolCache 0;
+    poolCache:out_poolCache 1;
 
     / cache for backward pass
     cache:`convCache`normCache`reluCache`poolCache!(convCache;normCache;reluCache;poolCache);
