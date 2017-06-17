@@ -325,8 +325,19 @@ lg "We start with only 100 data points"
 numTrain:100
 smallData:`xTrain`yTrain`xVal`yVal!(numTrain#xTrain;numTrain#yTrain;xVal;yVal)
 
-lg "running 20 epochs of overfitting"
-startd:smallData,(!). flip (`model`threeLayerConvNet;(`wScale;1e-2);(`numEpochs;20);(`batchSize;50);(`updateRule;`adam);(`optimConfig;enlist[`learnRate]!enlist 1e-3);(`printEvery;1);(`useBatchNorm;1b));
+lg "running 10 epochs of overfitting"
+startd:smallData,(!). flip (`model`threeLayerConvNet;(`wScale;1e-2);(`numEpochs;10);(`batchSize;50);(`updateRule;`adam);(`optimConfig;enlist[`learnRate]!enlist 1e-3);(`printEvery;1);(`useBatchNorm;1b));
+
+if[runAll;res:solver.train startd]
+
+lg "##############################
+    Long run of 3 layer net
+    ##############################"
+
+lg "this will take hours to run, and should get around 
+    80% training acc., and >60% val. accuracy"
+
+startd:(!). flip ((`xTrain;xTrain);(`yTrain;yTrain);(`xVal;xVal);(`yVal;yVal);`model`threeLayerConvNet;(`wScale;1e-3);(`numEpochs;10);(`batchSize;50);(`updateRule;`adam);(`optimConfig;enlist[`learnRate]!enlist 1e-3);(`printEvery;10);(`dimHidden;500);(`filterSize;3);(`useBatchNorm;1b));
 
 if[runAll;res:solver.train startd]
 
