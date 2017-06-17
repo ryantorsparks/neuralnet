@@ -1,4 +1,4 @@
-\p 5000
+@[system;"p 5000";{-1"WARNING: failed to set port to 5000";}]
 \l load_all.q
 \l load_cifar_data.q
 / set runAll to 1b only if you want to run everything
