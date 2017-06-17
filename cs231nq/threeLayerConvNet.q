@@ -160,6 +160,7 @@ threeLayerConvNet.loss:{[d]
  };
 
 threeLayerConvNet.params:{[d] `w1`b1`w2`b2`w3`b3}
+threeLayerConvNet.bnParams:{[d]`beta1`beta2`gamma1`gamma2`bnParams}
 
 / for batch normalization, we need to keep track of running means and
 / variances, so need to pass a special bnParam object to each batch norm

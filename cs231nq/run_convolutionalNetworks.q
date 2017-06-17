@@ -315,3 +315,18 @@ lossGrad:threeLayerConvNet.loss initd
 lg "as a sanity check, compare numerical gradients for reg in 0.0 3.14"
 gradCheckDict:@[(raze key[startd],`useBatchNorm`wScale`w1`w2`w3`b1`b2`b3`beta1`beta2`gamma1`gamma2`bnParams)#initd;`model`h;:;`threeLayerConvNet,1e-6] 
 compareNumericalGradients[gradCheckDict;0f];
+
+lg "##############################
+    Sanity check 3, overfit using conv-relu-norm-pool
+    ##############################"
+
+
+lg "We start with only 100 data points"
+numTrain:100
+smallData:`xTrain`yTrain`xVal`yVal!(numTrain#xTrain;numTrain#yTrain;xVal;yVal)
+
+lg "running 10 epochs of overfitting"
+startd:smallData,(!). flip (`model`threeLayerConvNet;(`wScale;1e-3);(`numEpocs;20);(`batchSize;50);(`updateRule;`adam);(`optimConfig;enlist[`learnRate]!enlist 1e-3);(`printEvery;1);(`useBatchNorm;1b));
+
+if[runAll;res:solver.train startd]
+
