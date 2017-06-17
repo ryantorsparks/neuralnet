@@ -7,7 +7,7 @@ lg:{-1 $[10h=type x;"\n" sv "  ",/:ltrim each "\n" vs $[x like "#*#";"\n",x,"\n"
 
 / log time and space
 / print (time timeSinceLastPrint MEM(GB) msg)
-lgts:{prevNow:@[get;`now;0Nt];now::.z.t;lg " " sv (string .z.t;string now-prevNow;.Q.f[2;1e-9*.Q.w[]`used]," GB";x)};
+lgts:{prevNow:@[get;`now;0Nt];now::.z.t;lg " " sv (string .z.t;string now-prevNow;.Q.f[2;1e-9*.Q.w[]`heap]," GB";x)};
 
 / util to convert n dimentional q matrix to python copy paste-able
 / (useful for confirming results should match)
