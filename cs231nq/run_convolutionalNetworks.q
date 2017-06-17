@@ -296,3 +296,22 @@ lossGrad2:threeLayerConvNet.loss @[initd;`reg;:;0.5]
 lg "initial loss (with regularization):"
 lossGrad2 0
 
+lg "##############################
+    Sanity check 2, grad check
+    ##############################"
+
+
+numInputs:2
+dimInput:3 10 10
+reg:0.0
+nClass:10
+x:rad numInputs,dimInput
+y:numInputs?nClass
+
+startd:`numFilters`filterSize`dimInput`dimHidden`x`y`useBatchNorm!(3;3;dimInput;7;x;y;1b)
+initd: threeLayerConvNet.init startd
+lossGrad:threeLayerConvNet.loss initd
+
+lg "as a sanity check, compare numerical gradients for reg in 0.0 3.14"
+gradCheckDict:@[(raze key[startd],`useBatchNorm`wScale`w1`w2`w3`b1`b2`b3`beta1`beta2`gamma1`gamma2`bnParams)#initd;`model`h;:;`threeLayerConvNet,1e-6] 
+compareNumericalGradients[gradCheckDict;0f];

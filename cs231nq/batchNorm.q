@@ -128,8 +128,8 @@ batchNormBackwardAlt:{[dout;cache]
 /     mode - `train or `test
 /     eps - constant for numeric stability
 /     momentum -constant for runnin mean/variance
-/     runningMean - list length D, running mean of features
-/     runningVar - list length D, running variance of features
+/     runningMean - list length C, running mean of features
+/     runningVar - list length C, running variance of features
 / returns, (out;cache), where out is shape (N;C;H;W)
 spatialBatchNormForward:{[x;gamma;beta;bnParam]
     xShape:shape x;

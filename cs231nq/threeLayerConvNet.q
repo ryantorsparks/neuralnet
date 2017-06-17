@@ -81,7 +81,7 @@ threeLayerConvNet.init:{[d]
     / d[`gamma1`gamm2] - d[`dimHidden`nClass]#\:1f
     / d[`betaParams] - `beta1`beta2
     / d[`beta1`beta2] - d[`dimHidden`nClass]#\:0f
-    d:initBnParams[d;3];
+    d:threeLayerConvNet.initBnParams[d;3];
     d
  };
 
@@ -105,7 +105,7 @@ threeLayerConvNet.loss:{[d]
 
     / forward into the conv layer
     convCache:$[d`useBatchNorm;
-                  convNormReluPoolForward[d`x;d`w1;d`b1;convParam;poolParam;d`gamma1;d`beta1;d[`bnParams]`bnParam1];
+                  convNormReluPoolForward[d`x;d`w1;d`b1;convParam;poolParam;d`gamma1;d`beta1;d .`bnParams`bnParam1];
                   convReluPoolForward[d`x;d`w1;d`b1;convParam;poolParam]
                ];
     convLayer:convCache 0;
@@ -118,7 +118,7 @@ threeLayerConvNet.loss:{[d]
     / rshape x
     x:reshapeM[convLayer;(convShape 0;prd convShape 1 2 3)];
     hiddenCache:$[d`useBatchNorm;
-                    affineNormReluForward `x`w`b`gamma`beta`bnParam!(x;d`w2;d`b2;d`gamma2;d`beta2;d[`bnParams]`bnParam2);
+                    affineNormReluForward `x`w`b`gamma`beta`bnParam!(x;d`w2;d`b2;d`gamma2;d`beta2;d .`bnParams`bnParam2);
                     affineReluForward`x`w`b!(x;d`w2;d`b2)
                  ];
     hiddenLayer:hiddenCache 0;
@@ -182,4 +182,24 @@ initBnParams:{[d;numLayers]
    d
  };
 
+threeLayerConvNet.initBnParams:{[d;numLayers]
+   if[d`useBatchNorm;
+        lg "We use batchnorm here";
+        if[not all (req:`numFilters`dimHidden) in key d;'"initBnParam: d needs all of ",-3!req];
+        F:d`numFilters;
+        gamma1:F#1f;
+        beta1:F#0f;
+        bnParam1:`mode`runningMean`runningVar!(`train;F#0f;F#0f);
+        Hh:d`dimHidden;
+        gamma2:Hh#1f;
+        beta2:Hh#0f;
+        bnParam2:`mode`runningMean`runningVar!(`train;Hh#0f;Hh#0f);
+        d[`gammaParams]:`gamma1`gamma2;
+        d[`betaParams]:`beta1`beta2;
+        d[d`gammaParams]:(gamma1;gamma2);
+        d[d`betaParams]:(beta1;beta2);
+        d[`bnParams]:([]bnParamName:`bnParam1`bnParam2)!(bnParam1;bnParam2);
+      ];
+   d
+ };
 
