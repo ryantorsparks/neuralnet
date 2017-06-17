@@ -246,7 +246,7 @@ dgammaNum:numericalGradientArray[(first convNormReluForward[x;w;b;convParam;;bet
 dbetaNum:numericalGradientArray[(first convNormReluForward[x;w;b;convParam;gamma;;bnParam]@);beta;dout;`beta]
 
 lg "relative errors are"
-relError'[(dxNum;dwNum;dbNum;dgammaNum;dbetaNum);dxDwDbDgammaDbeta]
+lg relError'[(dxNum;dwNum;dbNum;dgammaNum;dbetaNum);dxDwDbDgammaDbeta]
 
 lg "##############################
     Testing conv-norm-relu-pool
@@ -275,5 +275,24 @@ dgammaNum:numericalGradientArray[(first convNormReluPoolForward[x;w;b;convParam;
 dbetaNum:numericalGradientArray[(first convNormReluPoolForward[x;w;b;convParam;poolParam;gamma;;bnParam]@);beta;dout;`beta]
 
 lg "relative errors are"
-relError'[(dxNum;dwNum;dbNum;dgammaNum;dbetaNum);dxDwDbDgammaDbeta]
+lg relError'[(dxNum;dwNum;dbNum;dgammaNum;dbetaNum);dxDwDbDgammaDbeta]
+
+
+lg "##############################
+    Sanity check, loss with+w/o loss
+    ##############################"
+
+N:50
+x:rad N,3 32 32
+y:N?10
+
+lg "run three layer loss with reg=0 then reg=0.5"
+
+initd:threeLayerConvNet.init `x`y`useBatchNorm!(x;y;1b)
+lossGrad:threeLayerConvNet.loss initd
+lg "initial loss (no regularization):"
+lossGrad 0
+lossGrad2:threeLayerConvNet.loss @[initd;`reg;:;0.5]
+lg "initial loss (with regularization):"
+lossGrad2 0
 

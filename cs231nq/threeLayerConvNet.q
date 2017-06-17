@@ -105,7 +105,7 @@ threeLayerConvNet.loss:{[d]
 
     / forward into the conv layer
     convCache:$[d`useBatchNorm;
-                  convNormReluPoolForward[d`x;d`w1;d`b1;convParam;poolParam;d`gamma1;d`beta1;d`bnParam1];
+                  convNormReluPoolForward[d`x;d`w1;d`b1;convParam;poolParam;d`gamma1;d`beta1;d[`bnParams]`bnParam1];
                   convReluPoolForward[d`x;d`w1;d`b1;convParam;poolParam]
                ];
     convLayer:convCache 0;
@@ -118,7 +118,7 @@ threeLayerConvNet.loss:{[d]
     / rshape x
     x:reshapeM[convLayer;(convShape 0;prd convShape 1 2 3)];
     hiddenCache:$[d`useBatchNorm;
-                    affineNormReluForward `x`w`b`gamma`beta`bnParam!(x;d`w2;d`b2;d`gamma2;d`beta2;d`bnParam2);
+                    affineNormReluForward `x`w`b`gamma`beta`bnParam!(x;d`w2;d`b2;d`gamma2;d`beta2;d[`bnParams]`bnParam2);
                     affineReluForward`x`w`b!(x;d`w2;d`b2)
                  ];
     hiddenLayer:hiddenCache 0;
@@ -172,7 +172,7 @@ initBnParams:{[d;numLayers]
         dims:raze d`dimInput`dimHidden`nClass;
         tnl:1+til numLayers;
         bnLayers:-1_tnl;
-        bnZeros:(-1_1_dims)#\:0f;
+        bnZeros:(-1_ (count[d`dimInput]-1)_ dims)#\:0f;
         d[`gammaParams]:`$"gamma",/:string bnLayers;
         d[`betaParams]:`$"beta",/:string bnLayers;
         d[d`gammaParams]:1+bnZeros;
