@@ -335,9 +335,9 @@ lg "##############################
     ##############################"
 
 lg "this will take hours to run, and should get around 
-    80% training acc., and >60% val. accuracy"
+    80% training acc., and >65% val. accuracy"
 
-startd:(!). flip ((`xTrain;xTrain);(`yTrain;yTrain);(`xVal;xVal);(`yVal;yVal);`model`threeLayerConvNet;(`wScale;1e-3);(`numEpochs;10);(`batchSize;50);(`updateRule;`adam);(`optimConfig;enlist[`learnRate]!enlist 1e-3);(`printEvery;20);(`dimHidden;500);(`filterSize;3);(`useBatchNorm;1b));
+startd:(!). flip ((`xTrain;xTrain);(`yTrain;yTrain);(`xVal;xVal);(`yVal;yVal);`model`threeLayerConvNet;(`wScale;1e-3);(`numEpochs;4);(`batchSize;50);(`updateRule;`adam);(`optimConfig;enlist[`learnRate]!enlist 1e-3);(`printEvery;20);(`dimHidden;500);(`filterSize;3);(`useBatchNorm;1b));
 
 if[runAll;res:solver.train startd]
 
