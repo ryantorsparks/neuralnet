@@ -47,7 +47,15 @@ threeLayerConvNet.init:{[d]
     
     / initialise random w1, and b1
     paramd:()!();
-    paramd[`w1]:d[`wScale]*rad F,C,filterHeight,filterWidth;
+    / possibly use xavier init for wScale 
+    / TODO: confirm this formula  is correct (fairly unsure)
+    / fairly sure that the problems of bad initialisations are ameliorated
+    / if we use batchnorm anyway, so probably not a big deal
+    paramd[`w1]:rad[F,C,filterHeight,filterWidth]*
+                    $[`xavier~d`weightFiller;
+                        sqrt 2%1+C*filterHeight*filterWidth;
+                        d`wScale
+                     ];
     paramd[`b1]:F#0f;
 
 
@@ -67,7 +75,7 @@ threeLayerConvNet.init:{[d]
 
     / output affine layer
     Hc:d`nClass;
-    paramd[`w3]:d[`wScale]*rad Hh,Hc;
+    paramd[`w3]:convWInit[`weightFiller _ d;Hh,Hc;Hh+Hc];
     paramd[`b3]:Hc#0f;
 
     / add to dicitonary d, but don't overwrite any values of W/b if they 
@@ -123,8 +131,6 @@ threeLayerConvNet.loss:{[d]
                  ];
     hiddenLayer:hiddenCache 0;
     cacheHiddenLayer:hiddenCache 1;
-    /N:count hiddenLayer;
-    /Hh:count first hiddenLayer;
 
     / forward into linear output layer
     scoresCache:affineForward`x`w`b!(hiddenLayer;d`w3;d`b3);

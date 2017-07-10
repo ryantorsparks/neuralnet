@@ -1,5 +1,14 @@
 / from http://cs231n.github.io/convolutional-networks/
 
+/ weight initialization for convnets
+/ if d[`weightFiller] is `xavier, then use xavier initialisation
+convWInit:{[d;wDims;n]
+    $[`xavier~d`weightFiller;
+        [lg"using xavier init";rad[wDims]*sqrt 2%n];
+        d[`wScale]*rad wDims
+     ]
+ };
+
 
 / pool function
 / @param m - matrix that we want to decrease
