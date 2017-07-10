@@ -171,8 +171,11 @@ sumAxes:{[m;axes]{[x;ind].[x;ind#(::);sum]}/[m;desc axes]}
 / null dictionary
 nulld:enlist[`]!enlist(::)
 
+/ append number n to each sym in list of syms
+appendNToSyms:{[syms;n] `$string[syms],\:string n}
+
 / append layer number to each item in key d
-renameKey:{[layer;dict] (`$string[key dict],\:string layer)!value dict}
+renameKey:{[layer;dict] appendNToSyms[key dict;layer]!value dict}
 
 / transform dict `dx`dw`db!(a;b;c) -> `dx3`dw3`db3!(a;b;c) (for input layer 3)
 removeDFromDictKey:{[dict] (`$1_'string key dict)!value dict}

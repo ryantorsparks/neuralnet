@@ -15,6 +15,7 @@
 /        `wScale: Scalar giving standard deviation for random initialization
 /          of weights.
 /        `reg: Scalar giving L2 regularization strength
+/
 nLayerConvNet.init:{[d]
     / d expects at the very least `dimHidden
     defaults:(!) . flip (
@@ -42,13 +43,18 @@ nLayerConvNet.init:{[d]
     / F (# of filters), C,H,WW are size of each filter
     / Input size: N C H W
     / Output size: N F Hc Wc
-    F:inputDims[0]+d`numFilters;
+    F:inputDims[0],d`numFilters;
 
-
-
-    filterHeight:d`filterSize;
-    filterWidth:filterHeight;
+    / add on W's, b's and bnParams (if in batchNorm)
+    d:nLayerConvNet.initWeightBiasBnParams[d];
     strideConv:1;
+
+    / output heigh and widhts of conv layers
+    / inputDim[1 2] -> Hinput Winput (too many locals)
+    HConvWConv:sizeConv[strideConv;d`filterSize;inputDim 1;inputDim 2;d`L];
+
+
+
 
     / padding
     P:(d[`filterSize]-1)div 2;
@@ -104,5 +110,52 @@ nLayerConvNet.init:{[d]
     d:threeLayerConvNet.initBnParams[d;3];
     d
  };
+\
+/ TODO: change to vectorize instead of "each"
+/ initialize weights and batch norm params
+nLayerConvNet.initWeightBiasBnParams:{[d]
+    l:til d`L;
+    id:1+l;
+    F:d`F;
+    Ws:d[`wScale]*rad each F[l+\:1 0],\:2#d`filterSize;
+    d:d,(`$"W",/:string l+1)!Ws;
+    bs:F[l+1]#\:0f;
+    d:d,(`$"b",/:string l+1)!bs;
+    if[d`useBatchNorm;
+        lg "We use batchnorm here";
+        gammas:F[id]#\:1f;
+        betas:F[id]#\:0f;
+        bnParams:`mode`runningMean`runningVar!(`train;F[id]#\:0f;F[id]#\:0f);
+        d[`gammaParams]:`$"gamma",/:string id;
+        d[`betaParams]:`$"beta",/:string id;
+        d[d`gammaParams]:gammas;
+        d[d`betaParams]:betas;
+        d[`bnParams]:([]bnParamName:`$"bnParam",/:string id)!flip bnParams;
+      ];
+    d
+ };
+
+sizeConv:{[strideConv;filterSize;H;W;nConv]
+    / pad
+    P:(filterSize-1)div 2;
+    Hc:(H+(2*P)-filterSize)div strideConv+1;
+    Wc:(W+(2*P)-filterSize)div strideConv+1;
+    poolWidth:2;
+    poolHeight:2;
+    poolStride:2;
+    Hp:(Hc-poolHeight)div poolStride+1;
+    Wp:(Wc-poolWidth)div poolStride+1;
+    $[nConv=1;(Hp;Wp);.z.s[strideConv;filterSize;Hp;Wp;nConv-1]]
+ };
+
+
+
+
+
+
+
+
+
+
 
 
