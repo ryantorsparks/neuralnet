@@ -15,7 +15,6 @@
 /        `wScale: Scalar giving standard deviation for random initialization
 /          of weights.
 /        `reg: Scalar giving L2 regularization strength
-/
 nLayerConvNet.init:{[d]
     / d expects at the very least `dimHidden
     defaults:(!) . flip (
@@ -46,13 +45,19 @@ nLayerConvNet.init:{[d]
     F:inputDims[0],d`numFilters;
 
     / add on W's, b's and bnParams (if in batchNorm)
-    d:nLayerConvNet.initWeightBiasBnParams[d];
+    d:initWeightBiasBnParamsConvLayers[d];
     strideConv:1;
 
-    / output heigh and widhts of conv layers
+    / output height and widhts of conv layers
     / inputDim[1 2] -> Hinput Winput (too many locals)
     HConvWConv:sizeConv[strideConv;d`filterSize;inputDim 1;inputDim 2;d`L];
 
+    / initialize the affine-relu layers
+    dims:d[`dimHidden]+prd HConvWConv,last F;
+    d:initWeightBiasBnParamsAffineReluLayers[d];
+
+    / scoring layer
+    
 
 
 
@@ -110,31 +115,77 @@ nLayerConvNet.init:{[d]
     d:threeLayerConvNet.initBnParams[d;3];
     d
  };
-\
-/ TODO: change to vectorize instead of "each"
-/ initialize weights and batch norm params
-nLayerConvNet.initWeightBiasBnParams:{[d]
-    l:til d`L;
-    id:1+l;
-    F:d`F;
-    Ws:d[`wScale]*rad each F[l+\:1 0],\:2#d`filterSize;
-    d:d,(`$"W",/:string l+1)!Ws;
-    bs:F[l+1]#\:0f;
-    d:d,(`$"b",/:string l+1)!bs;
-    if[d`useBatchNorm;
-        lg "We use batchnorm here";
-        gammas:F[id]#\:1f;
-        betas:F[id]#\:0f;
-        bnParams:`mode`runningMean`runningVar!(`train;F[id]#\:0f;F[id]#\:0f);
-        d[`gammaParams]:`$"gamma",/:string id;
-        d[`betaParams]:`$"beta",/:string id;
-        d[d`gammaParams]:gammas;
-        d[d`betaParams]:betas;
-        d[`bnParams]:([]bnParamName:`$"bnParam",/:string id)!flip bnParams;
-      ];
+
+
+nLayerConvNet.initBnParams:{[d;x;id;idOffset]
+    lg "We use batchnorm here";
+    gammas:x[id]#\:1f;
+    betas:x[id]#\:0f;
+    bnParams:`mode`runningMean`runningVar!(`train;x[id]#\:0f;x[id]#\:0f);
+    ids:id+idOffset;
+    d[`gammaParams]:dget[d;`gammaParams;()],`$"gamma",/:string ids;
+    d[`betaParams]:dget[d;`betaParams;()],`$"beta",/:string ids;
+    d[d`gammaParams]:gammas;
+    d[d`betaParams]:betas;
+    d[`bnParams]:([]bnParamName:`$"bnParam",/:string ids)!flip bnParams;
     d
  };
 
+/ initialize weights and batch norm params for conv layers
+/ d expects
+/   L - long, number of conv layers
+/   wScale - float, weight scale
+/   F - long list - number of filters for each layer
+/   filterSize - long - the number of filters, same all layers
+/   useBatchNorm - boolean
+initWeightBiasBnParamsConvLayers:{[d]
+    l:til d`L;
+    id:1+l;
+    F:d`F;
+
+    / init the weights
+    Ws:d[`wScale]*rad each F[l+\:1 0],\:2#d`filterSize;
+    d:d,(`$"W",/:string l+1)!Ws;
+
+    / init biases
+    bs:F[l+1]#\:0f;
+    d:d,(`$"b",/:string l+1)!bs;
+
+    / add in bn params
+    if[d`useBatchNorm;d:nLayerConvNet.initBnParams[d;F;l+1;0]];
+    d
+ };
+
+
+/ initialize weights and batch norm params for affine relu layers
+/ d expects
+/   L - long, number of conv layers
+/   M - long, number of affine relu layers
+/   wScale - float, weight scale
+/   dims - long list - dims of affine relu layers
+/   useBatchNorm - boolean
+initWeightBiasBnParamsAffineReluLayers:{[d]
+    m:til d`M;
+    id:1+d[`L]+m;
+    dims:d`dims;
+
+    / initialize the list of W's (each will be 2 dims)
+    Ws:d[`wScale]*rad each dims m+\:0 1;
+    d:d,(`$"W",/:string id)!Ws;
+   
+    / init. the biases (each a list of 0's)
+    bs:dims[m+1]#\:0f;
+    d:d,(`$"b",/:string id)!bs;
+
+    / add in bn params
+    if[d`useBatchNorm;d:nLayerConvNet.initBnParams[d;dims;m+1;d`L]];
+    d
+ };
+
+        
+
+
+/ determine the conv size
 sizeConv:{[strideConv;filterSize;H;W;nConv]
     / pad
     P:(filterSize-1)div 2;
