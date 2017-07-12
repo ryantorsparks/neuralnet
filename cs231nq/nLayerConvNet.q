@@ -123,11 +123,12 @@ nLayerConvNet.initBnParams:{[d;x;id;idOffset]
     betas:x[id]#\:0f;
     bnParams:`mode`runningMean`runningVar!(`train;x[id]#\:0f;x[id]#\:0f);
     ids:id+idOffset;
-    d[`gammaParams]:dget[d;`gammaParams;()],`$"gamma",/:string ids;
-    d[`betaParams]:dget[d;`betaParams;()],`$"beta",/:string ids;
-    d[d`gammaParams]:gammas;
-    d[d`betaParams]:betas;
-    d[`bnParams]:([]bnParamName:`$"bnParam",/:string ids)!flip bnParams;
+    kd:key d;
+    d:@[d;`gammaParams;(:;,)`gammaParams in kd;gp:`$"gamma",/:string ids];
+    d:@[d;`betaParams;(:;,)`betaParams in kd;bp:`$"beta",/:string ids];
+    d[gp]:gammas;
+    d[bp]:betas;
+    d:@[d;`bnParams;(:;,)`bnParams in kd;([]bnParamName:`$"bnParam",/:string ids)!flip bnParams];
     d
  };
 
