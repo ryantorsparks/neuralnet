@@ -56,63 +56,9 @@ nLayerConvNet.init:{[d]
     dims:d[`dimHidden]+prd HConvWConv,last F;
     d:initWeightBiasBnParamsAffineReluLayers[d];
 
-    / scoring layer
-    
-
-
-
-    / padding
-    P:(d[`filterSize]-1)div 2;
-
-    / output of convolution, height and width
-    Hc:1+(H+(2*P)-filterHeight)div strideConv;
-    Wc:1+(W+(2*P)-filterWidth)div strideConv;
-    
-    / initialise random w1, and b1
-    paramd:()!();
-    / possibly use xavier init for wScale 
-    / TODO: confirm this formula  is correct (fairly unsure)
-    / fairly sure that the problems of bad initialisations are ameliorated
-    / if we use batchnorm anyway, so probably not a big deal
-    paramd[`w1]:rad[F,C,filterHeight,filterWidth]*
-                    $[`xavier~d`weightFiller;
-                        sqrt 2%1+C*filterHeight*filterWidth;
-                        d`wScale
-                     ];
-    paramd[`b1]:F#0f;
-
-
-    / Pool layer, 2x2, pool layer has no params but is important in the
-    / count of dimension:
-    / Input: N F Hc Wc
-    / Output: N F Hp Wp
-    widthPool:heightPool:stridePool:2;
-    Hp:1+(Hc-heightPool)div stridePool;
-    Wp:1+(Wc-widthPool)div stridePool;
-
-    / Hidden affine layer
-    / size of parameter (F*Hp*Wp;H1)
-    Hh:d`dimHidden;
-    paramd[`w2]:d[`wScale]*rad (F*Hp*Wp;Hh);
-    paramd[`b2]:Hh#0f;
-
-    / output affine layer
-    Hc:d`nClass;
-    paramd[`w3]:convWInit[`weightFiller _ d;Hh,Hc;Hh+Hc];
-    paramd[`b3]:Hc#0f;
-
-    / add to dicitonary d, but don't overwrite any values of W/b if they 
-    / already exists (not likely at all, just for testing)
-    d:paramd,d;
-
-    / this should add these to d:
-    / `bnParams - a keyed table of ([bnParamName] mode;runningMean;runningVar)
-    /     where bnParamName should be bnParam1, bnParam2
-    / `gammaParams - `gamma1`gamma2
-    / d[`gamma1`gamm2] - d[`dimHidden`nClass]#\:1f
-    / d[`betaParams] - `beta1`beta2
-    / d[`beta1`beta2] - d[`dimHidden`nClass]#\:0f
-    d:threeLayerConvNet.initBnParams[d;3];
+    / add W and b for the last layer, to d
+    d[`$"W",lastLayer:string sum 1,d`L`M]:d[`wScale]*rad last[dims],d`nClass;
+    d[`$"b",lastLayer]:d[`nClass]#0f;    
     d
  };
 
