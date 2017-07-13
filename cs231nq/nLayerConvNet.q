@@ -134,7 +134,7 @@ nLayerBackwardPassLinearLayersLoop:{[d]
 
     / add in grads to blocks
     d:.[d;`blocks,`$"dh",string idx-1;:;grads`dx];
-    d:.[d;(`blocks;`$("dw";"db"),\:sidx;:;grads`dw`db];
+    d:.[d;(`blocks;`$("dw";"db"),\:sidx);:;grads`dw`db];
     @[d;`i;-;1]
  };
     
@@ -157,7 +157,7 @@ nLayerBackwardPassConvLayersLoop:{[d]
 
     / add in grads to blocks
     d:.[d;`blocks,`$"dh",string idx-1;:;grads`dx];
-    d:.[d;(`blocks;`$("dw";"db"),\:sidx;:;grads`dw`db];
+    d:.[d;(`blocks;`$("dw";"db"),\:sidx);:;grads`dw`db];
     @[d;`i;-;1]
  };
 
@@ -223,7 +223,7 @@ nLayerConvNet.loss:{[d]
 
     / add in grads for h/w/b from scoring layer
     d:.[d;`blocks,`$"dh",string idx-1;:;dhDwDb`dx];
-    d:.[d;(`blocks;`$("dw";"db"),\:sidx;:;dhDwDb`dw`db];
+    d:.[d;(`blocks;`$("dw";"db"),\:sidx);:;dhDwDb`dw`db];
 
     / now, backward pass for the linear layers/blocks
     d:d[`M]nLayerBackwardPassLinearLayersLoop/@[d;`i;:;d`M];
@@ -232,7 +232,7 @@ nLayerConvNet.loss:{[d]
     d:d[`L]nLayerBackwardPassConvLayersLoop/@[d;`i;:;d`L];
 
     / w grads where we add the reg. term
-    dws:
+    dws:();
 
 
 
