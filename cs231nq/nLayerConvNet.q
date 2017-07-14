@@ -232,36 +232,11 @@ nLayerConvNet.loss:{[d]
     d:d[`L]nLayerBackwardPassConvLayersLoop/@[d;`i;:;d`L];
 
     / w grads where we add the reg. term
-    dws:();
+    / for every `dw[n] in d[`blcoks], add on d[`reg]*d[`dW[n]]
+    d:.[d;(`blocks;`$"d",/:lower string d`wParams);+;d[`reg]*d d`wParams];
 
-
-
-
-
-
-
-    / ########### backward pass ############
-    lossDscores:softmaxLoss `x`y!(scores;d`y);
-    dataLoss:lossDscores 0;
-    dscores: lossDscores 1;
-    regLoss:.5*d[`reg]*r$r:razeo d`w1`w2`w3;
-    loss:dataLoss+regLoss;
-
-    / back propagation into output layer
-    grads:renameGradKey[3;] affineBackward[dscores;cacheScores];
-    grads[`w3]+:d[`reg]*d`w3;
-
-    / backprop into first layer
-    / both return `dx`dw`db, batchnorm also has `dbeta`dgamma
-    grads,:renameGradKey[2;] $[d`useBatchNorm;affineNormReluBackward;affineReluBackward][grads`x3;cacheHiddenLayer];
-    grads[`w2]+:d[`reg]*d`w2;
-
-    / finally, backprop into conv layer
-    / same return as grads2
-    grads,:renameGradKey[1;] $[d`useBatchNorm;convNormReluPoolBackward;convReluPoolBackward][reshapeM[grads`x2;convShape];cacheConvLayer];
-    grads[`w1]+:d[`reg]*d`w1;
-
-    / `dx1`dw1`db1 .... `dx3`dw3`db3 (and possibly `beta1/2`gamma1/2)
+    / grads should be `dw1`dw2..`db1`db2...`dbeta1`dbeta2...`dgamma1`dgamma2!...
+    grads:raze[d`dwParams`dbParams`dgammaParams`dbetaParams]#d`blocks;
     (loss;grads)
  };
 
@@ -274,10 +249,11 @@ nLayerConvNet.initBnParams:{[d;x;id;idOffset]
     bnParams:`mode`runningMean`runningVar!(`train;x[id]#\:0f;x[id]#\:0f);
     ids:id+idOffset;
     kd:key d;
-    d:@[d;`gammaParams;(:;,)`gammaParams in kd;gp:`$"gamma",/:string ids];
-    d:@[d;`betaParams;(:;,)`betaParams in kd;bp:`$"beta",/:string ids];
-    d[gp]:gammas;
-    d[bp]:betas;
+    / add in `beta0`beta1`dbeta0`dbeta1`betaParams`dbetaParams!(.....;`beta0`beta1;`dbeta0`dbeta1)
+    d:@[d;`gammaParams`dgammaParams;(:;,)`gammaParams in kd;gp:`$("";"d"),/:\: "gamma",/:string ids];
+    d:@[d;`betaParams`dbetaParams;(:;,)`betaParams in kd;bp:`$("";"d"),/:\: "beta",/:string ids];
+    d[gp 0]:gammas;
+    d[bp 0]:betas;
     d:@[d;`bnParams;(:;,)`bnParams in kd;([]bnParamName:`$"bnParam",/:string ids)!flip bnParams];
     d
  };
@@ -289,6 +265,7 @@ nLayerConvNet.initBnParams:{[d;x;id;idOffset]
 /   F - long list - number of filters for each layer
 /   filterSize - long - the number of filters, same all layers
 /   useBatchNorm - boolean
+/ TODO: make param name init less bad
 initWeightBiasBnParamsConvLayers:{[d]
     l:til d`L;
     id:1+l;
@@ -297,13 +274,15 @@ initWeightBiasBnParamsConvLayers:{[d]
     / init the weights
     Ws:d[`wScale]*rad each F[l+\:1 0],\:2#d`filterSize;
     wParamNames:`$"W",/:string l+1;
-    d[`wParams]:wParamNames;
+    dwParamNames:`$"d",/:string lower wParamNames;
+    d[`wParams`dwParams]:(wParamNames;dwParamNames);
     d:d,wParamNames!Ws;
 
     / init biases
     bs:F[l+1]#\:0f;
     bParamNames:`$"b",/:string l+1;
-    d[`bParams]:bParamNames;
+    dbParamNames:`$"d",/:string bParamNames;
+    d[`bParams`dbParams]:(bParamNames;dbParamNames);
     d:d,bParamNames!bs;
 
     / add in bn params
@@ -319,6 +298,7 @@ initWeightBiasBnParamsConvLayers:{[d]
 /   wScale - float, weight scale
 /   dims - long list - dims of affine relu layers
 /   useBatchNorm - boolean
+/ TODO: make param name init less bad
 initWeightBiasBnParamsAffineReluLayers:{[d]
     m:til d`M;
     id:1+d[`L]+m;
@@ -327,13 +307,15 @@ initWeightBiasBnParamsAffineReluLayers:{[d]
     / initialize the list of W's (each will be 2 dims)
     Ws:d[`wScale]*rad each dims m+\:0 1;
     wParamNames:`$"W",/:string id;
-    d[`wParams],:wParamNames;
+    dwParamNames:`$"d",/:lower string wParamNames;
+    d[`wParams`dwParams],:(wParamNames;dwParamNames);
     d:d,wParamNames!Ws;
    
     / init. the biases (each a list of 0's)
     bs:dims[m+1]#\:0f;
     bParamNames:`$"b",/:string id;
-    d[`bParams],:bParamNames;
+    dbParamNames:`$"d",/:string bParamNames;
+    d[`bParams`dbParams],:(bParamNames;dbParamNames);
     d:d,bParamNames!bs;
 
     / add in bn params
