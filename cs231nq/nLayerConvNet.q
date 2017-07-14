@@ -59,7 +59,7 @@ nLayerConvNet.init:{[d]
     d:initWeightBiasBnParamsAffineReluLayers[d];
 
     / add W and b for the last layer, to d
-    d[`$"W",lastLayer:string sum 1,d`L`M]:d[`wScale]*rad last[dims],d`nClass;
+    d[`$"w",lastLayer:string sum 1,d`L`M]:d[`wScale]*rad last[dims],d`nClass;
     d[`$"b",lastLayer]:d[`nClass]#0f;    
     d
  };
@@ -68,7 +68,7 @@ nLayerFowardPassConvLayersLoop:{[d]
     / extract weights/bias relevant to this layer
     idx:d[`i]+1;
     sidx:string idx;
-    w:d`$"W",sidx;
+    w:d`$"w",sidx;
     b:d`$"b",sidx;
 
     / get the previous block
@@ -101,7 +101,7 @@ nLayerFowardPassLinearLayersLoop:{[d]
     if[d[`i]=0;h:reshapeM[h;count[d`x],1_shape h]];
 
     / extract weight and bias
-    w:d`$"W",sidx;
+    w:d`$"w",sidx;
     b:d`$"b",sidx;
 
     / TODO possibly neaten this convoluted if else
@@ -194,7 +194,7 @@ nLayerConvNet.loss:{[d]
     / finally forward into score layer 
     idx:sum 1,d`L`M;
     sidx:string idx;
-    w:d`$"W",sidx;
+    w:d`$"w",sidx;
     b:d`$"b",sidx;
     h:d[`blocks]`$"h",string idx-1;
     hCacheH:affineForward[h;w;b];
@@ -232,8 +232,8 @@ nLayerConvNet.loss:{[d]
     d:d[`L]nLayerBackwardPassConvLayersLoop/@[d;`i;:;d`L];
 
     / w grads where we add the reg. term
-    / for every `dw[n] in d[`blcoks], add on d[`reg]*d[`dW[n]]
-    d:.[d;(`blocks;`$"d",/:lower string d`wParams);+;d[`reg]*d d`wParams];
+    / for every `dw[n] in d[`blcoks], add on d[`reg]*d[`dw[n]]
+    d:.[d;(`blocks;`$"d",/:string d`wParams);+;d[`reg]*d d`wParams];
 
     / grads should be `dw1`dw2..`db1`db2...`dbeta1`dbeta2...`dgamma1`dgamma2!...
     grads:raze[d`dwParams`dbParams`dgammaParams`dbetaParams]#d`blocks;
@@ -272,11 +272,11 @@ initWeightBiasBnParamsConvLayers:{[d]
     F:d`F;
 
     / init the weights
-    Ws:d[`wScale]*rad each F[l+\:1 0],\:2#d`filterSize;
-    wParamNames:`$"W",/:string l+1;
-    dwParamNames:`$"d",/:string lower wParamNames;
+    ws:d[`wScale]*rad each F[l+\:1 0],\:2#d`filterSize;
+    wParamNames:`$"w",/:string l+1;
+    dwParamNames:`$"d",/:string wParamNames;
     d[`wParams`dwParams]:(wParamNames;dwParamNames);
-    d:d,wParamNames!Ws;
+    d:d,wParamNames!ws;
 
     / init biases
     bs:F[l+1]#\:0f;
@@ -304,12 +304,12 @@ initWeightBiasBnParamsAffineReluLayers:{[d]
     id:1+d[`L]+m;
     dims:d`dims;
 
-    / initialize the list of W's (each will be 2 dims)
-    Ws:d[`wScale]*rad each dims m+\:0 1;
-    wParamNames:`$"W",/:string id;
-    dwParamNames:`$"d",/:lower string wParamNames;
+    / initialize the list of w's (each will be 2 dims)
+    ws:d[`wScale]*rad each dims m+\:0 1;
+    wParamNames:`$"w",/:string id;
+    dwParamNames:`$"d",/:string wParamNames;
     d[`wParams`dwParams],:(wParamNames;dwParamNames);
-    d:d,wParamNames!Ws;
+    d:d,wParamNames!ws;
    
     / init. the biases (each a list of 0's)
     bs:dims[m+1]#\:0f;
@@ -338,6 +338,8 @@ sizeConv:{[strideConv;filterSize;H;W;nConv]
     $[nConv=1;(Hp;Wp);.z.s[strideConv;filterSize;Hp;Wp;nConv-1]]
  };
 
+nLayerConvNet.params:{[d]raze d`wParams`bParams}
+nLayerConvNet.bnParams:{[d]raze d`gammaParams`betaParams}
 
 
 
