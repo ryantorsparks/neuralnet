@@ -82,7 +82,7 @@ solver.step:{[d]
     modelParams:getModelValue[d;`params];
   
     / ??? about the stuff after `reg
-    lossGradKeys:modelParams,`reg`dropoutParam`useBatchNorm`bnParams`wParams`bParams`betaParams`gammaParams`layerInds`model;
+    lossGradKeys:modelParams,`reg`dropoutParam`useBatchNorm`bnParams`wParams`dwParams`bParams`dbParams`betaParams`dbetaParams`gammaParams`dgammaParams`layerInds`model`filterSize`L`M;
     if[d`useBatchNorm;lossGradKeys,:`gammaParams`betaParams,getModelValue[d;`bnParams]];
     lossGrad:getModelValue[ (inter[lossGradKeys;key d]#d),`x`y!(xBatch;yBatch);`loss];
     loss:lossGrad 0;
@@ -196,7 +196,7 @@ solver.i.train:{[d]
     modelParams:getModelValue[d;`params];
     if[any (cnt=0;cnt=numIterations+1;epochEnd);
         lg"checking accuracies";
-        checkKeys:modelParams,`bParams`wParams`layerInds`useBatchNorm;
+        checkKeys:modelParams,`bParams`wParams`layerInds`useBatchNorm`filterSize`L`M`reg;
         if[d`useBatchNorm;checkKeys,:`bnParams`betaParams`gammaParams,getModelValue[d;`bnParams]];
         trainAcc:solver.checkAccuracy (inter[checkKeys;key d]#d),`model`x`y`batchSize`numSamples!d[`model`xTrain`yTrain`batchSize],1000;
         valAcc:solver.checkAccuracy (inter[checkKeys;key d]#d),`model`x`y`batchSize`numSamples!d[`model`xVal`yVal`batchSize],0N;
