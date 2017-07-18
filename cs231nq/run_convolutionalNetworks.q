@@ -383,7 +383,27 @@ lg "as a sanity check, compare numerical gradients for reg in 0.0 3.14"
 gradCheckDict:@[(raze key[startd],`useBatchNorm`wScale`bnParams`L`M`wParams`dwParams`dbParams,raze(nLayerConvNet.params;nLayerConvNet.bnParams)@\:initd)#initd;`model`h;:;`nLayerConvNet,1e-6]
 compareNumericalGradients[gradCheckDict;0f];
 
+lg "##############################
+    Sanity check 3, overfit using 
+    n Layer convnet+small data
+    ##############################"
 
-//d:(!). flip (`useBatchNorm,1b;(`numFilters;16 32 64 128);`batchSize,50;`updateRule`adam;`filterSize,3;`printEvery,10;(`dimHidden;500 500);(`dimInput;3 32 32);(`numEpochs;4);`wScale,.05;`learnRateDecay,0.95;`nClass,10;(`xTrain;`float$xTrain);(`yTrain;yTrain);(`xVal;`float$xVal);(`yVal;yVal);`model`nLayerConvNet;(`optimConfig;(enlist `learnRate)!enlist 1e-3);`reg,0.05)
 
+lg "We start with only 100 data points"
+numTrain:100
+smallData:`xTrain`yTrain`xVal`yVal!(numTrain#xTrain;numTrain#yTrain;xVal;yVal)
 
+lg "running 10 epochs of overfitting, larger convnet, 
+    should reach 100% training accuracy within 10 epochs""
+startd:smallData,(!). flip (`model`nLayerConvNet;(`wScale;1e-2);(`numEpochs;10);(`batchSize;50);(`updateRule;`adam);(`optimConfig;enlist[`learnRate]!enlist 1e-3);(`printEvery;1);(`useBatchNorm;1b);(`dimInputs;3 32 32);(`numFilters;16 32 64 128);`filterSize,3;(`dimHidden;500 500));
+
+if[runAll;res:solver.train startd]
+
+lg "##############################
+    Run the full, deep conv net on
+    all training data
+    ##############################"
+
+startd:(!). flip (`useBatchNorm,1b;(`numFilters;16 32 64 128);`batchSize,50;`updateRule`adam;`filterSize,3;`printEvery,10;(`dimHidden;500 500);(`dimInput;3 32 32);(`numEpochs;4);`wScale,.05;`learnRateDecay,0.95;`nClass,10;(`xTrain;xTrain);(`yTrain;yTrain);(`xVal;xVal);(`yVal;yVal);`model`nLayerConvNet;(`optimConfig;(enlist `learnRate)!enlist 1e-3);`reg,0.05)
+
+if[runAll;res:solver.train startd]

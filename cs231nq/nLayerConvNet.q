@@ -205,11 +205,9 @@ nLayerConvNet.loss:{[d]
     hCacheH:affineForward`x`w`b!(h;w;b);
     / add `hN`cacheHN!hCacheH to d[`blocks]
     d:.[d;(`blocks;`$("h";"cacheH"),\:sidx);:;hCacheH];
-    .temp.d:d;
 
     / compute scores
     scores:d[`blocks]`$"h",sidx;
-    .temp.scores:scores;
 
     / exit early if we're in test mode (i.e. no y)
     if[not `y in key d;:scores];
@@ -218,11 +216,8 @@ nLayerConvNet.loss:{[d]
     / calc the loss
     lossDscores:softmaxLoss `x`y!(scores;d`y);
     dataLoss:lossDscores 0;
-    .temp.dataLoss:dataLoss;
     dscores: lossDscores 1;
-    .temp.dscores:dscores;
     loss:dataLoss+0.5*d[`reg]*r$r:razeo d d`wParams;
-    .temp.dataRegLoss:loss;
 
     / ########### backward pass ############
     idx:sum 1,d`L`M;
