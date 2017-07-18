@@ -279,7 +279,7 @@ lg relError'[(dxNum;dwNum;dbNum;dgammaNum;dbetaNum);dxDwDbDgammaDbeta]
 
 
 lg "##############################
-    Sanity check, loss with+w/o loss
+    Sanity check, loss with+w/o reg
     ##############################"
 
 N:50
@@ -340,4 +340,50 @@ lg "this will take hours to run, and should get around
 startd:(!). flip ((`xTrain;xTrain);(`yTrain;yTrain);(`xVal;xVal);(`yVal;yVal);`model`threeLayerConvNet;(`wScale;1e-3);(`numEpochs;4);(`batchSize;50);(`updateRule;`adam);(`optimConfig;enlist[`learnRate]!enlist 1e-3);(`printEvery;20);(`dimHidden;500);(`filterSize;3);(`useBatchNorm;1b));
 
 if[runAll;res:solver.train startd]
+
+lg "##############################
+    Running a deeper conv net
+    ##############################"
+
+lg "##############################
+    Sanity check, loss with+w/o reg
+    ##############################"
+
+N:50
+x:rad N,3 32 32
+y:N?10
+
+lg "run 7 layer loss with reg=0 then reg=0.5"
+
+initd:nLayerConvNet.init `x`y`useBatchNorm!(x;y;1b)
+lossGrad:nLayerConvNet.loss initd
+lg "initial loss (no regularization):"
+lossGrad 0
+lossGrad2:nLayerConvNet.loss @[initd;`reg;:;0.5]
+lg "initial loss (with regularization):"
+lossGrad2 0
+
+lg "##############################
+    Sanity check 2, nLayer convnet 
+    grad check
+    ##############################"
+
+numInputs:2
+dimInput:3 12 12
+reg:0.0
+nClass:10
+x:rad numInputs,dimInput
+y:numInputs?nClass
+
+startd:`numFilters`filterSize`dimInput`dimHidden`x`y`useBatchNorm!(16 32;3;dimInput;6 6;x;y;1b)
+initd: nLayerConvNet.init startd
+lossGrad:nLayerConvNet.loss initd
+
+lg "as a sanity check, compare numerical gradients for reg in 0.0 3.14"
+gradCheckDict:@[(raze key[startd],`useBatchNorm`wScale`bnParams`L`M`wParams`dwParams`dbParams,raze(nLayerConvNet.params;nLayerConvNet.bnParams)@\:initd)#initd;`model`h;:;`nLayerConvNet,1e-6]
+compareNumericalGradients[gradCheckDict;0f];
+
+
+//d:(!). flip (`useBatchNorm,1b;(`numFilters;16 32 64 128);`batchSize,50;`updateRule`adam;`filterSize,3;`printEvery,10;(`dimHidden;500 500);(`dimInput;3 32 32);(`numEpochs;4);`wScale,.05;`learnRateDecay,0.95;`nClass,10;(`xTrain;`float$xTrain);(`yTrain;yTrain);(`xVal;`float$xVal);(`yVal;yVal);`model`nLayerConvNet;(`optimConfig;(enlist `learnRate)!enlist 1e-3);`reg,0.05)
+
 
