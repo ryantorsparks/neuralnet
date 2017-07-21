@@ -69,7 +69,6 @@ nLayerFowardPassConvLayersLoop:{[d]
     / extract weights/bias relevant to this layer
     idx:d[`i]+1;
     sidx:string idx;
-    //lg "forward pass conv layer ",sidx;
     w:d`$"w",sidx;
     b:d`$"b",sidx;
 
@@ -97,7 +96,6 @@ nLayerFowardPassLinearLayersLoop:{[d]
     / extract weights/bias relevant to this layer
     idx:sum 1,d`i`L;
     sidx:string idx;
-    //lg "forward linear loop id ",sidx;
 
     / get the previous block
     h:d[`blocks]`$"h",string idx-1;
@@ -126,7 +124,6 @@ nLayerFowardPassLinearLayersLoop:{[d]
 nLayerBackwardPassLinearLayersLoop:{[d]
     idx:sum 1,d`i`L;
     sidx:string idx;
-    //lg "back pass linear layer ",sidx;
     dh:d[`blocks]`$"dh",sidx;
     cacheH:d[`blocks]`$"cacheH",sidx;
     / grads should be a dict `dx`dw`db[`dbeta`dgamma]!...
@@ -145,7 +142,6 @@ nLayerBackwardPassLinearLayersLoop:{[d]
 nLayerBackwardPassConvLayersLoop:{[d]
     idx:1+d`i;
     sidx:string idx;
-    //lg "back pass conv layer ",sidx;
     dh:d[`blocks]`$"dh",sidx;
     cacheH:d[`blocks]`$"cacheH",sidx;
     / for the furthest first (whiel moving from back to front in backward pass)
