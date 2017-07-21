@@ -86,8 +86,8 @@ nLayerFowardPassConvLayersLoop:{[d]
     if[not d`useBatchNorm;hCacheH:convReluPoolForward[h;w;b;d`convParam;d`poolParam]];
     h:hCacheH 0;
     cacheH:hCacheH 1;
-    d:.[d;`blocks,`$"h",sidx;:;h];
-    d:.[d;`blocks,`$"cacheH",sidx;:;cacheH];
+    d[`blocks;`$"h",sidx]:h;
+    d[`blocks;`$"cacheH",sidx]:cacheH;
    
     / increment i and return
     @[d;`i;:;idx]
@@ -117,7 +117,7 @@ nLayerFowardPassLinearLayersLoop:{[d]
     if[not d`useBatchNorm;hCacheH:affineReluForward `x`w`b!(h;w;b)];
 
     / add latest (h;cache) to blocks, i.e add `hN`cacheHN!hCacheH to d[`blocks]
-    d:.[d;(`blocks;`$("h";"cacheH"),\:sidx);:;hCacheH];
+    d[`blocks;`$("h";"cacheH"),\:sidx]:hCacheH;
 
     / increment i and return
     @[d;`i;+;1]
@@ -132,13 +132,13 @@ nLayerBackwardPassLinearLayersLoop:{[d]
     / grads should be a dict `dx`dw`db[`dbeta`dgamma]!...
     if[d`useBatchNorm;
         grads:affineNormReluBackward[dh;cacheH];
-        d:.[d;(`blocks;`$("dbeta";"dgamma"),\:sidx);:;grads`dbeta`dgamma];
+        d[`blocks;`$("dbeta";"dgamma"),\:sidx]:grads`dbeta`dgamma;
       ];
     if[not d`useBatchNorm;grads:affineReluBackward[dh;cacheH]];
 
     / add in grads to blocks
-    d:.[d;`blocks,`$"dh",string idx-1;:;grads`dx];
-    d:.[d;(`blocks;`$("dw";"db"),\:sidx);:;grads`dw`db];
+    d[`blocks;`$"dh",string idx-1]:grads`dx;
+    d[`blocks;`$("dw";"db"),\:sidx]:grads`dw`db;
     @[d;`i;-;1]
  };
     
@@ -156,13 +156,13 @@ nLayerBackwardPassConvLayersLoop:{[d]
     / grads will be a dict `dx`dw`db[`dbeta`dgamma]!...
     if[d`useBatchNorm;
         grads:convNormReluPoolBackward[dh;cacheH];
-        d:.[d;(`blocks;`$("dbeta";"dgamma"),\:sidx);:;grads`dbeta`dgamma];
+        d[`blocks;`$("dbeta";"dgamma"),\:sidx]:grads`dbeta`dgamma;
       ];
     if[not d`useBatchNorm;grads:convReluPoolBackward[dh;cacheH]];
 
     / add in grads to blocks
-    d:.[d;`blocks,`$"dh",string idx-1;:;grads`dx];
-    d:.[d;(`blocks;`$("dw";"db"),\:sidx);:;grads`dw`db];
+    d[`blocks;`$"dh",string idx-1]:grads`dx;
+    d[`blocks;`$("dw";"db"),\:sidx]:grads`dw`db;
     @[d;`i;-;1]
  };
 
@@ -179,7 +179,7 @@ nLayerConvNet.loss:{[d]
 
     / add update mode of bnParams
     if[1b~d`useBatchNorm;
-        d:.[d;(`bnParams;::;`mode);:;mode];
+        d[`bnParams;::;`mode]:mode;
       ];
 
     / pass pool param to the foward pass for the max-pooling layer
@@ -204,7 +204,7 @@ nLayerConvNet.loss:{[d]
     h:d[`blocks]`$"h",string idx-1;
     hCacheH:affineForward`x`w`b!(h;w;b);
     / add `hN`cacheHN!hCacheH to d[`blocks]
-    d:.[d;(`blocks;`$("h";"cacheH"),\:sidx);:;hCacheH];
+    d[`blocks;`$("h";"cacheH"),\:sidx]:hCacheH;
 
     / compute scores
     scores:d[`blocks]`$"h",sidx;
@@ -227,8 +227,8 @@ nLayerConvNet.loss:{[d]
     dhDwDb:affineBackward[dh;cacheH];
 
     / add in grads for h/w/b from scoring layer
-    d:.[d;`blocks,`$"dh",string idx-1;:;dhDwDb`dx];
-    d:.[d;(`blocks;wps:`$("dw";"db"),\:sidx);:;dhDwDb`dw`db];
+    d[`blocks;`$"dh",string idx-1]:dhDwDb`dx;
+    d[`blocks;wps:`$("dw";"db"),\:sidx]:dhDwDb`dw`db;
     d[`dwParams`dbParams],:wps;
 
     / now, backward pass for the linear layers/blocks
@@ -239,7 +239,7 @@ nLayerConvNet.loss:{[d]
 
     / w grads where we add the reg. term
     / for every `dw[n] in d[`blcoks], add on d[`reg]*d[`dw[n]]
-    d:.[d;(`blocks;`$"d",/:string d`wParams);+;d[`reg]*d d`wParams];
+    d[`blocks;`$"d",/:string d`wParams]+:d[`reg]*d d`wParams;
 
     / grads should be `dw1`dw2..`db1`db2...`dbeta1`dbeta2...`dgamma1`dgamma2!...
     grads:raze[d`dwParams`dbParams`dgammaParams`dbetaParams]#d`blocks;
@@ -348,14 +348,4 @@ sizeConv:{[strideConv;filterSize;H;W;nConv]
 
 nLayerConvNet.params:{[d]raze d`wParams`bParams}
 nLayerConvNet.bnParams:{[d]raze d`gammaParams`betaParams}
-
-
-
-
-
-
-
-
-
-
 
