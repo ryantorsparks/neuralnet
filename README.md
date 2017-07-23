@@ -14,6 +14,12 @@ I've tried to do/translate the Stanford cs231n assignment into kdb/q. Currently,
   * convolutional layers
   * convolutional relu/pool layers (sandwich layers)
   * three layer convnet
+  * n layer convnet
+  * training a good model for cifar data
+
+TODO:
+* implement dropout for n layer convnets
+* implement a good mnist handwriting convnet
 
 Source is http://cs231n.github.io/assignments2016/
 
