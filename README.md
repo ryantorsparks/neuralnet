@@ -14,8 +14,9 @@ I've tried to do/translate the Stanford cs231n assignment into kdb/q. Currently,
   * convolutional layers
   * convolutional relu/pool layers (sandwich layers)
   * three layer convnet
-  * n layer convnet
-  * training a good model for cifar data
+* deeper convnets
+  * n layer convnet model
+  * training a good model for cifar data using a 7 layer convnet
 
 TODO:
 * implement dropout for n layer convnets
@@ -29,4 +30,5 @@ NOTE:
 * without qml (see here for installing https://github.com/zholos/qml), the matrix multiplication will likely be too slow to get anywhere
 * Haven't necessarily done things the most optimized way, am more focused on learning the concepts myself, will hopefully improve over time
 * best accuracy I've found is only around 51% for a two layer net, and 55% for a 4 layer net - this is expected to increase when convolution nets are looked at
+  * Update: with deeper convnet already have 78% accuracy, but with overfitting, hoping to improve with dropout and hyperparamter experimentation
 * I've written this all on 32 bit kdb, and as such there were many problems trying to stay under the memory limits, so therefore many methods are sub-optimal in terms of speed (would write them differenlty if done on 64 bit)
