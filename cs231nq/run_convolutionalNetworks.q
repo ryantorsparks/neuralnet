@@ -407,3 +407,12 @@ lg "##############################
 startd:(!). flip (`useBatchNorm,1b;(`numFilters;16 32 64 128);`batchSize,50;`updateRule`adam;`filterSize,3;`printEvery,10;(`dimHidden;500 500);(`dimInput;3 32 32);(`numEpochs;4);`wScale,.05;`learnRateDecay,0.95;`nClass,10;(`xTrain;xTrain);(`yTrain;yTrain);(`xVal;xVal);(`yVal;yVal);`model`nLayerConvNet;(`optimConfig;(enlist `learnRate)!enlist 1e-3);`reg,0.05)
 
 if[runAll;res:solver.train startd]
+
+lg "##############################
+    Run a convnet on the mnist data
+    ##############################"
+
+
+startd:(!). flip (`useBatchNorm,1b;(`numFilters;32 32);`batchSize,50;`updateRule`adam;`filterSize,3;`printEvery,10;(`dimHidden;256 10);(`dimInput;1 28 28);(`numEpochs;4);`wScale,.05;`learnRateDecay,0.95;`nClass,10;(`xTrain;xTrain);(`yTrain;yTrain);(`xVal;xVal);(`yVal;yVal);`model`nLayerConvNet;(`optimConfig;(enlist `learnRate)!enlist 1e-3);`reg,0.05)
+
+if[runAll;res:solver.train startd]

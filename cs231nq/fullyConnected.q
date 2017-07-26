@@ -96,6 +96,7 @@ fullyConnectedNet.init:{[d]
     d[`bParams]:bParams;
     d[`wParams]:wParams;
     d[`layerInds]:fullyConnectedNet.layerInds[d];
+    d[`L`N`C]:(1+count d`dimHidden),d`dimInput`nClass;
 
     / when using dropout, need to pass a dropoutParam dict to each dropout
     / layer so that the layer knows the dropout probability and the mode (train
@@ -162,6 +163,132 @@ fullyConnectedNet.loss:{[d]
     bParams:modelParams 1;
     layerInds:fullyConnectedNet.layerInds d;
 
+
+    / ####################### forward pass ##################
+    / store everything in hidden dict
+    hidden:()!();
+    hidden[`h0]:reshapeM[d`x;{x[0]*prd 1_ x}shape d`x];
+    if[d`useDropout;hidden[`hdrop0`cacheHdrop0]:dropoutForward[hidden`h0;d`dropoutParam]];
+
+    / forward pass through all layers
+    d:d[`L]fullyConnectedForwardPassLoop/@[d;`i`hidden;:;(0;hidden)];
+
+    / scores, from last hidden h
+    scores:d[`hidden]symi[`h;d`L];
+
+    / exit early and return scores if we're doing test (not training)
+    if[mode=`test;:scores];
+
+    lossDscores:softmaxLoss `x`y!(scores;d`y);
+    loss:lossDscores 0;
+    dscores:lossDscores 1;
+
+    / add on regularization for each  weights (sum of sum x*x for each weights)
+    loss+:0.5*d[`reg]*r$r:razeo d wParams;
+
+    / ######################## backward pass ################
+    
+    d[`hidden;symi[`dh;d`L]]:dscores;
+    d:d[`L]fullyConnectedBackwardPassLoop/@[d;`i;:;d`L];
+  
+    / add on reg
+    d[`hidden;symi[`d;]each d`wParams]+:d[`reg]*d d`wParams;
+
+    / grads should be `dw1`dw2..`db1`db2...`dbeta1`dbeta2...`dgamma1`dgamma2!...
+    grads:raze[d`dwParams`dbParams`dgammaParams`dbetaParams]#d`blocks;
+    / solver.step expects `w1`w2 not `dw1`dw2 ..., so strip the d's
+    / TODO: make this less hacky
+    (loss;removeDFromDictKey grads)
+ };
+
+/ loop through forward passes incrementing d`i, and adding 
+/ to d[`hidden] each time
+fullyConnectedForwardPassLoop:{[d]
+    idx:1+d`i;
+    lastLayer:idx=d`L;
+    / projection, param name eg p `a -> `a3 etc.
+    p:symi[;idx];
+    pe:p';
+    w:d p`w;
+    b:d p`b; 
+    hidden:d`hidden;
+    h:hidden symi[`h;idx-1];
+    h:hidden symi[`h`hdrop@d`useDropout;idx-1];
+    if[d[`useBatchNorm]&not lastLayer;
+        gamma:d[`params;p`gamma];
+        beta:d[`params;p`beta];
+        bnParam:d[`bnParams;p`bnParams];
+      ];
+    / for last layer in forward pass, set h and cache h:
+    if[lastLayer;hidden[pe`h`cacheH]:affineForward`x`w`b!(h;w;b)];
+
+    / for all other layers
+    if[not lastLayer;
+        hCacheH:$[d`useBatchNorm;
+                    affineNormReluForward `x`w`b`gamma`beta`bnParam!(h;w;b;gamma;beta;bnParam);
+                    affineReluForward `x`w`b!(h;w;b)
+                 ];
+        hidden[pe`h`cacheH]:hCacheH;
+        if[d`useDropout;hidden[pe`hdrop`cacheHdrop]:dropoutForward[hidden p`h;d`dropoutParam]];
+      ];
+    @[d;`hidden`i;:;(hidden;idx)]
+ }; 
+
+/ loop through backward pass, decrementing d`i
+fullyConnectedBackwardPassLoop:{[d]
+    idx:1+d`i;
+    p:symi[;idx];
+    pe:p';
+    hidden:d`hidden;
+    hCache:hidden p`cacheH;
+    dh:hidden p`dh;
+    lastLayer:idx=d`L;
+    if[lastLayer; hidden[symi[`dh;idx-1],pe`dw`db]:affineBackward[dh;cacheH]`dx`dw`db];
+    if[not lastLayer;
+        if[d`useDropout;dh:dropoutBackward[dh;hidden p`cacheHdrop]];
+        $[d`useBatchNorm;
+            hidden[symi[`dh;idx-1],pe`dw`db`dgamma`dbeta]:affineNormReluBackward[dh;hCache]`dx`dw`db`dgamma`dbeta;
+            hidden[symi[`dh;idx-1],pe`dw`db]:affineReluBackward[dh;hCache]`dx`dw`db
+         ];
+    @[d;`hidden`i;:;(hidden;idx)]
+ };
+
+/ loss function for fully connected class
+/ @param d: contains:
+/ `w1`w2`w3 ... `b1`b2`b3  ... , `x and possibly `y
+fullyConnectedNet.lossOld:{[d]
+    / d expects `dropoutParam`useBatchNorm`wParams(`w1`w2 ...`wN)`bParams(`b1`b2...`bN)
+    /           `layerInds(1,2,3...N)
+    / d possibly (???) needs `bnParams
+    / if we have y, then treat this as training
+    mode:`test`train@`y in key d;
+ 
+    / set train test mode for batchnorm params and dropout param since they
+    / behave differently during training and testing
+    if[(()!())~d`dropoutParam;
+        d[`dropoutParam;`mode]:mode
+      ];
+
+    / bnParam should have:
+    /   mode - `train or `test
+    /   eps: - constant for numerical stability
+    /   momentum - constant for running mean/variance
+    /   runningMean - array of shape (D,), running mean of features
+    /   runningVar - shape (D,), running variance of features
+    / ????? not sure about this update ?????
+    if[1b~d`useBatchNorm;
+        d:.[d;(`bnParams;::;`mode);:;mode];
+      ];
+
+    / forward pass, compute class scores for x, store in scores
+    / feed each first[outCache] (result of affineReluForward) into next affineReluForward
+    / first, get wParams (`w1`w2`w3 ...`w[n-1]) and bParams (`b1`b2 ...`b[n-1])
+    / test:
+    modelParams:2 0N#fullyConnectedNet.params d;
+    wParams:modelParams 0;
+    bParams:modelParams 1;
+    layerInds:fullyConnectedNet.layerInds d;
+
     / forward pass on all but last layer (scan and store result as caches)
     cacheLayers:
         $[d`useBatchNorm;
@@ -183,7 +310,7 @@ fullyConnectedNet.loss:{[d]
     loss:lossDscores 0;
     dscores:lossDscores 1;
 
-    / add on regularization for each  weights (sum of sum x*x for each weights)
+    / add on regularization for each weights (sum of sum x*x for each weights)
     loss+:0.5*d[`reg]*r$r:razeo d wParams;
     
     / back prop into remaining layers
@@ -196,6 +323,7 @@ fullyConnectedNet.loss:{[d]
     gradDict[wParams]+:d[`reg]*d wParams;
     (loss;gradDict)
  };
+
 
 / gradDict - is `dx`dw`db!(...), but also `dgamma`dbeta if we're doing batchNorm
 / revInds - e.g. for a net with input - hidden1 - hidden2 - hidden3 - output, 3 2 1

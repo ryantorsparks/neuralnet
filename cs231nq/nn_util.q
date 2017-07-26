@@ -171,6 +171,9 @@ sumAxes:{[m;axes]{[x;ind].[x;ind#(::);sum]}/[m;desc axes]}
 / null dictionary
 nulld:enlist[`]!enlist(::)
 
+/ append an int i to a sym s
+symi:{[s;i]`$string[s],string i}  
+
 / append number n to each sym in list of syms
 appendNToSyms:{[syms;n] `$string[syms],\:string n}
 
