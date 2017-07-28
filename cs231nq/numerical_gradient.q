@@ -64,7 +64,7 @@ compareNumericalGradients:{[d;reg]
         gradNum:numericalGradient[f;d;param];
         relErr:relError[gradNum;grads param];
         lg"relative error for ",string[param]," is ",-3!relErr;
-    }[`model _ d;grads;lossFunc;] each asc {x where not x like "x*"} key grads;
+    }[`model _ d;grads;lossFunc;] each asc {x where not x like "[hx][0-9]*"} key grads;
  };
 
 

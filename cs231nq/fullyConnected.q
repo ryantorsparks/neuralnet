@@ -167,7 +167,7 @@ fullyConnectedNet.loss:{[d]
     / ####################### forward pass ##################
     / store everything in hidden dict
     hidden:()!();
-    hidden[`h0]:reshapeM[d`x;{x[0]*prd 1_ x}shape d`x];
+    hidden[`h0]:reshapeM[d`x;{x[0],prd 1_ x}shape d`x];
     if[d`useDropout;hidden[`hdrop0`cacheHdrop0]:dropoutForward[hidden`h0;d`dropoutParam]];
 
     / forward pass through all layers
@@ -189,13 +189,14 @@ fullyConnectedNet.loss:{[d]
     / ######################## backward pass ################
     
     d[`hidden;symi[`dh;d`L]]:dscores;
-    d:d[`L]fullyConnectedBackwardPassLoop/@[d;`i;:;d`L];
+    d:d[`L]fullyConnectedBackwardPassLoop/@[d;`i;:;-1+d`L];
   
     / add on reg
     d[`hidden;symi[`d;]each d`wParams]+:d[`reg]*d d`wParams;
 
     / grads should be `dw1`dw2..`db1`db2...`dbeta1`dbeta2...`dgamma1`dgamma2!...
-    grads:raze[d`dwParams`dbParams`dgammaParams`dbetaParams]#d`blocks;
+    / TODO: make this cleaner
+    grads:{(key[x] where key[x] like "d*")#x}d`hidden;
     / solver.step expects `w1`w2 not `dw1`dw2 ..., so strip the d's
     / TODO: make this less hacky
     (loss;removeDFromDictKey grads)
@@ -243,20 +244,21 @@ fullyConnectedBackwardPassLoop:{[d]
     hCache:hidden p`cacheH;
     dh:hidden p`dh;
     lastLayer:idx=d`L;
-    if[lastLayer; hidden[symi[`dh;idx-1],pe`dw`db]:affineBackward[dh;cacheH]`dx`dw`db];
+    if[lastLayer; hidden[symi[`dh;idx-1],pe`dw`db]:affineBackward[dh;hCache]`dx`dw`db];
     if[not lastLayer;
         if[d`useDropout;dh:dropoutBackward[dh;hidden p`cacheHdrop]];
         $[d`useBatchNorm;
             hidden[symi[`dh;idx-1],pe`dw`db`dgamma`dbeta]:affineNormReluBackward[dh;hCache]`dx`dw`db`dgamma`dbeta;
             hidden[symi[`dh;idx-1],pe`dw`db]:affineReluBackward[dh;hCache]`dx`dw`db
          ];
-    @[d;`hidden`i;:;(hidden;idx)]
+      ];
+    @[d;`hidden`i;:;(hidden;-1+d`i)]
  };
 
 / loss function for fully connected class
 / @param d: contains:
 / `w1`w2`w3 ... `b1`b2`b3  ... , `x and possibly `y
-fullyConnectedNet.lossOld:{[d]
+.old.fullyConnectedNet.loss:{[d]
     / d expects `dropoutParam`useBatchNorm`wParams(`w1`w2 ...`wN)`bParams(`b1`b2...`bN)
     /           `layerInds(1,2,3...N)
     / d possibly (???) needs `bnParams
@@ -305,7 +307,7 @@ fullyConnectedNet.lossOld:{[d]
 
     / exit early and return scores if we're doing test (not training)
     if[mode=`test;:scores];
-
+    break;
     lossDscores:softmaxLoss `x`y!(scores;d`y);
     loss:lossDscores 0;
     dscores:lossDscores 1;
