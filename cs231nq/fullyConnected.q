@@ -167,7 +167,7 @@ fullyConnectedNet.loss:{[d]
     / ####################### forward pass ##################
     / store everything in hidden dict
     hidden:()!();
-    hidden[`h0]:rwshapeM[d`x;{x[0],prd 1_ x}shape d`x];
+    hidden[`h0]:reshapeM[d`x;{x[0],prd 1_ x}shape d`x];
     if[d`useDropout;hidden[`hdrop0`cacheHdrop0]:dropoutForward[hidden`h0;d`dropoutParam]];
 
     / forward pass through all layers
