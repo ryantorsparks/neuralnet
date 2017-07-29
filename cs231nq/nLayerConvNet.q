@@ -25,11 +25,14 @@ nLayerConvNet.init:{[d]
         (`nClass;10);
         (`useBatchNorm;0b);
         (`wScale;0.001);
+        (`dropout;0f);
+        (`seed;0N);
         (`reg;0.0)
         );
     d:defaults,d;
     / set the number of conv layers L
     / and the number of hidden fully connected layers M
+    d[`useDropout]:d[`dropout]>0;
     d[`L`M]:count each d`numFilters`dimHidden;
 
     / always set model to this
@@ -48,6 +51,17 @@ nLayerConvNet.init:{[d]
     / add on W's, b's and bnParams (if in batchNorm)
     d:initWeightBiasBnParamsConvLayers[d];
     strideConv:1;
+
+    / when using dropout, need to pass a dropoutParam dict to each dropout
+    / layer so that the layer knows the dropout probability and the mode (train
+    / vs. test). You can pass the same dropoutParam to each dropout layer
+    d[`dropoutParam]:()!();
+    if[d`useDropout;
+        d[`dropoutParam]:`mode`p!(`train;d`dropout);
+        if[not null d`seed;
+            d[`dropoutParam;`seed]:d`seed
+          ]
+      ];
 
     / output height and widths of conv layers
     / inputDim[1 2] -> Hinput Winput (too many locals to actually define them)
@@ -95,47 +109,58 @@ nLayerFowardPassConvLayersLoop:{[d]
 nLayerFowardPassLinearLayersLoop:{[d]
     / extract weights/bias relevant to this layer
     idx:sum 1,d`i`L;
-    sidx:string idx;
+    / projection, turn p`w -> `wn etc
+    p:symi[;idx];
+    pe:p';
+    blocks:d`blocks;
+    / if we're on the first fully connected layer, set dropout
+    if[(0=d`i)&d`useDropout;
+        blocks[symi[;idx-1]each`hdrop`cacheHdrop]:dropoutForward[blocks@symi[`h;idx-1];d`dropoutParam]
+      ];
 
     / get the previous block
-    h:d[`blocks]`$"h",string idx-1;
+    h:blocks symi[`h`hdrop@d`useDropout;idx-1];
     if[0=d`i;h:reshapeM[h;count[d`x],1_shape h]];
 
     / extract weight and bias
-    w:d`$"w",sidx;
-    b:d`$"b",sidx;
+    w:d p`w;
+    b:d p`b;
 
     / TODO possibly neaten this convoluted if else
     if[d`useBatchNorm;
-        beta:d`$"beta",sidx;
-        gamma:d`$"gamma",sidx;
-        bnParam:d[`bnParams]`$"bnParam",sidx;
+        beta:d p`beta;
+        gamma:d p`gamma;
+        bnParam:d[`bnParams]p`bnParam;
         hCacheH:affineNormReluForward `x`w`b`gamma`beta`bnParam!(h;w;b;gamma;beta;bnParam);
       ];
     if[not d`useBatchNorm;hCacheH:affineReluForward `x`w`b!(h;w;b)];
 
     / add latest (h;cache) to blocks, i.e add `hN`cacheHN!hCacheH to d[`blocks]
-    d[`blocks;`$("h";"cacheH"),\:sidx]:hCacheH;
+    blocks[pe`h`cacheH]:hCacheH;
+    if[d`useDropout;blocks[pe`hdrop`cacheHdrop]:dropoutForward[blocks p`h;d`dropoutParam]];
 
     / increment i and return
-    @[d;`i;+;1]
+    @[d;`i`blocks;:;(1+d`i;blocks)]
  };
 
 nLayerBackwardPassLinearLayersLoop:{[d]
     idx:sum 1,d`i`L;
-    sidx:string idx;
-    dh:d[`blocks]`$"dh",sidx;
-    cacheH:d[`blocks]`$"cacheH",sidx;
+    p:symi[;idx];
+    pe:p';
+    blocks:d`blocks;
+    dh:blocks p`dh;
+    if[d`useDropout;dh:dropoutBackward[dh;blocks p`cacheHdrop]];
+    cacheH:blocks p`cacheH;
     / grads should be a dict `dx`dw`db[`dbeta`dgamma]!...
     if[d`useBatchNorm;
         grads:affineNormReluBackward[dh;cacheH];
-        d[`blocks;`$("dbeta";"dgamma"),\:sidx]:grads`dbeta`dgamma;
+        d[`blocks;pe`dbeta`dgamma]:grads`dbeta`dgamma;
       ];
     if[not d`useBatchNorm;grads:affineReluBackward[dh;cacheH]];
 
     / add in grads to blocks
-    d[`blocks;`$"dh",string idx-1]:grads`dx;
-    d[`blocks;`$("dw";"db"),\:sidx]:grads`dw`db;
+    d[`blocks;symi[`dh;idx-1]]:grads`dx;
+    d[`blocks;pe`dw`db]:grads`dw`db;
     @[d;`i;-;1]
  };
     
@@ -170,6 +195,12 @@ nLayerConvNet.loss:{[d]
     / if we have y, then treat this as training
     mode:`test`train@`y in key d;
 
+    / set train test mode for batchnorm params and dropout param since they
+    / behave differently during training and testing
+    if[(()!())~d`dropoutParam;
+        d[`dropoutParam;`mode]:mode
+      ];
+
     / pass convParam to the forward pass for the convolution layer
     d[`convParam]:`stride`pad!1,(d[`filterSize]-1)div 2;
 
@@ -181,6 +212,7 @@ nLayerConvNet.loss:{[d]
     / pass pool param to the foward pass for the max-pooling layer
     d[`poolParam]:`poolHeight`poolWidth`stride!3#2;
 
+    / ####################### forward pass ##################
     / store dict of blocks
     blocks:()!();
     blocks[`h0]:d`x;
@@ -190,20 +222,22 @@ nLayerConvNet.loss:{[d]
     d:d[`L]nLayerFowardPassConvLayersLoop/@[d;`i;:;0];
     
     / forward into linear blocks
+    / add dropout (note only for fully connected, not conv layers)
     d:d[`M]nLayerFowardPassLinearLayersLoop/@[d;`i;:;0];
 
     / finally forward into score layer 
     idx:sum 1,d`L`M;
-    sidx:string idx;
-    w:d`$"w",sidx;
-    b:d`$"b",sidx;
-    h:d[`blocks]`$"h",string idx-1;
+    p:symi[;idx];
+    pe:p';
+    w:d p`w;
+    b:d p`b;
+    h:d[`blocks]@symi[`h;idx-1];
     hCacheH:affineForward`x`w`b!(h;w;b);
     / add `hN`cacheHN!hCacheH to d[`blocks]
-    d[`blocks;`$("h";"cacheH"),\:sidx]:hCacheH;
+    d[`blocks;pe`h`cacheH]:hCacheH;
 
     / compute scores
-    scores:d[`blocks]`$"h",sidx;
+    scores:d[`blocks]p`h;
 
     / exit early if we're in test mode (i.e. no y)
     if[not `y in key d;:scores];
@@ -217,14 +251,15 @@ nLayerConvNet.loss:{[d]
 
     / ########### backward pass ############
     idx:sum 1,d`L`M;
-    sidx:string idx;
+    p:symi[;idx];
+    pe:p';
     dh:dscores;
-    cacheH:d[`blocks]`$"cacheH",sidx;
+    cacheH:d[`blocks]p`cacheH;
     dhDwDb:affineBackward[dh;cacheH];
 
     / add in grads for h/w/b from scoring layer
-    d[`blocks;`$"dh",string idx-1]:dhDwDb`dx;
-    d[`blocks;wps:`$("dw";"db"),\:sidx]:dhDwDb`dw`db;
+    d[`blocks;symi[`dh;idx-1]]:dhDwDb`dx;
+    d[`blocks;wps:pe`dw`db]:dhDwDb`dw`db;
     d[`dwParams`dbParams],:wps;
 
     / now, backward pass for the linear layers/blocks
