@@ -198,7 +198,7 @@ solver.i.train:{[d]
         lg"checking accuracies";
         checkKeys:modelParams,`bParams`wParams`layerInds`useBatchNorm`filterSize`L`M`reg`dropout`useDropout`dropoutParam;
         if[d`useBatchNorm;checkKeys,:`bnParams`betaParams`gammaParams,getModelValue[d;`bnParams]];
-        trainAcc:solver.checkAccuracy (inter[checkKeys;key d]#d),`model`x`y`batchSize`numSamples!d[`model`xTrain`yTrain`batchSize],1000;
+        trainAcc:solver.checkAccuracy (inter[checkKeys;key d]#d),`model`x`y`batchSize`numSamples`useDropout!d[`model`xTrain`yTrain`batchSize],1000,0b;
         valAcc:solver.checkAccuracy (inter[checkKeys;key d]#d),`model`x`y`batchSize`numSamples`useDropout!d[`model`xVal`yVal`batchSize],0N,0b;
         d[`trainAccHistory],:trainAcc;
         d[`valAccHistory],:valAcc;
