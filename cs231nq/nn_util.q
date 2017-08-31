@@ -1,6 +1,9 @@
 / utils
 system"c 30 150"
 
+/ try and load andrey zohlos' qml library
+@[{system"l qml.q";lg"loading qml lib";};();{-1 "no qml lib found in $QHOME";}];
+
 / for comments, trim off white spaces,
 / then shift everything to the right two spaces
 lg:{-1 $[10h=type x;"\n" sv "  ",/:ltrim each "\n" vs $[x like "#*#";"\n",x,"\n";x];.Q.s x];};
@@ -52,7 +55,12 @@ matrixInds:(cross/)til each
 flipn:{[m;flipInds] newshape#razeo[m] @.[matrixInds shapem;(::;flipInds)]?matrixInds[newshape:(shapem:shape m)@flipInds]}
 
 / matrix multiply, use qml if possible
-dot:@[{system"l qml.q";lg"setting dot as qml.mm";.qml.mm};();{"no qml, dot is mmu";mmu}];
+//dot:@[{system"l qml.q";lg"setting dot as qml.mm";.qml.mm};();{lg "no qml, dot is mmu";mmu}];
+dot:@[value;`.qml.mm;{lg"no qml, dot set as mmu";mmu}];
+
+/ hyperbolic tan func, tanh
+tanhq:{(1-e)%1+e:exp neg 2*x};
+tanh:@[value;`.qml.tanh;{lg"no qml, tanh defined in q";tanhq}];
 
 / relative errors
 relError:{[x;y]max/[abs[x-y]%1e-8|sum abs(x;y)]}
