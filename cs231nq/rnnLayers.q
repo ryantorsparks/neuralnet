@@ -91,6 +91,43 @@ rnnForward:{[d]
     (flip h;cache)
  };
 
+/ backward pass function for vanilla RNN over entire sequence
+/ of data
+/ inputs are
+/   dh: upstream grads, shape (N;T;H)
+/   cache: table (list of dicts) from rnnForward, cols are `x`wx`prevH`wh`forward
+/ returns a cache dict, with elements:
+/   `dx: gradients of inputs, shape (N;T;D)
+/   `dh0: gradient of initial hidden state, shape (N;H)
+/   `dwx: gradient of input-to-hidden weights, shape (D;H)
+/   `dwh: gradient of hidden-to-hidden weights, shape (H;H)
+/   `db: gradient of biases, list length H
+rnnBackward:{[dh;cacheList]
+    shapeDh:shape dh;
+    N:shapeDh 0;
+    T:shapeDh 1;
+    H: shapeDh 2;
+
+    / shape[1] of the first x in cache
+    D:count cacheList[0;`x;0]
+   
+    dhList:flip dh;
+    grads:`dx`dh0`db`dwh`dwx!(T,N,D;N,H;H;H,H;D,H)#\:0f;
+    grads[`dxList]:();
+
+    rnnBackwardLoop:{[d;dh;cache]
+        dh+:d`dhPrev;
+        grads:rnnStepBackward[dh;cache];
+        d[`dxList],:enlist grads`dx;
+        d[`dhPrev]:grads`dh0;
+        d+:grads;
+        d
+     };
+
+    res:rnnBackwardLoop/[grads;dhList;cacheList]; 
+    res:@[res;`dxList;flip];
+    `dx`dh0`dwx`dwh`db#res
+ };
 
 
 
@@ -98,13 +135,3 @@ rnnForward:{[d]
 
 
 
-
-
-
-
-
-
-
-
-
- 
