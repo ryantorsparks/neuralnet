@@ -69,7 +69,7 @@ rnnForward:{[d]
     N:shapex 0;
     T:shapex 1;
     D:shapex 2;
-    H:shape first d`h0;
+    H:count first d`h0;
     cache:()!();
    
     x:flip x;
@@ -77,10 +77,8 @@ rnnForward:{[d]
     h:@[h;2;:;h0];
 
     rnnStepForwardLoop:{[hCacheList;x;wx;wh;b]
-        i:d`i;
-        hprev:h[i-1];
         hlist:hCacheList 0;
-        cachelist:hCachelist 1;
+        cachelist:hCacheList 1;
         res:rnnStepForward[x;last hlist;wx;wh;b];
         hCacheList,'enlist each res
      };
