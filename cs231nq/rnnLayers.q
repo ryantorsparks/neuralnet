@@ -13,7 +13,7 @@
 /   nextH: next hidden state, shape (N;H)
 /   cache: dict of values needed for back pass
 rnnStepForward:{[x;prevH;wx;wh;b]
-    forward:dot[x;wx]+dot[prevH;wh]+b;
+    forward:dot[x;wx]+dot[prevH;wh]+\:b;
 
     / squash using tanh
     nextH:tanh forward;

@@ -60,7 +60,7 @@ dot:@[value;`.qml.mm;{lg"no qml, dot set as mmu";mmu}];
 
 / hyperbolic tan func, tanh
 tanhq:{(1-e)%1+e:exp neg 2*x};
-tanh:@[value;`.qml.tanh;{lg"no qml, tanh defined in q";tanhq}];
+tanh:@[value;"{shape[x]#.qml.tanh razeo x}";{lg"no qml, tanh defined in q";tanhq}];
 
 / relative errors
 relError:{[x;y]max/[abs[x-y]%1e-8|sum abs(x;y)]}
