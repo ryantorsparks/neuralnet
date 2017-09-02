@@ -49,4 +49,22 @@ grads:rnnStepBackward[dnexth;outCache 1]
 
 relError'[value grads;(dxNum;dprevHNum;dwxNum;dwhNum;dbNum)]
 
+lg "##############################
+    Vanilla RNN - forward
+    ##############################"
 
+lg "we now implement a RNN that process an entire sequence of data."
+
+@[`.;`N`T`D`H;:;2 3 4 5];
+x:(N;T;D)#linSpace[-0.1;0.3;N*T*D]
+h0:(N;H)#linSpace[-0.3;0.1;N*H]
+wx:(D;H)#linSpace[-0.2;0.4;D*H]
+wh:(H;H)#linSpace[-0.4;0.1;H*H]
+b:linSpace[-0.7;0.1;H]
+
+hCache:rnnForward `x`h0`wx`wh`b!(x;h0;wx;wh;b)
+
+expectedH:((-0.4207075 -0.2727926 -0.1107494 0.05740409 0.2223625;-0.3952581 -0.2255466 -0.0409454 0.1464941 0.3239732;-0.4230511 -0.2422373 -0.04287027 0.1599704 0.3501453);(-0.5585747 -0.3906582 -0.1919818 0.02378408 0.2373567;-0.271502 -0.07088804 0.1356294 0.3309973 0.5015877;-0.5101482 -0.3052443 -0.06755202 0.1780639 0.4033304))
+
+lg "relative error compared to expected h "
+relError[hCache 0;expectedH]
