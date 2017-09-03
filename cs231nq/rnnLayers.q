@@ -83,8 +83,7 @@ rnnForward:{[d]
         hCacheList,'enlist each res
      };
     hCacheList:rnnStepForwardLoop[;;d`wx;d`wh;d`b]/[(enlist h0;flip`x`wx`prevH`wh`forward!());x];
-    
-    h:hCacheList 0;
+    h:1_ hCacheList 0;
     cache:hCacheList 1;
     (flip h;cache)
  };
@@ -107,24 +106,23 @@ rnnBackward:{[dh;cacheList]
     H: shapeDh 2;
 
     / shape[1] of the first x in cache
-    D:count cacheList[0;`x;0]
+    D:count cacheList[0;`x;0];
    
     dhList:flip dh;
-    grads:`dx`dh0`db`dwh`dwx!(T,N,D;N,H;H;H,H;D,H)#\:0f;
-    grads[`dxList]:();
+    grads:`dh0`db`dwh`dwx!(N,H;H;H,H;D,H)#\:0f;
+    grads[`dxList`dprevH]:(();(N;H)#0f);
 
     rnnBackwardLoop:{[d;dh;cache]
-        dh+:d`dhPrev;
+        dh+:d`dprevH;
         grads:rnnStepBackward[dh;cache];
-        d[`dxList],:enlist grads`dx;
-        d[`dhPrev]:grads`dh0;
-        d+:grads;
+        d[`dxList]:enlist[grads`dx],d`dxList;
+        d[`dprevH]:grads`dprevH;
+        d+:`dx`dprevH _ grads;
         d
      };
 
-    res:rnnBackwardLoop/[grads;dhList;cacheList]; 
-    res:@[res;`dxList;flip];
-    `dx`dh0`dwx`dwh`db#res
+    res:rnnBackwardLoop/[grads;reverse dhList;reverse cacheList]; 
+    `dx`dh0`dwx`dwh`db!(flip res`dxList;res`dprevH;res`dwx;res`dwh;res`db)
  };
 
 
