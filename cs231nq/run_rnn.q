@@ -68,3 +68,30 @@ expectedH:((-0.4207075 -0.2727926 -0.1107494 0.05740409 0.2223625;-0.3952581 -0.
 
 lg "relative error compared to expected h "
 relError[hCache 0;expectedH]
+
+lg "##############################
+    Vanilla RNN - backward
+    ##############################"
+
+@[`.;`N`D`T`H;:;2 3 10 5];
+
+x:rad N, T, D
+h0:rad N, H
+wx:rad D, H
+wh:rad H, H
+b:rad H
+outCache:rnnForward `x`h0`wx`wh`b!(x;h0;wx;wh;b)
+
+dout:rad shape outCache 0;
+
+grads:rnnBackward[dout;outCache 1]
+
+lg "now get numerical grads for comparison "
+
+dxNum:numericalGradientArray[(first rnnForward@);`x`h0`wx`wh`b!(x;h0;wx;wh;b);dout;`x]
+dh0Num:numericalGradientArray[(first rnnForward@);`x`h0`wx`wh`b!(x;h0;wx;wh;b);dout;`h0]
+dwxNum:numericalGradientArray[(first rnnForward@);`x`h0`wx`wh`b!(x;h0;wx;wh;b);dout;`wx]
+dwhNum:numericalGradientArray[(first rnnForward@);`x`h0`wx`wh`b!(x;h0;wx;wh;b);dout;`wh]
+dbNum:numericalGradientArray[(first rnnForward@);`x`h0`wx`wh`b!(x;h0;wx;wh;b);dout;`b]
+
+relError'[value grads;(dxNum;dh0Num;dwxNum;dwhNum;dbNum)]

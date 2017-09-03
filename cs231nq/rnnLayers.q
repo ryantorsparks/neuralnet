@@ -69,7 +69,8 @@ rnnForward:{[d]
     N:shapex 0;
     T:shapex 1;
     D:shapex 2;
-    H:count first d`h0;
+    h0:d`h0;
+    H:count first h0;
     cache:()!();
    
     x:flip x;
