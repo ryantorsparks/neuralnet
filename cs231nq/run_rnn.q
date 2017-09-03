@@ -81,9 +81,7 @@ wx:rad D, H
 wh:rad H, H
 b:rad H
 outCache:rnnForward `x`h0`wx`wh`b!(x;h0;wx;wh;b)
-
 dout:rad shape outCache 0;
-
 grads:rnnBackward[dout;outCache 1]
 
 lg "now get numerical grads for comparison "

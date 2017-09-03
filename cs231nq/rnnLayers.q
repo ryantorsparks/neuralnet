@@ -126,6 +126,44 @@ rnnBackward:{[dh;cacheList]
     `dx`dh0`dwx`dwh`db!(flip res`dxList;res`dprevH;res`dwx;res`dwh;res`db)
  };
 
+/ word embedding function forward pass
+/ operate on mini batches of size N, with each sequence
+/ length T. We assume a vocabulary of V words, assigning each a vector of
+/ dimension dimension D
+/ inputs:
+/   x: integer matrix, shape (N;T), giving indices of words. Each element
+/      of x must be in range 0<=idx<V
+/   w: weight matrix shape (V;D), giving word vectors for all words
+/ returns (out;cache), where:
+/   out: array shape (N;T;D) giving word vectors for all input words
+/   cache: dict of vals for back pass `x`w
+wordEmbeddingForward:{[x;w]
+    out:w x;
+    cache: `x`w!(x;w);
+    (out;cache)
+ };
+
+/ word embedding function backward pass
+/ we cannot back propagate into the words as they are ints,
+/ so we only return gradient for the word embedding matrix
+/ inputs:
+/   dout: upstream grads, shape (N;T;D)
+/   cache: vals from forward pass, dict with key `x`w
+/ returns:
+/   dw: gradient of word embedding matrix, shape (V;D)
+wordEmbeddingBackward:{[dout;cache]
+    x:cache`x;
+    w:cache`w;
+    @[;;+;]/[w*0;x;dout];
+ };
+
+
+
+
+
+
+
+
 
 
 
