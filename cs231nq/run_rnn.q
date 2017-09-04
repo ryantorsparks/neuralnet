@@ -159,3 +159,31 @@ grads: temporalAffineBackward[dout;outCache 1];
 
 lg "relative error compared to numerical gradient"
 relError'[value grads;(dxNum;dwNum;dbNum)]
+
+
+lg "##############################
+    Temporal softmax loss
+    ##############################"
+
+lg "in an RNN language model, at every timestep we produce a score for 
+    each word in the vocabulary. We know the ground-truth word at each timestep, 
+    so we use a softmax loss function to compute loss and gradient at each 
+    timestep. We sum the losses over time and average them over the minibatch. 
+    However, since we operate over minibatches and different captions may have 
+    different lengths, we append <NULL> tokens to the end of each caption so 
+    they all have the same length. We don't want these <NULL> tokens to count 
+    toward the loss or gradient, so in addition to scores and ground-truth 
+    labels our loss function also accepts a mask array that tells it which 
+    elements of the scores count towards the loss."
+
+@[`.;`N`T`V;:;100 1 10];
+
+checkLoss:{[N;T;V;p]
+    x:0.001*rad N,T,V;
+    y:(N;T)#(N*T)?V;
+    mask:p>=(N;T)#(N*T)?1.0;
+    first temporalSoftmaxLoss[x;y;mask]
+ };
+
+lg "run a few random loss checks, losses should be approx 2.3, 23, 2.3"
+checkLoss'[100 100 5000;1 10 10;10 10 10; 1.0 1.0 0.1]

@@ -29,6 +29,22 @@ softmaxLoss:{[d]
     (loss;dx)
  };
 
+/ temporal version - assume we're making predictions on a vocabulary of 
+/ size V for each timestamp of a timeseries of length T, over a minibatch
+/ size N. Input x gives scores for all vocabulary elements ata all timesteps,
+/ and y gives indices of the ground-truth element at each timestep. We use
+/ cross entropy loss at each timestep, summing the loss over all timesteps and 
+/ getting the average over the minibatch
+/ We also may want to ignore the model output at some timesteps, as sequences
+/ of different length may have been combined into a minibatch and padded with
+/ null tokens - hence the use of mask (which elements we want to keep)
+/ inputs:
+/   x: input scores, shape (N;T;V)
+/   y: ground truth indices, shape (N;T), each element is 0<=y[i,t]<V
+/   mask: array shape (N;T), indices of elements we want to contribute to loss
+/ returns:
+/   loss: scar of loss
+/   dx: grad of loss wrt scores
 temporalSoftmaxLoss:{[x;y;mask]
     shapeX:shape x;
     N:shapeX 0;
@@ -41,7 +57,7 @@ temporalSoftmaxLoss:{[x;y;mask]
 
     probs:exp xFlat-max each xFlat;
     probs%:sum each probs;
-    loss:neg sumo[maskFlat*log[probs @'yFlat]i]%N;
+    loss:neg sumo[maskFlat*log[probs @'yFlat]]%N;
     dxFlat:@'[probs;yFlat;-;1]%N;
     dxFlat*:maskFlat;
 
