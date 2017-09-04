@@ -93,3 +93,69 @@ dwhNum:numericalGradientArray[(first rnnForward@);`x`h0`wx`wh`b!(x;h0;wx;wh;b);d
 dbNum:numericalGradientArray[(first rnnForward@);`x`h0`wx`wh`b!(x;h0;wx;wh;b);dout;`b]
 
 relError'[value grads;(dxNum;dh0Num;dwxNum;dwhNum;dbNum)]
+
+
+lg "##############################
+    Word embedding - forward
+    ##############################"
+
+lg "In deep learning systems, we commonly represent words using vectors.
+    Each word of the vocabulary will be associated with a vector, and 
+    these vectors will be learned jointly with the rest of the system."
+
+@[`.;`N`T`V`D;:;2 4 5 3];
+x:2 4#0 3 1 2 2 1 0 3
+w:(V;D)#linSpace[0;1;V*D]
+
+out:first wordEmbeddingForward[x;w]
+
+expectedOut:((0 0.07142857 0.1428571;0.6428571 0.7142857 0.7857143;0.2142857 0.2857143 0.3571429;0.4285714 0.5 0.5714286);(0.4285714 0.5 0.5714286;0.2142857 0.2857143 0.3571429;0 0.07142857 0.1428571;0.6428571 0.7142857 0.7857143))
+
+lg "compare forward pass against expected value: "
+relError[out;expectedOut]
+
+lg "##############################
+    Word embedding - backward
+    ##############################"
+
+@[`.;`N`T`V`D;:;50 3 5 6];
+
+x:(N;T)#(N*T)?V;
+
+w:rad V,D
+
+outCache:wordEmbeddingForward[x;w];
+
+dout:rad shape outCache 0;
+
+dw:wordEmbeddingBackward[dout;outCache 1];
+
+dwNum:numericalGradientArray[(first wordEmbeddingForward[x;]@);w;dout;`w];
+
+lg "relative error compared to numerical gradient"
+relError[dw;dwNum]
+
+lg "##############################
+    Temporal affine layer
+    ##############################"
+
+lg "At every timestep we use an affine function to transform the RNN hidden 
+    vector at that timestep into scores for each word in the vocabulary"
+
+@[`.;`N`T`D`M;:;2 3 4 5];
+
+x:rad N,T,D;
+w:rad D,M;
+b:rad M;
+
+outCache:temporalAffineForward[x;w;b];
+dout:rad shape outCache 0;
+
+dxNum:numericalGradientArray[(first temporalAffineForward[;w;b]@);x;dout;`x];
+dwNum:numericalGradientArray[(first temporalAffineForward[x;;b]@);w;dout;`w];
+dbNum:numericalGradientArray[(first temporalAffineForward[x;w;]@);b;dout;`b];
+
+grads: temporalAffineBackward[dout;outCache 1];
+
+lg "relative error compared to numerical gradient"
+relError'[value grads;(dxNum;dwNum;dbNum)]

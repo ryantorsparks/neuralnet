@@ -154,11 +154,55 @@ wordEmbeddingForward:{[x;w]
 wordEmbeddingBackward:{[dout;cache]
     x:cache`x;
     w:cache`w;
-    @[;;+;]/[w*0;x;dout];
+    @[;;+;]/[w*0;x;dout]
  };
 
+/ temporal affine forward function
+/ forward pass func, input is a set of D-dimensional vectors arranged into 
+/ a minibatch of N timeseries, each of length T. Use affine func to tranform
+/ each of those vetors to a new vector of dimension M
+/ inputs:
+/   x:input data shape (N;T;D)
+/   w: weights, shape (D;M)
+/   b: biases, list length M
+/ returns: (out;cache):
+/   out: shape (N;T;M)
+/   cache: dict, `x`w`b`out for key
+temporalAffineForward:{[x;w;b]
+    shapeX:shape x;
+    N:shapeX 0;
+    T:shapeX 1;
+    D:shapeX 2;
+    M:count b;
+    out:(b+/:)'[reshapeM[dot[reshapeM[x;(N*T;D)];w];(N;T;M)]];
+    cache:`x`w`b`out!(x;w;b;out);
+    (out;cache)
+ };
 
+/ backward pass func for temporal affine filter
+/ input:
+/   dout: upstream grads, shape (N;T;M)
+/   cache: dict from forward pass, key is `x`w`b`out
+/ returns, dict:
+/   `dx: grads, shape (N;T;D)
+/   `dw: grads of weight, shape (D;M)
+/   `db: grads of biases, list length M
+temporalAffineBackward:{[dout;cache]
+    x:cache`x;
+    w:cache`w;
+    b:cache`b;
+    out:cache`out;
+    shapeX:shape x;
+    N:shapeX 0;
+    T:shapeX 1;
+    D:shapeX 2;
+    M:count b;
 
+    dx:reshapeM[ dot[reshapeM[dout;(N*T;M)];flip w]; (N;T;D)];
+    dw:flip dot[flip[reshapeM[dout;(N*T;M)]]; reshapeM[x;(N*T;D)]];
+    db:2 sum/dout;
+    `dx`dw`db!(dx;dw;db)
+ };
 
 
 
