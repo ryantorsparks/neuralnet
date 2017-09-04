@@ -28,3 +28,24 @@ softmaxLoss:{[d]
     dx:@'[probs;y;-;1]%N;
     (loss;dx)
  };
+
+temporalSoftmaxLoss:{[x;y;mask]
+    shapeX:shape x;
+    N:shapeX 0;
+    T:shapeX 1;
+    V:shapeX 2;
+    
+    xFlat:reshapeM[x;(N*T;V)];
+    yFlat:reshapeM[y;N*T];
+    maskFlat:reshapeM[mask;N*T];
+
+    probs:exp xFlat-max each xFlat;
+    probs%:sum each probs;
+    loss:neg sumo[maskFlat*log[probs @'yFlat]i]%N;
+    dxFlat:@'[probs;yFlat;-;1]%N;
+    dxFlat*:maskFlat;
+
+    dx:reshapeM[dxFlat;(N;T;V)];
+    (loss;dx)
+ }; 
+
