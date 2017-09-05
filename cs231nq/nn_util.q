@@ -230,6 +230,10 @@ dotIndexesAsList:{[m;dotInds] sum flip[dotInds]*reverse prds 1,-1_reverse shape 
 / faster version of doing deepMatrix ./: dotInds
 matrixDotInds:{[m;dotInds] razeo[m]@dotIndexesAsList[m;dotInds]}
 
+/ equivalent of numpy squeeze
+/ removes/collapses dimensions of a matrix that are dim=1
+squeeze:{[m] {x where x>1}[shape m]#razeo m}
+
 // stride stuff
 / strides, the number of bytes to step when going through matrix
 / hard coded to only work for longs and floats (8 byte)

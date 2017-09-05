@@ -54,6 +54,7 @@ captioningRNN.loss:{[d]
     mask:captions=nullToken;
     
     / ################ Forward pass ################
+
     h0:dot[d`features;d`wProj]+/:d`bProj;
     xCacheEmbedding: wordEmbeddingForward[captionsIn;d`wEmbed];
     x:CacheEmbedding 0;
@@ -72,6 +73,7 @@ captioningRNN.loss:{[d]
     dscores:lossDscores 1;
 
     / ################ Backward pass ###############
+
     dhDwDb:temporalAffineBackward[dscores;cacheScores];
     
     grads:(`rnn`lstm!rnnBackward,lstmBackward)[d`cellType][dhDwDb`dh;cacheRnn];
@@ -81,14 +83,48 @@ captioningRNN.loss:{[d]
     dwProj:dot[flip d`features;grads`dh0];
     dbProj:sum grads`dh0;
     
+    gradRes:`wProj`bProj`wEmbed`wx`wh`b`wVocab`bVocab!
+             (dwProj;dbProj;dwEmbed;grads`dwx;grads`dwh;grads`b;dhDwDb 1;dhDwDb 2);
+    
+    (loss;gradRes)
+ };
 
+captioningRNN.sample:{[d]
+    features:d`features;
+    N:count features;
+    maxLength:dget[d;`maxLength;30];
+    captions:d[`null]*(N;maxLength)#1j;
+    
+    h0:dot[features;d`wProj]+/:d`bProj;
+    prevH:h0;
+    prevC:h0*0f;
+    
+    / current word (start word)
+    capt:d[`start]*(N;1)#1j;
+    
+    / d has `capt`captions`prevH
+    sampleLoop:{[d;wEmbed;wVocab;bVocab;wx;wh;b]
+        wordEmbed:first wordEmbeddingForward[d`capt;wEmbed];
+        hc:$[`rnn~d`cellType;
+               rnnStepForward[squeeze wordEmbed;d`prevH;wx;wh;b];
+               lstmStepForward[squeeze wordEmbed;d`prevH;d`prevC;wx;wh;b]
+            ];
+        h:hc 0;
+        c:hc 1;
+        
+        scores:first temporalAffineForward[enlist each h;wVocab;bVocab];
+        / TODO: confirm this is correct
+        idxBest:squeeze {x?max x}''[scores];
+        d[`captions],:idxBest;
 
+        d[`prevH]:h;
+        if[`lstm~d`cellType;d[`prevC]:c];
+        d[`capt]:idxBest
+     };
 
-
-
-
-
-
+    res:maxLength sampleLoop[;d`wEmbed;d`wVocab;d`bVocab;d`wx;d`wh;d`b]/capt;
+    flip res
+ };
 
 
 

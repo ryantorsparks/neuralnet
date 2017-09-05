@@ -174,7 +174,7 @@ temporalAffineForward:{[x;w;b]
     T:shapeX 1;
     D:shapeX 2;
     M:count b;
-    out:(b+/:)'[reshapeM[dot[reshapeM[x;(N*T;D)];w];(N;T;M)]];
+    out:b+/:/:reshapeM[dot[reshapeM[x;(N*T;D)];w];(N;T;M)];
     cache:`x`w`b`out!(x;w;b;out);
     (out;cache)
  };
