@@ -55,7 +55,7 @@ captioningRNN.loss:{[d]
     
     / ################ Forward pass ################
 
-    h0:dot[d`features;d`wProj]+/:d`bProj;
+    h0:dot[d`features;d`wProj]+\:d`bProj;
     xCacheEmbedding: wordEmbeddingForward[captionsIn;d`wEmbed];
     x:xCacheEmbedding 0;
     cacheEmbedding:xCacheEmbedding 1;
@@ -74,9 +74,9 @@ captioningRNN.loss:{[d]
 
     / ################ Backward pass ###############
 
-    dhDwDb:temporalAffineBackward[dscores;cacheScores];
+    dxDwDb:temporalAffineBackward[dscores;cacheScores];
     
-    grads:(`rnn`lstm!rnnBackward,lstmBackward)[d`cellType][dhDwDb`dh;cacheRnn];
+    grads:(`rnn`lstm!rnnBackward,lstmBackward)[d`cellType][dxDwDb`dx;cacheRnn];
 
     dwEmbed:wordEmbeddingBackward[grads`dx;cacheEmbedding];
 
@@ -84,7 +84,7 @@ captioningRNN.loss:{[d]
     dbProj:sum grads`dh0;
     
     gradRes:`wProj`bProj`wEmbed`wx`wh`b`wVocab`bVocab!
-             (dwProj;dbProj;dwEmbed;grads`dwx;grads`dwh;grads`b;dhDwDb 1;dhDwDb 2);
+             (dwProj;dbProj;dwEmbed;grads`dwx;grads`dwh;grads`b;dxDwDb`dw;dxDwDb`db);
     
     (loss;gradRes)
  };

@@ -1,6 +1,6 @@
 @[system;"p 5000";{-1"WARNING: failed to set port to 5000";}]
 \l load_all.q
-\l load_coco_data.q
+//\l load_coco_data.q
 / set runAll to 1b only if you want to run everything
 runAll:0b
 

@@ -77,16 +77,15 @@ rnnForward:{[d]
     h:(T;N;H)#0f;
     h:@[h;2;:;h0];
 
-    rnnStepForwardLoop:{[hCacheList;x;wx;wh;b]
-        hlist:hCacheList 0;
+    rnnForwardLoop:{[hCacheList;x;wx;wh;b]
+    //    show(hCacheList;x);
+        hlist:last hCacheList 0;
         cachelist:hCacheList 1;
-        res:rnnStepForward[x;last hlist;wx;wh;b];
+        res:rnnStepForward[x;hlist;wx;wh;b];
         hCacheList,'enlist each res
      };
-    hCacheList:rnnStepForwardLoop[;;d`wx;d`wh;d`b]/[(enlist h0;flip`x`wx`prevH`wh`forward!());x];
-    h:1_ hCacheList 0;
-    cache:hCacheList 1;
-    (flip h;cache)
+    hCacheList:rnnForwardLoop[;;d`wx;d`wh;d`b]/[(enlist h0;flip`x`wx`prevH`wh`forward!());x];
+    (flip 1_ hCacheList 0;hCacheList 1)
  };
 
 / backward pass function for vanilla RNN over entire sequence
