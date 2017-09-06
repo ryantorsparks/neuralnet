@@ -29,20 +29,20 @@ captioningRNN.init:{[d]
     d[`bProj]:dimHidden#0f;
 
     / init params for the RNN
-    dimMul:(`lstm`rnn!1 4)d`cellType;
+    dimMul:(`lstm`rnn!4 1)d`cellType;
     d[`wx]:rad[dimWordVec,dimMul*dimHidden]%sqrt dimWordVec;
     d[`wh]:rad[dimHidden,dimMul*dimHidden]%dimHidden;
     d[`b]:(dimMul*dimHidden)#0f;
 
     / init output to vocab weights
     d[`wVocab]:rad[dimHidden,vocabSize]%sqrt dimHidden;
-    d[`bVocab]:vocabSize:0f;
+    d[`bVocab]:vocabSize#0f;
 
     d
  };
 
 
-captioningRNN.params:{[d] `wEmbed`wProj`wx`wh`b`wVocab`bVocab};
+captioningRNN.params:{[d] `wEmbed`wProj`bProj`wx`wh`b`wVocab`bVocab};
 
 / input d with key:
 /   `features: input image features, shape (N;D)
@@ -51,16 +51,16 @@ captioningRNN.params:{[d] `wEmbed`wProj`wx`wh`b`wVocab`bVocab};
 captioningRNN.loss:{[d]
     captionsIn:-1 _/:d`captions;
     captionsOut:1 _/:d`captions;
-    mask:captions=nullToken;
+    mask:captions=d`null;
     
     / ################ Forward pass ################
 
     h0:dot[d`features;d`wProj]+/:d`bProj;
     xCacheEmbedding: wordEmbeddingForward[captionsIn;d`wEmbed];
-    x:CacheEmbedding 0;
+    x:xCacheEmbedding 0;
     cacheEmbedding:xCacheEmbedding 1;
 
-    hCacheRnn:(`rnn`lstm!rnnForward,lstmForward)[d`cellType][x;h0;d`wx;d`wh;d`b];
+    hCacheRnn:(`rnn`lstm!rnnForward,lstmForward)[d`cellType]`x`h0`wx`wh`b!(x;h0;d`wx;d`wh;d`b);
     h:hCacheRnn 0;
     cacheRnn:hCacheRnn 1;
 

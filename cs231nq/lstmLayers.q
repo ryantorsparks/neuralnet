@@ -1,0 +1,3 @@
+lstmForward:{}
+lstmBackward:{}
+lstmStepForward:{}

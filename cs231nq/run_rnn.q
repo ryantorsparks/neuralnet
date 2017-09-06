@@ -187,3 +187,29 @@ checkLoss:{[N;T;V;p]
 
 lg "run a few random loss checks, losses should be approx 2.3, 23, 2.3"
 checkLoss'[100 100 5000;1 10 10;10 10 10; 1.0 1.0 0.1]
+
+lg "##############################
+    RNN for imaging captioning
+    ##############################"
+
+@[`.;`N`D`W`H`T;:;10 20 30 40 13];
+wordToIdx:(nullToken,`cat`dog)!0 2 3;
+V:count wordToIdx;
+
+startd:(!). flip((`wordToIdx;wordToIdx);`dimInput,D;`dimWordVec,W;`dimHidden,H;`cellType`rnn);
+initd:captioningRNN.init startd;
+
+features:(N;D)#linSpace[-1.5;0.3;N*D]
+captions:(N,T)#til[N*T]mod V;
+
+lossGrads:captioningRNN.loss @[initd;`features`captions;:;(features;captions)]
+
+
+
+
+
+
+
+
+
+
