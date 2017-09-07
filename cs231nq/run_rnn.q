@@ -199,13 +199,19 @@ V:count wordToIdx;
 startd:(!). flip((`wordToIdx;wordToIdx);`dimInput,D;`dimWordVec,W;`dimHidden,H;`cellType`rnn);
 initd:captioningRNN.init startd;
 
+/ scale everything to a linSpace of that shape
+initd:@[initd;captioningRNN.params[];{shapex#linSpace[-1.4;1.3;prd shapex:shape x]}]
+
 features:(N;D)#linSpace[-1.5;0.3;N*D]
 captions:(N,T)#til[N*T]mod V;
 
 lossGrads:captioningRNN.loss @[initd;`features`captions;:;(features;captions)]
 
-
-
+lg "comparing loss to expected "
+lg "loss is ",string loss:first lossGrads
+lg "expected loss is ",string expectedLoss:9.83235591003
+lg "relative error is "
+relError[loss;expectedLoss]
 
 
 
