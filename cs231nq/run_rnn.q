@@ -213,8 +213,13 @@ lg "expected loss is ",string expectedLoss:9.83235591003
 lg "relative error is "
 relError[loss;expectedLoss]
 
+lg "we now check numerical gradients"
+wordToIdx:(nullToken,`cat`dog)!0 2 3;
+startd:(!). flip (`batchSize,2;`timesteps,3;`dimInput,4;`dimWordVec,5;`dimHidden,6;(`wordToIdx;wordToIdx);`vocabSize,count wordToIdx)
+startd[`captions`features]:({(x;y)#(x*y)?z}[startd`batchSize;startd`timesteps;startd`vocabSize];rad startd`batchSize`dimInput)
 
-
+initd:captioningRNN.init startd
+lossGrads:captioningRNN.loss initd
 
 
 
