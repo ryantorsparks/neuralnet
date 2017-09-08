@@ -221,6 +221,11 @@ startd[`captions`features]:({(x;y)#(x*y)?z}[startd`batchSize;startd`timesteps;st
 initd:captioningRNN.init startd
 lossGrads:captioningRNN.loss initd
 
+lg "relative errors are "
+
+captioningRNN.params[]!{[grads;initd;param] relError[grads param;numericalGradientArray[(first captioningRNN.loss@);initd;initd param;param]]}[lossGrads 1;@[initd;`h;:;1e-6]]each captioningRNN.params[]
+
+
 
 
 

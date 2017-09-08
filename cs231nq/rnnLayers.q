@@ -75,7 +75,7 @@ rnnForward:{[d]
    
     x:flip x;
     h:(T;N;H)#0f;
-    h:@[h;2;:;h0];
+    h:@[h;-1+count h;:;h0];
 
     rnnForwardLoop:{[hCacheList;x;wx;wh;b]
     //    show(hCacheList;x);

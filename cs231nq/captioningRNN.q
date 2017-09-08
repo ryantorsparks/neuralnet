@@ -80,6 +80,7 @@ captioningRNN.loss:{[d]
     temp::dxDwDb;
     
     grads:(`rnn`lstm!rnnBackward,lstmBackward)[d`cellType][dxDwDb`dx;cacheRnn];
+    temp2::grads;
 
     dwEmbed:wordEmbeddingBackward[grads`dx;cacheEmbedding];
 
@@ -87,7 +88,7 @@ captioningRNN.loss:{[d]
     dbProj:sum grads`dh0;
     
     gradRes:`wProj`bProj`wEmbed`wx`wh`b`wVocab`bVocab!
-             (dwProj;dbProj;dwEmbed;grads`dwx;grads`dwh;grads`b;dxDwDb`dw;dxDwDb`db);
+             (dwProj;dbProj;dwEmbed;grads`dwx;grads`dwh;grads`db;dxDwDb`dw;dxDwDb`db);
     
     (loss;gradRes)
  };
