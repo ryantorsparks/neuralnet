@@ -1,6 +1,6 @@
 @[system;"p 5000";{-1"WARNING: failed to set port to 5000";}]
 \l load_all.q
-//\l load_coco_data.q
+\l load_coco_data.q
 / set runAll to 1b only if you want to run everything
 runAll:0b
 
@@ -206,7 +206,7 @@ features:(N;D)#linSpace[-1.5;0.3;N*D]
 captions:(N,T)#til[N*T]mod V;
 
 lossGrads:captioningRNN.loss @[initd;`features`captions;:;(features;captions)]
-
+/
 lg "comparing loss to expected "
 lg "loss is ",string loss:first lossGrads
 lg "expected loss is ",string expectedLoss:9.83235591003
@@ -224,8 +224,22 @@ lossGrads:captioningRNN.loss initd
 lg "relative errors are "
 
 captioningRNN.params[]!{[grads;initd;param] relError[grads param;numericalGradientArray[(first captioningRNN.loss@);initd;initd param;param]]}[lossGrads 1;@[initd;`h;:;1e-6]]each captioningRNN.params[]
+\
+
+lg "##############################
+    Overfit small data
+    ##############################"
+
+lg "we now overfit a model using a small sample of 100 training examples,
+    we should see losses around 1"
+
+/ temporary
+overfitMask:get `:rnnOverfitMask
+smallData:(!). flip ((`trainCaptions;train_captions mask);(`trainImageIdxs;train_image_idxs mask);(`valCaptions;val_captions);(`valImageIdxs;val_image_idxs);(`trainFeatures;train_features);(`valFeatures;val_features))
+
+startd:smallData,(!). flip (`updateRule`adam;`numEpochs,50;`batchSize,25;(`optimConfig;enlist[`learnRate]!enlist 5e-3);`lrDecay,0.05;`printEvery,10;`cellType`rnn;(`wordToIdx;word_to_idx);(`dimInput;count train_features);`dimHidden,512;`dimWordVec,256)
 
 
-
+startd:smallData,(!). flip (`updateRule`adam;`numEpochs,50;`batchSize,25;(`optimConfig;enlist[`learnRate]!enlist 5e-3);`lrDecay,0.05;`printEvery,10;`cellType`rnn;(`wordToIdx;word_to_idx);(`dimInput;count train_features);`dimHidden,512;`dimWordVec,256;`model`captioningRNN)
 
 

@@ -244,6 +244,9 @@ squeeze:{[m] {x where x>1}[shape m]#razeo m}
 /   asStrided[m;newshape;strides]
 asStrided:{[m;newshape;strides] newshape#razeo[m]@{raze x+/:raze y}/[reverse[strides]*'til each reverse newshape]}
 
+/ override func
+getClassValue:{[func;class] value $[()~key override: ` sv (-1_v),class,last v:` vs func;func;override]}
+
 / load in col2im c funtion
 lg "attempting to load col2im6dInner function, must be a col2im6dInner.so object in $QHOME";
 @[{`col2im6dInner set `col2im6dInner 2:(`col2im6dInner;5)};();{lg"WARNING: failed to load col2im6dInner c function"}];

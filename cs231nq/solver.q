@@ -74,7 +74,8 @@ solver.step:{[d]
     /batchMask:neg[d`batchSize]?numTrain;
     /xBatch:d[`xTrain] batchMask;
     /yBatch:d[`yTrain] batchMask;
-    batches:solver.genBatch[d];
+    batches:getClassValue[`solver.genBatch;dget[d;`class;`]]d;
+//    batches:solver.genBatch[d];
     xBatch:solver.xTrainParser batches 0;
     yBatch:batches 1;
 
@@ -213,4 +214,39 @@ solver.i.train:{[d]
     d[`cnt]+:1;
     d
  };
+
+
+/ ################ captioning solver specific funcs ##################
+
+captioningSolver.init:{[d]
+    / d expects `model (getModelValue)
+    d:nulld,d;
+   
+    / add on initial default params for the model
+    d:getModelValue[d;`init];
+    defauls:(!). flip (
+        `updateRule`sgd;
+        (`optimConfig;()!());
+        `lrDecay,1f;
+        `batchSize,100;
+        `numEpochs,10;
+        `printEvery,10;
+        `class`rnn
+        );
+    d:defaults,d;
+    d
+ };
+        
+solver.rnn.genBatch:{[d]
+    batchSize:dget[d;`batchSize;100];
+    batchMask:$[`batchMask in key d;d`batchMask; 
+
+
+
+
+
+
+
+
+
 

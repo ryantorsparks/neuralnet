@@ -8,6 +8,7 @@ captioningRNN.init:{[d]
       `dimInput,512;
       `dimWordVec,128;
       `dimHidden,128;
+      `useBatchNorm,0b;
       `cellType`rnn
     );
     d:defaults,d;
@@ -52,7 +53,6 @@ captioningRNN.loss:{[d]
     captionsIn:-1 _/:d`captions;
     captionsOut:1 _/:d`captions;
     mask:not captionsOut=d`null;
-    tempnull::d`null;
     
     / ################ Forward pass ################
     h0:dot[d`features;d`wProj]+\:d`bProj;
@@ -68,19 +68,14 @@ captioningRNN.loss:{[d]
     scores:scoresCacheScores 0;
     cacheScores:scoresCacheScores 1;
 
-    temp0::(captionsOut;mask);
     lossDscores:temporalSoftmaxLoss[scores;captionsOut;mask];
-    temp1::(lossDscores);
     loss:lossDscores 0;
     dscores:lossDscores 1;
 
     / ################ Backward pass ###############
      
     dxDwDb:temporalAffineBackward[dscores;cacheScores];
-    temp::dxDwDb;
-    
     grads:(`rnn`lstm!rnnBackward,lstmBackward)[d`cellType][dxDwDb`dx;cacheRnn];
-    temp2::grads;
 
     dwEmbed:wordEmbeddingBackward[grads`dx;cacheEmbedding];
 
