@@ -249,9 +249,14 @@ lg "##############################
     Test time sampling
     ##############################"
 
-minibatch:sampleCocoMinibatch[smallData;`train;2]  
-gtCaptions:minibatch`captions                                                                                                                                             
-features:minibatch`imageFeatures 
-captionTrainRes:captioningRNN.sample @[res;`features;:;features]
-lg "training captioning sample: "
--1@" " sv'idx_to_word captionTrainRes;
+/ lazy use of globals here
+f:{[split]
+    lg "########## Running captions on ",string[split]," data ###########";
+    minibatch:sampleCocoMinibatch[smallData;split;2];
+    gtCaptions:minibatch`captions;                                                                                                                        
+    features:minibatch`imageFeatures;
+    captionTrainRes:captioningRNN.sample @[res;`features;:;features];
+    {[gtRes;res] lg "ground truth captions are: \n",(decodeCaptions gtRes),"\n";lg "train res captions are: \n",(decodeCaptions res),"\n";}./: flip (minibatch`captions;captionTrainRes);
+ };
+
+f each `train`val;

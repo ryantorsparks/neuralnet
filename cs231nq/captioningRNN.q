@@ -1,6 +1,6 @@
-nullToken:`$"<NULL>";
-startToken:`$"<START>";
-endToken:`$"<END>";
+/ util for decoding captions, in coco data it should be 2
+/ (.i.e. word_to_idx@`$"<END>"), uses global vars from load_coco_data.q
+decodeCaptions:{" " sv idx_to_word (1+x?endId)#x}
 
 captioningRNN.init:{[d]
     defaults:(!). flip 

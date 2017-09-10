@@ -24,4 +24,11 @@ getCocoFiles[];
 
 train_urls:read0 ` sv dataDir,`train2014_urls.txt
 val_urls:read0 ` sv dataDir,`val2014_urls.txt
+
+/ global vars
+nullToken:`$"<NULL>";
+startToken:`$"<START>";
+endToken:`$"<END>";
+endId:word_to_idx endToken;
+
 lgts "finished loading coco data"
