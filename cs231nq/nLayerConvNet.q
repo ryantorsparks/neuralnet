@@ -114,7 +114,7 @@ nLayerFowardPassLinearLayersLoop:{[d]
     pe:p';
     blocks:d`blocks;
     / if we're on the first fully connected layer, set dropout
-    if[(0=d`i)&d`useDropout;
+    if[(0=d`i)&1b~d`useDropout;
         blocks[symi[;idx-1]each`hdrop`cacheHdrop]:dropoutForward[blocks@symi[`h;idx-1];d`dropoutParam]
       ];
 

@@ -94,12 +94,13 @@ captioningRNN.sample:{[d]
     maxLength:dget[d;`maxLength;30];
     captions:d[`null]*(N;maxLength)#1j;
     
-    h0:dot[features;d`wProj]+/:d`bProj;
+    h0:dot[features;d`wProj]+\:d`bProj;
     prevH:h0;
     prevC:h0*0f;
     
     / current word (start word)
     capt:d[`start]*(N;1)#1j;
+    d[`capt`prevH`prevC`captions]:(capt;prevH;prevC;());
     
     / d has `capt`captions`prevH
     sampleLoop:{[d;wEmbed;wVocab;bVocab;wx;wh;b]
@@ -114,18 +115,19 @@ captioningRNN.sample:{[d]
         scores:first temporalAffineForward[enlist each h;wVocab;bVocab];
         / TODO: confirm this is correct
         idxBest:squeeze {x?max x}''[scores];
-        d[`captions],:idxBest;
+        d[`captions],:enlist idxBest;
 
         d[`prevH]:h;
         if[`lstm~d`cellType;d[`prevC]:c];
-        d[`capt]:idxBest
+        d[`capt]:idxBest;
+        d
      };
 
-    res:maxLength sampleLoop[;d`wEmbed;d`wVocab;d`bVocab;d`wx;d`wh;d`b]/capt;
-    flip res
+    res:maxLength sampleLoop[;d`wEmbed;d`wVocab;d`bVocab;d`wx;d`wh;d`b]/d;
+    flip res`captions
  };
 
-
+sampleCocoMinibatch:{[d;split;batchSize] d,captioningSolver.genBatch d:@[d;`split`batchSize;:;(split;batchSize)]}
 
 
 

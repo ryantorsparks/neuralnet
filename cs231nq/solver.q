@@ -74,18 +74,22 @@ solver.step:{[d]
     /batchMask:neg[d`batchSize]?numTrain;
     /xBatch:d[`xTrain] batchMask;
     /yBatch:d[`yTrain] batchMask;
-    batches:getClassValue[`solver.genBatch;dget[d;`class;`]]d;
-//    batches:solver.genBatch[d];
+//    batches:getClassValue[`solver.genBatch;dget[d;`class;`]]d;
+    batches:solver.genBatch[d];
     xBatch:solver.xTrainParser batches 0;
     yBatch:batches 1;
+    solver.i.step[d;xBatch;yBatch]
+ };
 
+solver.i.step:{[d;xBatch;yBatch]
     / compute loss and grad of mini batch
     modelParams:getModelValue[d;`params];
   
     / ??? about the stuff after `reg
-    lossGradKeys:modelParams,`reg`dropoutParam`useBatchNorm`bnParams`wParams`dwParams`bParams`dbParams`betaParams`dbetaParams`gammaParams`dgammaParams`layerInds`model`filterSize`L`M`dropout`useDropout;
+    lossGradKeys:modelParams,`reg`dropoutParam`useBatchNorm`bnParams`wParams`dwParams`bParams`dbParams`betaParams`dbetaParams`gammaParams`dgammaParams`layerInds`model`filterSize`L`M`dropout`useDropout`null`cellType;
     if[d`useBatchNorm;lossGradKeys,:`gammaParams`betaParams,getModelValue[d;`bnParams]];
-    lossGrad:getModelValue[ (inter[lossGradKeys;key d]#d),`x`y!(xBatch;yBatch);`loss];
+    inputDict:$[d[`class]~`captioning;`features`captions!(xBatch;yBatch);`x`y!(xBatch;yBatch)];
+    lossGrad:getModelValue[ (inter[lossGradKeys;key d]#d),inputDict;`loss];
     loss:lossGrad 0;
     grads:lossGrad 1;
     if[null loss;break];
@@ -216,33 +220,93 @@ solver.i.train:{[d]
  };
 
 
-/ ################ captioning solver specific funcs ##################
-
+/ ################ captioning solver specific funcs ################
 captioningSolver.init:{[d]
     / d expects `model (getModelValue)
     d:nulld,d;
    
     / add on initial default params for the model
     d:getModelValue[d;`init];
-    defauls:(!). flip (
+    defaults:(!). flip (
         `updateRule`sgd;
+        `cnt,0;
         (`optimConfig;()!());
-        `lrDecay,1f;
+        `learnRateDecay,1f;
         `batchSize,100;
         `numEpochs,10;
         `printEvery,10;
-        `class`rnn
+        `class`captioning
         );
     d:defaults,d;
     d
  };
         
-solver.rnn.genBatch:{[d]
+captioningSolver.genBatch:{[d]
     batchSize:dget[d;`batchSize;100];
-    batchMask:$[`batchMask in key d;d`batchMask; 
+    split:string dget[d;`split;`train];
+    / either valCaptions or trainCaptions
+    captionsData:d@`$split,"Captions";
+    batchMask:$[`batchMask in key d;d`batchMask;neg[batchSize]?count captionsData];
+    captions:captionsData batchMask;
+    imageIdxs:d[`$split,"ImageIdxs"]batchMask;
+    imageFeatures:(d@`$split,"Features")@imageIdxs;
+    urls:d[`$split,"Urls"]imageIdxs;
+    `captions`imageFeatures`urls!(captions;imageFeatures;urls)
+ };
 
 
+captioningSolver.step:{[d]
+    d[`split]:`train;
+    batches:captioningSolver.genBatch d;
+    solver.i.step[d;;]. batches`imageFeatures`captions
+ };
 
+/ train function
+captioningSolver.train:{[d]
+    / d expects `xTrain`batchSize`numEpochs
+    / first initialize d (this will first call model specific d[`model].init func, then
+    / fill in blanks with default values)
+    d: captioningSolver.init d;
+
+    / then reset everything
+    d: solver.reset d;
+
+    / get # of trainings, numEpochs, iters per epoch etc.
+    numTrain:count d`trainCaptions;
+    iterationsPerEpoch:1|numTrain div d`batchSize;
+    numIterations:d[`numEpochs]*iterationsPerEpoch;
+    d[`numIterations`iterationsPerEpoch]:numIterations,iterationsPerEpoch;
+    res:numIterations captioningSolver.i.train/d;
+
+    / finally, swap in best params (only the model params though, leave
+    / the rest in tact (e.g. loss/accuracy histories)
+//    res:res,getModelValue[res;`params]#res`bestParams;
+    res
+ };
+ 
+captioningSolver.i.train:{[d]
+    / d expects `cnt`numIterations`printEvery`lossHistory`iterationsPerEpoch`epoch
+    /           `optimConfigs`learnRate`learnRateDecay`model`batchSize`xTrain`yTrain
+    /           `trainAccHistory`valAccHistory`bestValAcc
+    / possibly print training loss
+    cnt:d`cnt;
+    numIterations:d`numIterations;
+
+    / step
+    d:captioningSolver.step d;
+
+    if[(0=cnt mod d`printEvery)or numIterations=1+cnt;
+        lgts"Iteration: ",string[d`cnt],"/",string[numIterations]," loss: ",string last d`lossHistory;
+      ];
+
+    / at end of every epoch, increment epoch counter, decay learnRate
+    if[0=(1+cnt)mod d`iterationsPerEpoch;
+        d[`epoch]+:1;
+        d[`optimConfigs;;`learnRate]*:d`learnRateDecay;
+      ];
+    d[`cnt]+:1;
+    d
+ };
 
 
 

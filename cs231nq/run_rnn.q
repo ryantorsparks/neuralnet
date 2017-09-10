@@ -231,15 +231,27 @@ lg "##############################
     ##############################"
 
 lg "we now overfit a model using a small sample of 100 training examples,
-    we should see losses around 1"
+    we should see losses around 1 after 50 epochs"
 
 / temporary
-overfitMask:get `:rnnOverfitMask
-smallData:(!). flip ((`trainCaptions;train_captions mask);(`trainImageIdxs;train_image_idxs mask);(`valCaptions;val_captions);(`valImageIdxs;val_image_idxs);(`trainFeatures;train_features);(`valFeatures;val_features))
-
-startd:smallData,(!). flip (`updateRule`adam;`numEpochs,50;`batchSize,25;(`optimConfig;enlist[`learnRate]!enlist 5e-3);`lrDecay,0.05;`printEvery,10;`cellType`rnn;(`wordToIdx;word_to_idx);(`dimInput;count train_features);`dimHidden,512;`dimWordVec,256)
+mask:get `:rnnOverfitMask
+smallData:(!). flip ((`trainCaptions;train_captions mask);(`trainImageIdxs;train_image_idxs mask);(`valCaptions;val_captions);(`valImageIdxs;val_image_idxs);(`trainFeatures;train_features);(`valFeatures;val_features);(`idxToWord;idx_to_word);(`wordToIdx;word_to_idx);(`trainUrls;train_urls);(`valUrls;val_urls));
 
 
-startd:smallData,(!). flip (`updateRule`adam;`numEpochs,50;`batchSize,25;(`optimConfig;enlist[`learnRate]!enlist 5e-3);`lrDecay,0.05;`printEvery,10;`cellType`rnn;(`wordToIdx;word_to_idx);(`dimInput;count train_features);`dimHidden,512;`dimWordVec,256;`model`captioningRNN)
+startd:smallData,(!). flip (`updateRule`adam;`numEpochs,50;`batchSize,25;(`optimConfig;enlist[`learnRate]!enlist 5e-3);`lrDecay,0.05;`printEvery,10;`cellType`rnn;(`wordToIdx;word_to_idx);(`dimInput;count train_features 0);`dimHidden,512;`dimWordVec,256;`model`captioningRNN)
 
+res:captioningSolver.train startd
 
+lg "plot loss history, validation and training accuracy in an IDE e.g qstudio using scatterplots:"
+lg"loss history: ([]iteration:til count res`lossHistory;loss:res`lossHistory)"
+
+lg "##############################
+    Test time sampling
+    ##############################"
+
+minibatch:sampleCocoMinibatch[smallData;`train;2]  
+gtCaptions:minibatch`captions                                                                                                                                             
+features:minibatch`imageFeatures 
+captionTrainRes:captioningRNN.sample @[res;`features;:;features]
+lg "training captioning sample: "
+-1@" " sv'idx_to_word captionTrainRes;

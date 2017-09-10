@@ -22,5 +22,6 @@ getCocoFiles[];
      
 (load ` sv dataDir,)each cocoFiles; 
 
-train2014_urls:read0 ` sv dataDir,`train2014_urls.txt
+train_urls:read0 ` sv dataDir,`train2014_urls.txt
+val_urls:read0 ` sv dataDir,`val2014_urls.txt
 lgts "finished loading coco data"
