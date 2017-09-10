@@ -249,6 +249,11 @@ lg "##############################
     Test time sampling
     ##############################"
 
+lg "we now compare ground truth captions against the result from our overfitting training,
+    and also against validation data that we caption from our overfit training. Threfore we 
+    expect our training captions to be very accurate, but our validation captions to be 
+    garbage."
+
 / lazy use of globals here
 f:{[split]
     lg "########## Running captions on ",string[split]," data ###########";
