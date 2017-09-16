@@ -5,9 +5,7 @@ dataSize:count data;
 -1"total characters+uniques are ",-3!dataSize,vocabSize:count chars;
 charToIx:chars!til count chars;
 / hyperparams
-hiddenSize:100;
-seqLength:25;
-learningRate:0.1;
+`hiddenSize`seqLength`learningRate set'100,25,0.1;
 / model params
 wxh:0.01*rad hiddenSize,vocabSize; // input to hidden
 whh:0.01*rad 2#hiddenSize; // hidden to hidden
@@ -36,7 +34,7 @@ lossFunc:{[inputs;targets;hprev]
     `loss`dwxh`dwhh`dwhy`dbh`dby`hs#@[res;`hs;last]
  };
 sample:{[h;seedIx;n]
-     n{[d] d[`h]:tanh[dot[wxh;"f"$d`x]+dot[whh;d`h]]+bh;
+     n{[d] d[`h]:tanh[dot[wxh;"f"$d`x]+dot[whh;d`h]+bh];
            p:{x%sumo x}exp dot[why;d`h]+bY;
            ix:randChoiceP[til vocabSize;1;p];
            d:@[d;`x;:;@[vocabSize#0;ix;:;1]];

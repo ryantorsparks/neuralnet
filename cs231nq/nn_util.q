@@ -93,6 +93,9 @@ randArray:{(x;y)#sqrt[-2*log n?1.]*cos[2*pi*(n:x*y)?1.]}
 / (r)andom (a)rray n-(d)imensional
 rad:{[dims](dims)#sqrt[-2*log n?1.]*cos[2*pi*(n:prd dims)?1.]}
 
+/ equivalent of np.random.choic(n,c,p=[...array of floats that sum to 1f])
+randChoiceP:{[n;c;p] if[not 1=sum p;'"p must sum to 1"];if[not(=). count each(p;n);'"p and n must have same count"];n@sums[p] binr c?1f}
+
 / raze over
 razeo:raze/
 
