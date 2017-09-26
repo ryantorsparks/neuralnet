@@ -34,7 +34,9 @@ dirs:{(` sv x,) each key[x] except `q`Q`h`j`o`prof`debug`qml}
 / generate list of profileable functions
 lambdas:{x where 100h=(type get@) each x} 
 
+allFuncs:{lambdas except[raze tree each `.,dirs`;`..lg`..lgts]}
+
 / instrument all functions
-modifyAllFuncs:{modifyFunc each lambdas except[raze tree each `.,dirs`;`..lg`..lgts]}
+modifyAllFuncs:{modifyFunc each allFuncs[]}
 
 

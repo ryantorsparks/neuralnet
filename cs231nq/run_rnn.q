@@ -254,14 +254,4 @@ lg "we now compare ground truth captions against the result from our overfitting
     expect our training captions to be very accurate, but our validation captions to be 
     garbage."
 
-/ lazy use of globals here
-f:{[split]
-    lg "########## Running captions on ",string[split]," data ###########";
-    minibatch:sampleCocoMinibatch[smallData;split;2];
-    gtCaptions:minibatch`captions;                                                                                                                        
-    features:minibatch`imageFeatures;
-    captionTrainRes:captioningRNN.sample @[res;`features;:;features];
-    {[gtRes;res] lg "ground truth captions are: \n",(decodeCaptions gtRes),"\n";lg "train res captions are: \n",(decodeCaptions res),"\n";}./: flip (minibatch`captions;captionTrainRes);
- };
-
-f each `train`val;
+sampleCaptions[smallData;res;] each `train`val;

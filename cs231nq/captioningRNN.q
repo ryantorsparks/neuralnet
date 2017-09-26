@@ -107,7 +107,7 @@ captioningRNN.sample:{[d]
         wordEmbed:first wordEmbeddingForward[d`capt;wEmbed];
         hc:$[`rnn~d`cellType;
                rnnStepForward[squeeze wordEmbed;d`prevH;wx;wh;b];
-               lstmStepForward[squeeze wordEmbed;d`prevH;d`prevC;wx;wh;b]
+               lstmStepForward`x`prevH`prevC`wx`wh`b!(squeeze wordEmbed;d`prevH;d`prevC;wx;wh;b)
             ];
         h:hc 0;
         c:hc 1;
@@ -129,7 +129,18 @@ captioningRNN.sample:{[d]
 
 sampleCocoMinibatch:{[d;split;batchSize] d,captioningSolver.genBatch d:@[d;`split`batchSize;:;(split;batchSize)]}
 
-
+/ inputs:
+/   res - result of training, i.e. captioningRNN.train ....
+/   smallData - small data to run on 
+/   split - `test or `val
+sampleCaptions:{[smallData;res;split]
+    lg "########## Running captions on ",string[split]," data ###########";
+    minibatch:sampleCocoMinibatch[smallData;split;2];
+    gtCaptions:minibatch`captions;
+    features:minibatch`imageFeatures;
+    captionTrainRes:captioningRNN.sample @[res;`features;:;features];
+    {[gtRes;res] lg "ground truth captions are: \n",(decodeCaptions gtRes),"\n";lg "train res captions are: \n",(decodeCaptions res),"\n";}./: flip (minibatch`captions;captionTrainRes);
+ };
 
 
 
