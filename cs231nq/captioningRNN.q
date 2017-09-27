@@ -139,7 +139,7 @@ sampleCaptions:{[smallData;res;split]
     gtCaptions:minibatch`captions;
     features:minibatch`imageFeatures;
     captionTrainRes:captioningRNN.sample @[res;`features;:;features];
-    {[gtRes;res] lg "ground truth captions are: \n",(decodeCaptions gtRes),"\n";lg "train res captions are: \n",(decodeCaptions res),"\n";}./: flip (minibatch`captions;captionTrainRes);
+    {[gtRes;res;url] lg "for url: \n",url,"\nground truth captions are: \n",(decodeCaptions gtRes),"\n";lg "train res captions are: \n",(decodeCaptions res),"\n";}./: flip (minibatch`captions;captionTrainRes;minibatch`urls);
  };
 
 

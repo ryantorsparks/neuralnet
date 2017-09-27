@@ -69,7 +69,8 @@ nLayerConvNet.init:{[d]
 
     / initialize the affine-relu layers
     dims:prd[HConvWConv,last F],d`dimHidden;
-    d[`dims]:dims;
+    if[not all{x=floor x}dims;'"dimensions must not be fractions"];
+    d[`dims]:`long$dims;
     d:initWeightBiasBnParamsAffineReluLayers[d];
 
     / add W and b for the last layer, to d
@@ -372,8 +373,8 @@ sizeConv:{[strideConv;filterSize;H;W;nConv]
     poolWidth:2;
     poolHeight:2;
     poolStride:2;
-    Hp:1+(Hc-poolHeight)div poolStride;
-    Wp:1+(Wc-poolWidth)div poolStride;
+    Hp:1+(Hc-poolHeight)%poolStride;
+    Wp:1+(Wc-poolWidth)%poolStride;
     $[nConv=1;(Hp;Wp);.z.s[strideConv;filterSize;Hp;Wp;nConv-1]]
  };
 
