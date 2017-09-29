@@ -77,6 +77,9 @@ solver.step:{[d]
 //    batches:getClassValue[`solver.genBatch;dget[d;`class;`]]d;
     batches:solver.genBatch[d];
     xBatch:solver.xTrainParser batches 0;
+    / do data augmentation, mirror half the images randomly
+    if[1b~d`dataAugmentation;
+        xBatch:@[xBatch;{neg[x div 2]?x}d`batchSize;reverse each]];
     yBatch:batches 1;
     solver.i.step[d;xBatch;yBatch]
  };

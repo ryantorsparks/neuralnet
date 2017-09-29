@@ -27,6 +27,7 @@ nLayerConvNet.init:{[d]
         (`wScale;0.001);
         (`dropout;0f);
         (`seed;0N);
+        (`dataAugmentation;1b);
         (`reg;0.0)
         );
     d:defaults,d;

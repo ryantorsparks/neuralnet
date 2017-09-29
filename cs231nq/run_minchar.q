@@ -38,11 +38,11 @@ while[1b;                                                                       
     if[any(n=0;(p+seqLength+1)>=count data);-1"resetting hprev and p";hprev:hiddenSize#0f;p:0];
     inputs:charToIx data ind:p+til seqLength;
     targets:charToIx data 1+ind;
-    if[0=n mod 100;-1"----\n ",chars[sample[hprev;inputs 0;200]`ixes],"\n----"];                                            // sample text every 100 iters
+    if[0=n mod 500;-1"----\n ",chars[sample[hprev;inputs 0;200]`ixes],"\n----"];                                            // sample text every 100 iters
     lossGrads:lossFunc[inputs;targets;hprev];                                                                               // forward seqLength chars through and get grad
     hprev:lossGrads`hs;
     smoothLoss:(0.001*lossGrads`loss)+smoothLoss*0.999;
-    if[0=n mod 100;-1 string[.z.t-now]," iteration ",string[n]," loss: ",string smoothLoss;now:.z.t];                                                   // track loss
+    if[0=n mod 500;-1 string[.z.t-now]," iteration ",string[n]," loss: ",string smoothLoss;now:.z.t];                                                   // track loss
     dparam:lossGrads`dwxh`dwhh`dwhy`dbh`dby;
     `wxh`whh`why`bh`bY set'(wxh;whh;why;bh;bY)-learningRate*dparam%sqrt 1e-8+mem+:{x*x}dparam;                              // adagrad update
     `fwhy`fwhh set'flip each (why;whh);
