@@ -7,7 +7,7 @@
 
 inputd:{$[1=count x;value first@;value']x}each .Q.opt .z.x;
 logName:(first "." vs string[.z.h]),"_cnn_","_" sv "_" sv' flip (string key@;value)@\:{ssr[-3!x;" ";"_"]}each {asc[key x]#x}inputd;
-//system"1 logs/",logName,".log";
+system"1 logs/",logName,".log";
 
 -1"##################  starting run_cnn.q ####################";
  
@@ -18,7 +18,7 @@ if[`learnRate in key inputd;inputd:`learnRate _ inputd,enlist[`optimConfig]!enli
 \l load_all.q
 \l load_cifar_data.q
  
-defaultStartd:(!). flip (`useBatchNorm,1b;(`numFilters;16 32 64 128);`batchSize,50;`updateRule`adam;`filterSize,3;`printEvery,50;(`dimHidden;500 500);(`dimInput;3 32 32);(`numEpochs;100);`wScale,.05;`learnRateDecay,0.9;`nClass,10;(`xTrain;xTrain);(`yTrain;yTrain);(`xVal;xVal);(`yVal;yVal);`model`nLayerConvNet;(`optimConfig;(enlist `learnRate)!enlist 5e-4);`reg,0.05;`dropout,0.5)
+defaultStartd:(!). flip (`useBatchNorm,1b;(`numFilters;16 32 64 128);`batchSize,50;`updateRule`adam;`filterSize,3;`printEvery,50;(`dimHidden;500 500);(`dimInput;3 32 32);(`numEpochs;100);`wScale,.05;`learnRateDecay,0.9;`nClass,10;(`xTrain;xTrain);(`yTrain;yTrain);(`xVal;xVal);(`yVal;yVal);`model`nLayerConvNet;(`optimConfig;(enlist `learnRate)!enlist 5e-4);`reg,0.05;`dropout,0.5;`dataAugmentation,1b)
  
 startd:defaultStartd,inputd
  

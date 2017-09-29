@@ -404,6 +404,6 @@ lg "##############################
     all training data
     ##############################"
 
-startd:(!). flip (`useBatchNorm,1b;(`numFilters;16 32 64 128);`batchSize,50;`updateRule`adam;`filterSize,3;`printEvery,10;(`dimHidden;500 500);(`dimInput;3 32 32);(`numEpochs;4);`wScale,.05;`learnRateDecay,0.9;`nClass,10;(`xTrain;xTrain);(`yTrain;yTrain);(`xVal;xVal);(`yVal;yVal);`model`nLayerConvNet;(`optimConfig;(enlist `learnRate)!enlist 1e-3);`reg,0.05;`dropout,0.75)
+startd:(!). flip (`useBatchNorm,1b;(`numFilters;16 32 64 128);`batchSize,50;`updateRule`adam;`filterSize,3;`printEvery,10;(`dimHidden;500 500);(`dimInput;3 32 32);(`numEpochs;30);`wScale,.05;`learnRateDecay,0.9;`nClass,10;(`xTrain;xTrain);(`yTrain;yTrain);(`xVal;xVal);(`yVal;yVal);`model`nLayerConvNet;(`optimConfig;(enlist `learnRate)!enlist 1e-3);`reg,0.05;`dropout,0.75)
 
 if[runAll;res:solver.train startd]
