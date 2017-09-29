@@ -1,0 +1,72 @@
+### local mac
+
+# copy neuralnet to it
+gcloud compute scp ~/Downloads/neuralnet-master.zip  convnet:/home/rspa9428
+# copy k.h over
+gcloud compute scp  /Users/ryansparks/q/k.h  convnet:/home/rspa9428
+#copy kdb linux
+gcloud compute scp   ~/Downloads/kodlin.zip convnet:/home/rspa9428
+gcloud compute scp   ~/qod/kc.lic convnet:/home/rspa9428
+
+### on gcloud
+# change to root for yum install gcc, unzip, zip etc
+sudo yum install git unzip gcc wget
+
+#install rlwrap
+wget https://dl.fedoraproject.org/pub/epel/epel-release-latest-6.noarch.rpm
+sudo rpm -Uvh epel-release-latest-6.noarche
+sudo yum install rlwrap
+
+#exit root
+exit
+
+# stick in .bash_profile
+export QHOME=/home/rspa9428/kdb/kodlin
+export QLIC=/home/rspa9428/kdb/kodlin
+
+alias q="rlwrap $QHOME/l64/qelm $*"
+alias cdgnn="cd ~/qstuff/neuralnet-master/cs231nq"
+alias sbp='source ~/.bash_profile'
+alias vibp='vi ~/.bash_profile'
+
+
+
+#make qstuff dir
+source ~/.bash_profile
+mkdir kdb
+mv kod.zip kdb/
+cd kdb
+unzip kodlin.zip
+
+mkdir ~/qstuff
+cd ~/qstuff
+mv ~/neuralnet-master.zip .
+unzip neuralnet-master.zip 
+mv ~/kc.lic $QHOME/
+mv ~/k.h /home/rspa9428/qstuff/neuralnet-master/cs231nq
+
+#copy cshell
+# May need to run :
+#   sudo su
+#   chmod -R 777 ~
+# first
+gcloud compute scp   /Users/ryansparks/Documents/qscripts/gitnn/neuralnet/cs231nq/makeqc_linux.sh  convnet:/home/rspa9428/qstuff/neuralnet-master/cs231nq
+
+# copy CIFAR data if you have it already
+gcloud compute scp   /Users/ryansparks/Documents/qscripts/gitnn/neuralnet/cs231nq/CIFAR_data_razed.tgz  convnet:/home/rspa9428/qstuff/neuralnet-master/cs231nq
+
+
+# back on gcloud
+cdgnn
+# if you have it, unzip
+sudo chmod 777 CIFAR_data_razed.tgz
+tar -xzvf CIFAR_data_razed.tgz
+mkdir logs
+
+#make c files
+sudo chmod 777 makeqc_linux.sh
+./makeqc_linux.sh col2im6dInner && ./makeqc_linux.sh maskBroadcast6dAxes35 && ./makeqc_linux.sh sumAxes35KeepDims6dBroadcast && ./makeqc_linux.sh sumAxesKeepDims6d
+
+# kick of cnn
+nohup $QHOME/l64/qelm run_cnn.q -reg 0.05 -dropout 0.75 -dimHidden 500 500 -learnRate 0.001 &
+
