@@ -513,7 +513,7 @@ col2im6d:{[d]
     outw:1+(Wpad-d`WW)div stride;
     xPaddedShape:(d`N;d`C;Hpad;Wpad);
     xCols:d`xCols;    
-    col2im6dShape:(d`C;d`HH;d`WW;d`N;d`H;d`W);
+    col2im6dShape:d`C`HH`WW`N`H`W;
 
     / call out to c for this function, muuuch too slow in q unfortunately 
     xCols:reshapeM[xCols;col2im6dShape];
