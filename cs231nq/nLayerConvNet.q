@@ -90,7 +90,7 @@ nLayerFowardPassConvLayersLoop:{[d]
 
     / get the previous block
     h:d[`blocks]`$"h",string idx-1;
-    
+
     / TODO possibly neaten this convoluted if else
     if[d`useBatchNorm;
         beta:d`$"beta",sidx;
@@ -127,7 +127,6 @@ nLayerFowardPassLinearLayersLoop:{[d]
     / extract weight and bias
     w:d p`w;
     b:d p`b;
-
     / TODO possibly neaten this convoluted if else
     if[d`useBatchNorm;
         beta:d p`beta;

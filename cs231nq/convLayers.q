@@ -80,6 +80,11 @@ convForwardNaive:{[x;w;b;convParam]
 
 / also known as, convForwardStrides
 convForwardFast:{[x;w;b;convParam]
+    / example, inputs shapes
+    / x - 50 3 32 32
+    / w - 16 3 3 3
+    / b - 16
+    / convParam - `stride`pad!1 1
    
     / unpack variables
     stride:convParam`stride;
@@ -88,12 +93,18 @@ convForwardFast:{[x;w;b;convParam]
     N:xShape 0;C:xShape 1;H:xShape 2;W:xShape 3;
     wShape:shape w;
     F:wShape 0; HH:wShape 2;WW:wShape 3;
+
+    / e.g., xShape is 50 3 32 32, wShape 16 3 3 3 
+    / -> hout=wout=32
     hout:`long$1+(H+(2*pad)-HH)%stride;
     wout:`long$1+(W+(2*pad)-WW)%stride;
+    / e.g. outShape -> 50 16 32 32
     outShape:N,F,hout,wout;
 
     / assumes x is 4 dimensions
     if[not 4= count xShape;'"convForwardFast requires x to be 4 dimensions"];
+
+    / e.g, xPad has shape 50 3 34 34 (from pad=1)
     xPad:.[x;(::;::);zeroPad[;pad]];
     H+:2*pad;
     W+:2*pad;
@@ -101,17 +112,23 @@ convForwardFast:{[x;w;b;convParam]
     outw:1+(W-WW)div stride;
     
     / perform an im2col operation by picking clever strides
+    / e.g. strideShape is 3 3 3 50 32 32
     strideShape:C,HH,WW,N,outh,outw;
+    / e.g. strides is 1156 34 1 3468 34 1
     strides:(H*W; W; 1; C*H*W; stride*W;stride);
+    / e.g. xCols is shape 3 3 3 50 32 32
     xCols: asStrided[xPad;strideShape;strides];
     
     / reshape from a 6D into a 2D matrix
+    / xCols goes from 3 3 3 50 32 32 -> shape 27 51200
     xCols:reshapeM[xCols;(C*HH*WW;N*outh*outw)];
 
     / now all our convolutions become one big matrix multiply
+    / e.g. will be a dot[shape 16 27;shape 27 51200]+(list length 16)
     res:dot[reshapeM[w;(F;0N)];xCols]+b;
 
     / reshape the output
+    / out is now shape 50 16 32 32
     out:flip reshapeM[res;(F;N;outh;outw)];
 
     cache:`x`w`b`convParam`xCols!(x;w;b;convParam;xCols);
@@ -593,22 +610,28 @@ convNormReluBackward:{[dout;cache]
 / gamma - spatial batchnorm params
 / bnParam - param dict for batchnorm 
 convNormReluPoolForward:{[x;w;b;convParam;poolParam;gamma;beta;bnParam]
-    / convolution layer
+    / convolution layer, e.g. first layer, x[shape 50 3 32 32],
+    /    w[shape 16 3 3 3] -> output conv is shape 50 16 32 32
     conv_convCache:convForwardFast[x;w;b;convParam];
     conv:conv_convCache 0;
     convCache:conv_convCache 1;
 
     / spatial batchnorm layer
+    / e.g: conv[shape 50 16 32 32], gamma/beta[shape 16]
+    / -> norm is shape 50 16 32 32 (but normalized), but numbers
+    /    have been normalized (e.g. range from (-75 79)-> (-5.3 6.3)
     norm_normCache:spatialBatchNormForward[conv;gamma;beta;bnParam];
     norm:norm_normCache 0;
     normCache:norm_normCache 1;
 
     / relu layer
+    / just (0|)
     relu_reluCache:reluForward[norm];
     relu:relu_reluCache 0;
     reluCache:relu_reluCache 1;
   
     / pool layer
+    / e.g. input shape relu is 50 16 32 32, -> out has shape 50 16 16 16
     out_poolCache:maxPoolForwardFast[relu;poolParam];
     out:out_poolCache 0;
     poolCache:out_poolCache 1;
