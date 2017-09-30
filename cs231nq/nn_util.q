@@ -245,6 +245,7 @@ squeeze:{[m] {x where x>1}[shape m]#razeo m}
 /   newshape: 3 7 7 50 32 32
 /   strides: 1444 38 1 4332 38 1
 /   asStrided[m;newshape;strides]
+/ equivalent to np.lib.stride_tricks.as_strided
 asStrided:{[m;newshape;strides] newshape#razeo[m]@{raze x+/:raze y}/[reverse[strides]*'til each reverse newshape]}
 
 / override func
