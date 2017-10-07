@@ -36,6 +36,6 @@ K gpu_square(K x) {
  // free the memory we allocated on the graphics card
  cudaMemcpy(host_memory, device_memory, size, cudaMemcpyDeviceToHost);
  cudaFree(device_memory);
- return 0;
+ R r1(x);
 }
 
