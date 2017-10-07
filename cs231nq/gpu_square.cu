@@ -7,7 +7,7 @@
 extern  "C" K gpu_square(K x);
 
 // Define the "Kernel" that executes on the CUDA device in parallel
-__global__ void square_array(float *a, int N) {
+__global__ void square_array(double *a, int N) {
  int idx = blockIdx.x * blockDim.x + threadIdx.x;
  if (idx<N)
     a[idx] = a[idx] * a[idx];
@@ -20,10 +20,10 @@ __global__ void square_array(float *a, int N) {
 // - copy back and overwrite the K object data
 K gpu_square(K x) {
   // Pointers to host & device arrays
- float *host_memory = (float*) &(kF(x)[0]), *device_memory;
+ double *host_memory = (float*) &(kF(x)[0]), *device_memory;
 
  // Allocate memory on the device for the data and copy it to the GPU
- size_t size = xn * sizeof(float);
+ size_t size = xn * sizeof(double);
  cudaMalloc((void **)&device_memory, size);
  cudaMemcpy(device_memory, host_memory, size, cudaMemcpyHostToDevice);
 
