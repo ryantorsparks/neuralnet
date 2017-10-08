@@ -11,7 +11,7 @@
 //   nvcc --compiler-options '-fPIC -DKXVER=3 -O2' -o $QHOME/l64/gpu_mm.so --shared -lcurand -lcublas gpu_mm.cu
 
 // Export the function we will load into kdb+
-extern  "C" K gpu_mm(K x);
+extern  "C" K gpu_mm(K A, K B, K C);
 
 // Fill the array A(nr_rows_A, nr_cols_A) with random numbers on GPU
 void GPU_fill_rand(float *A, int nr_rows_A, int nr_cols_A) {
@@ -40,7 +40,9 @@ void gpu_blas_mmul(const float *A, const float *B, float *C, const int m, const 
     cublasCreate(&handle);
 
     // Do the actual multiplication
-    cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc);
+    // CUBLAS_OP_T means input is row major, CUBLAS_OP_N means input is column major
+//    cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc);
+    cublasSgemm(handle, CUBLAS_OP_T, CUBLAS_OP_T, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc);
 
     // Destroy the handle
     cublasDestroy(handle);
@@ -59,46 +61,41 @@ void print_matrix(const float *A, int nr_rows_A, int nr_cols_A) {
     std::cout << std::endl;
 }
 
-K gpu_mm(K x) {
+K gpu_mm(K A, K B, K C) {
     // Allocate 3 arrays on CPU
     int nr_rows_A, nr_cols_A, nr_rows_B, nr_cols_B, nr_rows_C, nr_cols_C;
 
+    // get shape of input A (assume A/B/C are all square, same shape
+    long n=A->n;
+    long r=sqrt(n);
+
     // for simplicity we are going to use square arrays
-    nr_rows_A = nr_cols_A = nr_rows_B = nr_cols_B = nr_rows_C = nr_cols_C = 3;
-    
+    nr_rows_A = nr_cols_A = nr_rows_B = nr_cols_B = nr_rows_C = nr_cols_C = r;
+
+    // allocate memory, host arrays
     float *h_A = (float *)malloc(nr_rows_A * nr_cols_A * sizeof(float));
     float *h_B = (float *)malloc(nr_rows_B * nr_cols_B * sizeof(float));
     float *h_C = (float *)malloc(nr_rows_C * nr_cols_C * sizeof(float));
 
-    // Allocate 3 arrays on GPU
+    // Allocate 3 arrays on GPU, device arrays
     float *d_A, *d_B, *d_C;
-    cudaMalloc(&d_A,nr_rows_A * nr_cols_A * sizeof(float));
-    cudaMalloc(&d_B,nr_rows_B * nr_cols_B * sizeof(float));
+    float *host_memoryA = (float*) &(kE(A)[0]);
+    float *host_memoryB = (float*) &(kE(B)[0]);
+    float *host_memoryC = (float*) &(kE(C)[0]);
+    size_t size = n * sizeof(float);
+    cudaMalloc((void **)&d_A, size);
+    cudaMalloc((void **)&d_B, size);
     cudaMalloc(&d_C,nr_rows_C * nr_cols_C * sizeof(float));
 
     // If you already have useful values in A and B you can copy them in GPU:
-    // cudaMemcpy(d_A,h_A,nr_rows_A * nr_cols_A * sizeof(float),cudaMemcpyHostToDevice);
-    // cudaMemcpy(d_B,h_B,nr_rows_B * nr_cols_B * sizeof(float),cudaMemcpyHostToDevice);
-
-    // Fill the arrays A and B on GPU with random numbers
-    GPU_fill_rand(d_A, nr_rows_A, nr_cols_A);
-    GPU_fill_rand(d_B, nr_rows_B, nr_cols_B);
-
-    // Optionally we can copy the data back on CPU and print the arrays
-    cudaMemcpy(h_A,d_A,nr_rows_A * nr_cols_A * sizeof(float),cudaMemcpyDeviceToHost);
-    cudaMemcpy(h_B,d_B,nr_rows_B * nr_cols_B * sizeof(float),cudaMemcpyDeviceToHost);
-    std::cout << "A =" << std::endl;
-    print_matrix(h_A, nr_rows_A, nr_cols_A);
-    std::cout << "B =" << std::endl;
-    print_matrix(h_B, nr_rows_B, nr_cols_B);
+    cudaMemcpy(d_A, host_memoryA, size, cudaMemcpyHostToDevice);
+    cudaMemcpy(d_B, host_memoryB, size, cudaMemcpyHostToDevice);
 
     // Multiply A and B on GPU
     gpu_blas_mmul(d_A, d_B, d_C, nr_rows_A, nr_cols_A, nr_cols_B);
 
-    // Copy (and print) the result on host memory
-    cudaMemcpy(h_C,d_C,nr_rows_C * nr_cols_C * sizeof(float),cudaMemcpyDeviceToHost);
-    std::cout << "C =" << std::endl;
-    print_matrix(h_C, nr_rows_C, nr_cols_C);
+    // Copy the result on host memory
+    cudaMemcpy(host_memoryC,d_C,nr_rows_C * nr_cols_C * sizeof(float),cudaMemcpyDeviceToHost);
 
     //Free GPU memory
     cudaFree(d_A);
@@ -110,5 +107,5 @@ K gpu_mm(K x) {
     free(h_B);
     free(h_C);
 
-    return 0;
+    R r1(C);
 }
