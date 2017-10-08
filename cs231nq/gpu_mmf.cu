@@ -72,7 +72,6 @@ K gpu_mmf(K A, K rA, K cA, K B, K rB, K cB,  K C) {
     double *host_memoryC = (double*) &(kF(C)[0]);
     size_t sizeA = nr_rows_A * nr_cols_A * sizeof(double);
     size_t sizeB = nr_rows_B * nr_cols_B * sizeof(double);
-    size_t sizeC = nr_rows_C * nr_cols_C * sizeof(double);
     cudaMalloc((void **)&d_A, sizeA);
     cudaMalloc((void **)&d_B, sizeB);
     cudaMalloc(&d_C,nr_rows_C * nr_cols_C * sizeof(double));
