@@ -4,11 +4,8 @@
 #include"k.h"
 #include<math.h>
 #include </usr/local/cuda/include/cuda.h>
-
 #define CMCPYHTD cudaMemcpyHostToDevice
 #define CMCPYDTH cudaMemcpyDeviceToHost
-
-// CONSTS for compute capability 2.0
 #define BLOCK_WIDTH 16
 
 extern  "C" K gpu_floydwarshall(K matrix);
@@ -59,8 +56,8 @@ K gpu_floydwarshall(K matrix)
     cudaSetDevice(0);
 
     // Initialize the grid and block dimensions here
-    dim3 dimGrid((n - 1) / BLOCK_WIDTH + 1, (n - 1) / BLOCK_WIDTH + 1, 1);
-    dim3 dimBlock(BLOCK_WIDTH, BLOCK_WIDTH, 1);
+    dim3 dimGrid((n - 1) / BLOCK_WIDTH + 1, (n - 1) / BLOCK_WIDTH + 1);
+    dim3 dimBlock(BLOCK_WIDTH, BLOCK_WIDTH);
 
     // Create new stream to copy data
     cudaStreamCreate(&cpyStream);
@@ -78,6 +75,7 @@ K gpu_floydwarshall(K matrix)
     // cudaDeviceSynchronize waits for the kernel to finish, and returns
     cudaDeviceSynchronize();
 
+    // set preference for larger L1 cache and smaller shared memory
     cudaFuncSetCacheConfig(fw_kernel, cudaFuncCachePreferL1 );
     for (int u = 0; u <= (n-1); ++u)
     {
@@ -98,4 +96,3 @@ K gpu_floydwarshall(K matrix)
 
     R r1(matrix);
 }
-
