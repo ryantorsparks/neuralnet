@@ -1,5 +1,4 @@
-5 layer neural net that implements gpu for mmu, vs a 5 layer net using .qml.mm:
-
+5 layer neural net that implements gpu for mmu, vs a 5 layer net using .qml.mm. We can see that most functions have become significantly faster now - as they have been converted to input/output lists. Note this was for a fairly large batchsize example, I haven't had time to "optimise the hyperparameters" yet, using the same params as a smaller batchsize has lead to lower accuracy
 
 | nc                              | timepc      | timepc_old  | pct         | pct_old      | faster | 
 |---------------------------------|-------------|-------------|-------------|--------------|--------| 
