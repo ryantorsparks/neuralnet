@@ -262,3 +262,9 @@ lg "attempting to load maskBroadcast6dAxes35 function, must be a maskBroadcast6d
 / load in sumAxes35KeepDims6dBroadcast c funtion
 lg "attempting to load sumAxes35KeepDims6dBroadcast function, must be a sumAxes35KeepDims6dBroadcast.so object in $QHOME";
 @[{`sumAxes35KeepDims6dBroadcast set `sumAxes35KeepDims6dBroadcast 2:(`sumAxes35KeepDims6dBroadcast;2)};();{lg"WARNING: failed to load sumAxes35KeepDims6dBroadcast c function"}];
+
+/ load in expandAxes35Flat6dMatrix
+q)q)f:`expandAxes35Flat6dMatrix 2:(`expandAxes35Flat6dMatrix;3)
+lg "attempting to load expandAxes35Flat6dMatrix function, must be a expandAxes35Flat6dMatrix.so object in $QHOME";
+@[{`expandAxes35Flat6dMatrix set `expandAxes35Flat6dMatrix 2:(`expandAxes35Flat6dMatrix;3)};();{lg"WARNING: failed to load sumAxes35KeepDims6dBroadcast c function"}];
+

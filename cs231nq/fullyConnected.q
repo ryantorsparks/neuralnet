@@ -306,7 +306,6 @@ fullyConnectedBackwardPassLoop:{[d]
 
     / exit early and return scores if we're doing test (not training)
     if[mode=`test;:scores];
-    break;
     lossDscores:softmaxLoss `x`y!(scores;d`y);
     loss:lossDscores 0;
     dscores:lossDscores 1;
