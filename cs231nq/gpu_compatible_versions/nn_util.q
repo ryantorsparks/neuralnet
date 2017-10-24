@@ -45,12 +45,6 @@ reshapeM:{[m1;m2Shape] m2Shape#razeo m1}
 / equivalient to flip rehsape[x;w], but about 10-15% faster for typical use case here
 flipReshape:{[x;w]razeo[x] @ ((cw*til cx:count x)+/:til cw:count w) }
 
-// function to do transpose on a flattened version of a matrix,
-// i.e. if m:5 11#55?1f;
-//      flipFlat[raze m;5;11;55#0f]~raze flip m
-// example (b (list length 100); m (200*100 list); nrows 200; ncolumns 100)
-flipFlat:`flipFlat 2:(`flipFlat;4);
-
 / generate dot index versions of a matrix shape
 / e.g. a 2x3 matrix -> (0 0;0 1;0 2;...;2 0;2 1;2 2)
 matrixInds:(cross/)til each
@@ -63,8 +57,6 @@ flipn:{[m;flipInds] newshape#razeo[m] @.[matrixInds shapem;(::;flipInds)]?matrix
 / matrix multiply, use qml if possible
 //dot:@[{system"l qml.q";lg"setting dot as qml.mm";.qml.mm};();{lg "no qml, dot is mmu";mmu}];
 dot:@[value;`.qml.mm;{lg"no qml, dot set as mmu";mmu}];
-dot:{[x;rowsx;colsx;y;rowsy;colsy] razeo .qml.mm[(rowsx,colsx)#x;(rowsy,colsy)#y]}
-addDotBias:`addDotBias 2:(`addDotBias;4);
 
 / hyperbolic tan func, tanh
 tanhq:{(1-e)%1+e:exp neg 2*x};
@@ -97,7 +89,6 @@ pget:{[module;paramName] get ppath[module;paramName]}
 / and avg=0.0
 pi:3.1415926535897931
 randArray:{(x;y)#sqrt[-2*log n?1.]*cos[2*pi*(n:x*y)?1.]}
-randArrayFlat:{(x,y;sqrt[-2*log n?1.]*cos[2*pi*(n:x*y)?1.])}
 
 / (r)andom (a)rray n-(d)imensional
 rad:{[dims](dims)#sqrt[-2*log n?1.]*cos[2*pi*(n:prd dims)?1.]}
@@ -187,13 +178,6 @@ sumAxesKeepDims:$[not ()~key `sumAxesKeepDims6d;sumAxesKeepDimsC;sumAxesKeepDims
 / e.g. m=rad 2 3 4 5 6 7
 / sumAxes[m;3 5] is equivlanet to np.sum(m,axis=(3,5))
 sumAxes:{[m;axes]{[x;ind].[x;ind#(::);sum]}/[m;desc axes]} 
-
-/ sum matrix flat
-/ function to do transpose on a flattened version of a matrix,
-/ i.e. if m:5 11#55?1f;
-/      flipFlat[raze m;5;11;5#0f]~sum m
-/ example (b (list length 100); m (200*100 list); nrows 200; ncolumns 100)
-sumMatrixFlat:`sumMatrixFlat 2:(`sumMatrixFlat;4);
 
 / null dictionary
 nulld:enlist[`]!enlist(::)

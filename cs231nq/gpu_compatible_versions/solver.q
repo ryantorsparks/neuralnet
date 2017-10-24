@@ -148,7 +148,7 @@ solver.checkAccuracy:{[d]
     lossFunc:` sv d[`model],`loss;
 
     / also get index of each max entry in resulting loss array
-    yPred:raze {[f;d;x]{x?max x}each(#) . f @[d;`x;:;x]}[lossFunc;`y _ d] peach x inds;
+    yPred:raze {[f;d;x]{x?max x}peach f @[d;`x;:;x]}[lossFunc;`y _ d] peach x inds;
 
     / finally, return accuracy
     avg yPred=y
