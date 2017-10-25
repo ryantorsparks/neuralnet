@@ -271,12 +271,16 @@ lg "attempting to load sumAxes35KeepDims6dBroadcast function, must be a sumAxes3
 @[{`sumAxes35KeepDims6dBroadcast set `sumAxes35KeepDims6dBroadcast 2:(`sumAxes35KeepDims6dBroadcast;2)};();{lg"WARNING: failed to load sumAxes35KeepDims6dBroadcast c function"}];
 
 / load in expandAxes35Flat6dMatrix
-q)q)f:`expandAxes35Flat6dMatrix 2:(`expandAxes35Flat6dMatrix;3)
 lg "attempting to load expandAxes35Flat6dMatrix function, must be a expandAxes35Flat6dMatrix.so object in $QHOME";
 @[{`expandAxes35Flat6dMatrix set `expandAxes35Flat6dMatrix 2:(`expandAxes35Flat6dMatrix;3)};();{lg"WARNING: failed to load sumAxes35KeepDims6dBroadcast c function"}];
 
+/ like "flip" but for a flattned matrix flip[flatm;nrows;ncols]
 flipFlat:`flipFlat 2:(`flipFlat;3)
+
+/ like "sum matrix" but for flattened matrix flip[flatm;nrows;ncols]
 sumMatrixFlat:`sumMatrixFlat 2:(`sumMatrixFlat;3)
+
+/ like b+/:matrix but for flat matrix addDotBias[b;flatm;nrows;ncols]
 addDotBias:`addDotBias 2:(`addDotBias;4)
 
 // make all c funcs
