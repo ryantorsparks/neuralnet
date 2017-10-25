@@ -28,6 +28,17 @@ softmaxLoss:{[d]
     dx:@'[probs;y;-;1]%N;
     (loss;dx)
  };
+.flat.softmaxLoss:{[d]
+    x:d`x;
+    y:d`y;
+    // to do: not have to turn this into 2 d array (not huge problem as it's called infrequently)
+    probs:expScores%sum each expScores:exp x- max each x:(#). x;
+    N:count x;
+    loss:sum neg[log probs@'y]%N;
+    dx:@'[probs;y;-;1]%N;
+    (loss;(shape dx;raze dx))
+ };
+
 
 / temporal version - assume we're making predictions on a vocabulary of 
 / size V for each timestamp of a timeseries of length T, over a minibatch

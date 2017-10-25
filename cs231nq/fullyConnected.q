@@ -69,6 +69,7 @@ fullyConnectedNet.init:{[d]
         (`useBatchNorm;0b);
         (`wScale;0.01);
         (`reg;0.0);
+        (`flat;0b);
         (`seed;0N)
         );
     d:defaults,d;
@@ -92,7 +93,9 @@ fullyConnectedNet.init:{[d]
     wParams:`$"w",/:string tnl;
 
     / only add w params if we don't have them already (may want to set them)
-    if[not all wParams in key d;d,:wParams!d[`wScale]*randArray ./:wDims];
+//  if[not all wParams in key d;d,:wParams!d[`wScale]*randArray ./:wDims];
+//  if[not all wParams in key d;d,:wParams!.[;(::;1);d[`wScale]*]randArrayFlat ./:wDims];
+    if[not all wParams in key d;d,:wParams!$[d`flat;.[;(::;1);d[`wScale]*]randArrayFlat ./:;d[`wScale]*randArray ./:]wDims];
     d[`bParams]:bParams;
     d[`wParams]:wParams;
     d[`layerInds]:fullyConnectedNet.layerInds[d];
@@ -167,7 +170,10 @@ fullyConnectedNet.loss:{[d]
     / ####################### forward pass ##################
     / store everything in hidden dict
     hidden:()!();
-    hidden[`h0]:reshapeM[d`x;{x[0],prd 1_ x}shape d`x];
+//    hidden[`h0]:reshapeM[d`x;{x[0],prd 1_ x}shape d`x];
+//    hidden[`h0]:({x[0],prd 1_ x}shape d`x;razeo d`x);
+    hidden[`h0]:$[d`flat;({x[0],prd 1_ x}shape d`x;razeo d`x);reshapeM[d`x;{x[0],prd 1_ x}shape d`x]];
+
     if[d`useDropout;hidden[`hdrop0`cacheHdrop0]:dropoutForward[hidden`h0;d`dropoutParam]];
 
     / forward pass through all layers
@@ -184,7 +190,9 @@ fullyConnectedNet.loss:{[d]
     dscores:lossDscores 1;
 
     / add on regularization for each  weights (sum of sum x*x for each weights)
-    loss+:0.5*d[`reg]*r$r:razeo d wParams;
+//    loss+:0.5*d[`reg]*r$r:razeo d wParams;
+//    loss+:0.5*d[`reg]*r$r:razeo d[wParams][;1];
+    loss+:0.5*d[`reg]*r$r:razeo $[d`flat;.[;(::;1)];]d wParams;
 
     / ######################## backward pass ################
     
@@ -192,7 +200,13 @@ fullyConnectedNet.loss:{[d]
     d:d[`L]fullyConnectedBackwardPassLoop/@[d;`i;:;-1+d`L];
   
     / add on reg
-    d[`hidden;symi[`d;]each d`wParams]+:d[`reg]*d d`wParams;
+//    d[`hidden;symi[`d;]each d`wParams]+:d[`reg]*d d`wParams;
+//    d[`hidden;symi[`d;]each d`wParams;1]+:d[`reg]*last each d d`wParams;
+    $[d`flat;
+        d[`hidden;symi[`d;]each d`wParams;1]+:d[`reg]*last each d d`wParams;
+        d[`hidden;symi[`d;]each d`wParams]+:d[`reg]*d d`wParams
+     ];
+
 
     / grads should be `dw1`dw2..`db1`db2...`dbeta1`dbeta2...`dgamma1`dgamma2!...
     / TODO: make this cleaner

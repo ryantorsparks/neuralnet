@@ -57,6 +57,7 @@ flipn:{[m;flipInds] newshape#razeo[m] @.[matrixInds shapem;(::;flipInds)]?matrix
 / matrix multiply, use qml if possible
 //dot:@[{system"l qml.q";lg"setting dot as qml.mm";.qml.mm};();{lg "no qml, dot is mmu";mmu}];
 dot:@[value;`.qml.mm;{lg"no qml, dot set as mmu";mmu}];
+.flat.dot:{[flatm1;rm1;cm1;flatm2;rm2;cm2] res:.qml.mm[(rm1,cm1)#flatm1;(rm2,cm2)#flatm2];raze res};
 
 / hyperbolic tan func, tanh
 tanhq:{(1-e)%1+e:exp neg 2*x};
@@ -89,6 +90,7 @@ pget:{[module;paramName] get ppath[module;paramName]}
 / and avg=0.0
 pi:3.1415926535897931
 randArray:{(x;y)#sqrt[-2*log n?1.]*cos[2*pi*(n:x*y)?1.]}
+randArrayFlat:{(x,y;sqrt[-2*log n?1.]*cos[2*pi*(n:x*y)?1.])}
 
 / (r)andom (a)rray n-(d)imensional
 rad:{[dims](dims)#sqrt[-2*log n?1.]*cos[2*pi*(n:prd dims)?1.]}
@@ -195,8 +197,13 @@ renameKey:{[layer;dict] appendNToSyms[key dict;layer]!value dict}
 removeDFromDictKey:{[dict] (`$1_'string key dict)!value dict}
 renameGradKey:{[layer;dict]renameKey[layer;removeDFromDictKey dict]}
 
-
-
+/ activate using flat functions (func overrides in .flat namespace)
+useFlatFunctions:{[] -1"using flat versions of functions";
+    if[()~key `.orig;.orig:1#.q];
+    @[`.orig;x;:;`. x:except[key .flat;`]];
+    @[`.;x;:;(get ` sv`.flat,)'[x]];
+    -1"overwrote funcs ",-3!x;
+ };
 
 / get model params
 / e.g. getModelValue[d;`params]
@@ -268,3 +275,9 @@ q)q)f:`expandAxes35Flat6dMatrix 2:(`expandAxes35Flat6dMatrix;3)
 lg "attempting to load expandAxes35Flat6dMatrix function, must be a expandAxes35Flat6dMatrix.so object in $QHOME";
 @[{`expandAxes35Flat6dMatrix set `expandAxes35Flat6dMatrix 2:(`expandAxes35Flat6dMatrix;3)};();{lg"WARNING: failed to load sumAxes35KeepDims6dBroadcast c function"}];
 
+flipFlat:`flipFlat 2:(`flipFlat;3)
+sumMatrixFlat:`sumMatrixFlat 2:(`sumMatrixFlat;3)
+addDotBias:`addDotBias 2:(`addDotBias;4)
+
+// make all c funcs
+makeAllCFuncs:{system" && " sv {"./makeqc64.sh ",-2_ string x} each {x where x like "*.c"}key `:.}

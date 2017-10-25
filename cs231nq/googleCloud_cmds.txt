@@ -1,34 +1,24 @@
 ### local mac
 
 # copy neuralnet to it
-gcloud compute scp ~/Downloads/neuralnet-master.zip  convnet:/home/rspa9428
-# copy k.h over
-gcloud compute scp  /Users/ryansparks/q/k.h  convnet:/home/rspa9428
-#copy kdb linux
-gcloud compute scp   ~/Downloads/kodlin.zip convnet:/home/rspa9428
-gcloud compute scp   ~/qod/kc.lic convnet:/home/rspa9428
+gcloud compute scp ~/Downloads/neuralnet-master.zip /Users/ryansparks/q/k.h ~/Downloads/kod.zip ~/qod/kc.lic  root@gpunet:/home/rspa9428
 
 ### on gcloud
 # change to root for yum install gcc, unzip, zip etc
-sudo yum install git unzip gcc wget
-
-#install rlwrap
-wget https://dl.fedoraproject.org/pub/epel/epel-release-latest-6.noarch.rpm
-sudo rpm -Uvh epel-release-latest-6.noarche
-sudo yum install rlwrap
-
-#exit root
-exit
+#sudo yum install git unzip gcc wget
+sudo apt-get -y install git unzip gcc wget rlwrap
 
 # stick in .bash_profile
-export QHOME=/home/rspa9428/kdb/kodlin
-export QLIC=/home/rspa9428/kdb/kodlin
+export QHOME=/home/rspa9428/kdb/kod
+export PATH=${PATH}:${QHOME}/l64
+export QLIC=/home/rspa9428/kdb/kod
 
 alias q="rlwrap $QHOME/l64/qelm $*"
-alias cdgnn="cd ~/qstuff/neuralnet-master/cs231nq"
+alias cdgnn="cd /home/rspa9428/qstuff/neuralnet-master/cs231nq"
 alias sbp='source ~/.bash_profile'
 alias vibp='vi ~/.bash_profile'
-
+alias tl='tail -n 10 /home/rspa9428/qstuff/neuralnet-master/cs231nq/logs/newconvnet_cnn_dimHidden_500_500_dropout_0.75_learnRate_0.001_reg_0.05.log'
+alias tf='tail -f /home/rspa9428/qstuff/neuralnet-master/cs231nq/logs/newconvnet_cnn_dimHidden_500_500_dropout_0.75_learnRate_0.001_reg_0.05.log'
 
 
 #make qstuff dir
@@ -36,7 +26,7 @@ source ~/.bash_profile
 mkdir kdb
 mv kod.zip kdb/
 cd kdb
-unzip kodlin.zip
+unzip kod.zip
 
 mkdir ~/qstuff
 cd ~/qstuff
@@ -46,14 +36,10 @@ mv ~/kc.lic $QHOME/
 mv ~/k.h /home/rspa9428/qstuff/neuralnet-master/cs231nq
 
 #copy cshell
-# May need to run :
-#   sudo su
-#   chmod -R 777 ~
-# first
-gcloud compute scp   /Users/ryansparks/Documents/qscripts/gitnn/neuralnet/cs231nq/makeqc_linux.sh  convnet:/home/rspa9428/qstuff/neuralnet-master/cs231nq
+gcloud compute scp   /Users/ryansparks/Documents/qscripts/gitnn/neuralnet/cs231nq/makeqc_linux.sh  root@gpunet:/home/rspa9428/qstuff/neuralnet-master/cs231nq
 
 # copy CIFAR data if you have it already
-gcloud compute scp   /Users/ryansparks/Documents/qscripts/gitnn/neuralnet/cs231nq/CIFAR_data_razed.tgz  convnet:/home/rspa9428/qstuff/neuralnet-master/cs231nq
+gcloud compute scp   /Users/ryansparks/Documents/qscripts/gitnn/neuralnet/cs231nq/CIFAR_data_razed.tgz  root@gpunet:/home/rspa9428/qstuff/neuralnet-master/cs231nq
 
 
 # back on gcloud
@@ -65,8 +51,44 @@ mkdir logs
 
 #make c files
 sudo chmod 777 makeqc_linux.sh
-./makeqc_linux.sh col2im6dInner && ./makeqc_linux.sh maskBroadcast6dAxes35 && ./makeqc_linux.sh sumAxes35KeepDims6dBroadcast && ./makeqc_linux.sh sumAxesKeepDims6d
+./makeqc_linux.sh col2im6dInner && ./makeqc_linux.sh maskBroadcast6dAxes35 && ./makeqc_linux.sh sumAxes35KeepDims6dBroadcast && ./makeqc_linux.sh sumAxesKeepDims6d && ./makeqc_linux.sh expandAxes35Flat6dMatrix
+
+# download qml
+cd
+wget https://github.com/zholos/qml/archive/master.zip
+unzip master.zip
+cd qml-master
+sudo apt update
+sudo apt -y upgrade
+sudo apt -y install build-essential
+sudo apt-get -y install gfortran
+
+cd
+ln -s kdb/kod q
+ 
+cd qml-master
+./configure --build-openblas=native
+make
+make install
 
 # kick of cnn
+cdgnn
 nohup $QHOME/l64/qelm run_cnn.q -reg 0.05 -dropout 0.75 -dimHidden 500 500 -learnRate 0.001 &
+
+#cuda stuff
+
+wget https://developer.nvidia.com/compute/cuda/9.0/Prod/local_installers/cuda-repo-ubuntu1604-9-0-local_9.0.176-1_amd64-deb
+sudo apt-key add /var/cuda-repo-9-0-local/7fa2af80.pub
+sudo dpkg -i cuda-repo-ubuntu1604-9-0-local_9.0.176-1_amd64-deb
+sudo apt-get update
+sudo apt-get -y install cuda
+#check
+cat /var/lib/apt/lists/*cuda*Packages | grep "Package:" 
+# add to bash_profile
+export PATH=/usr/local/cuda-9.0/bin${PATH:+:${PATH}}
+export LD_LIBRARY_PATH=/usr/local/cuda-9.0/lib64${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}
+#install samples
+cuda-install-samples-9.0.sh cudaSamples
+cd cudaSamples/NVIDIA_CUDA-9.0_Samples
+make
 

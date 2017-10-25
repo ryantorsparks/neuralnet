@@ -94,3 +94,37 @@ adam:{[x;dx;config]
     config[`m`v`t]:(m;v;t);
     (shapex#nextX;config)
  };
+// flat version (i.e. x and dx are flat lists with possible shape as first element
+.flat.adam:{[x;dx;config]
+    / d optionals `learnRate`beta1`beta2`epsilon`m`v`t
+    origx:x;
+    shapex:$[type x;enlist count x;origx 0];
+    cntx:prd shapex;
+    x:$[type x;origx;origx 1];
+    origdx:dx;
+    shapedx:$[type dx;enlist count dx;origdx 0];
+    dx:$[type dx;origdx;origdx 1];
+    defaults:(!) . flip ((`learnRate;1e-3);(`beta1;0.9);(`beta2;0.999);
+             (`epsilon;1e-8);(`m;cntx#0f);(`v;cntx#0f);(`t;0));
+
+    / remove the null initialized ones (replace with default)
+    config:where[config~\:(::)] _ config;
+    config:defaults,config;
+    learnRate:config`learnRate;
+    beta1:config`beta1;
+    beta2:config`beta2;
+    epsilon:config`epsilon;
+    m:config`m;
+    v:config`v;
+    t:1+config`t;
+    m:(beta1*m)+dx*1-beta1;
+    v:(beta2*v)+(1-beta2)*dx*dx;
+
+    / bias correction
+    mb:m%1-beta1 xexp t;
+    vb:v%1-beta2 xexp t;
+    nextX:x-learnRate* mb % epsilon+sqrt vb;
+    config[`m`v`t]:(m;v;t);
+    ((shapex;nextX);config)
+ };
+

@@ -76,7 +76,8 @@ solver.step:{[d]
     /yBatch:d[`yTrain] batchMask;
 //    batches:getClassValue[`solver.genBatch;dget[d;`class;`]]d;
     batches:solver.genBatch[d];
-    xBatch:solver.xTrainParser batches 0;
+//    xBatch:solver.xTrainParser batches 0;
+    xBatch:batches 0;
     / do data augmentation, mirror half the images randomly
     if[1b~d`dataAugmentation;
         xBatch:@[xBatch;{neg[x div 2]?x}d`batchSize;reverse each]];
@@ -89,7 +90,7 @@ solver.i.step:{[d;xBatch;yBatch]
     modelParams:getModelValue[d;`params];
   
     / ??? about the stuff after `reg
-    lossGradKeys:modelParams,`reg`dropoutParam`useBatchNorm`bnParams`wParams`dwParams`bParams`dbParams`betaParams`dbetaParams`gammaParams`dgammaParams`layerInds`model`filterSize`L`M`dropout`useDropout`null`cellType;
+    lossGradKeys:modelParams,`reg`dropoutParam`useBatchNorm`bnParams`wParams`dwParams`bParams`dbParams`betaParams`dbetaParams`gammaParams`dgammaParams`layerInds`model`filterSize`L`M`dropout`useDropout`null`cellType`flat;
     if[d`useBatchNorm;lossGradKeys,:`gammaParams`betaParams,getModelValue[d;`bnParams]];
     inputDict:$[d[`class]~`captioning;`features`captions!(xBatch;yBatch);`x`y!(xBatch;yBatch)];
     lossGrad:getModelValue[ (inter[lossGradKeys;key d]#d),inputDict;`loss];
@@ -134,7 +135,7 @@ solver.checkAccuracy:{[d]
         x@:mask;
         y@:mask;
       ];
-    x:solver.xTrainParser x;
+//    x:solver.xTrainParser x;
     numBatches:N div batchSize;
 
     / make sure we do at least enough batches
@@ -148,11 +149,15 @@ solver.checkAccuracy:{[d]
     lossFunc:` sv d[`model],`loss;
 
     / also get index of each max entry in resulting loss array
-    yPred:raze {[f;d;x]{x?max x}peach f @[d;`x;:;x]}[lossFunc;`y _ d] peach x inds;
+    yPred:raze getMaxIndex[lossFunc;`y _ d] peach x inds;
 
     / finally, return accuracy
     avg yPred=y
  };
+
+// helper func
+getMaxIndex:{[f;d;x]{x?max x}each f @[d;`x;:;x]};
+.flat.getMaxIndex:{[f;d;x]{x?max x}each (#). f @[d;`x;:;x]};
 
 / train function
 solver.train:{[d]
@@ -204,7 +209,7 @@ solver.i.train:{[d]
     modelParams:getModelValue[d;`params];
     if[any (cnt=0;cnt=numIterations+1;epochEnd);
         lg"checking accuracies";
-        checkKeys:modelParams,`bParams`wParams`layerInds`useBatchNorm`filterSize`L`M`reg`dropout`useDropout`dropoutParam;
+        checkKeys:modelParams,`bParams`wParams`layerInds`useBatchNorm`filterSize`L`M`reg`dropout`useDropout`dropoutParam`flat;
         if[d`useBatchNorm;checkKeys,:`bnParams`betaParams`gammaParams,getModelValue[d;`bnParams]];
         trainAcc:solver.checkAccuracy (inter[checkKeys;key d]#d),`model`x`y`batchSize`numSamples`useDropout!d[`model`xTrain`yTrain`batchSize],1000,0b;
         valAcc:solver.checkAccuracy (inter[checkKeys;key d]#d),`model`x`y`batchSize`numSamples`useDropout!d[`model`xVal`yVal`batchSize],0N,0b;
