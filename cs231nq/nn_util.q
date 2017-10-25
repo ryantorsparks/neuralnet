@@ -57,7 +57,7 @@ flipn:{[m;flipInds] newshape#razeo[m] @.[matrixInds shapem;(::;flipInds)]?matrix
 / matrix multiply, use qml if possible
 //dot:@[{system"l qml.q";lg"setting dot as qml.mm";.qml.mm};();{lg "no qml, dot is mmu";mmu}];
 dot:@[value;`.qml.mm;{lg"no qml, dot set as mmu";mmu}];
-.flat.dot:{[flatm1;rm1;cm1;flatm2;rm2;cm2] res:.qml.mm[(rm1,cm1)#flatm1;(rm2,cm2)#flatm2];raze res};
+.flat.dot:{[flatm1;rm1;cm1;flatm2;rm2;cm2] raze .qml.mm[(rm1,cm1)#flatm1;(rm2,cm2)#flatm2]};
 
 / hyperbolic tan func, tanh
 tanhq:{(1-e)%1+e:exp neg 2*x};
