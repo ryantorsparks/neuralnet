@@ -11,7 +11,7 @@
 //   nvcc --compiler-options '-fPIC -DKXVER=3 -O2' -o $QHOME/l64/gpu_mmf.so --shared -lcurand -lcublas gpu_mmf.cu
 
 // Export the function we will load into kdb+
-extern  "C" K gpu_mmf(K A, K rA, K cA, K B, K rB, K cB, K C);
+extern  "C" K gpu_mmf(K A, K rA, K cA, K B, K rB, K cB);
 
 // Multiply the arrays A and B on GPU and save the result in C
 // C(m,n) = A(m,k) * B(k,n)
@@ -37,7 +37,7 @@ void gpu_blas_mmul(const double *A, const double *B, double *C, const int m, con
     cublasDestroy(handle);
 }
 
-K gpu_mmf(K A, K rA, K cA, K B, K rB, K cB,  K C) {
+K gpu_mmf(K A, K rA, K cA, K B, K rB, K cB) {
     // Allocate 3 arrays on CPU
 //    int nr_rows_A, nr_cols_A, nr_rows_B, nr_cols_B, nr_rows_C, nr_cols_C;
     int nr_rows_A = rA->n;
@@ -53,6 +53,7 @@ K gpu_mmf(K A, K rA, K cA, K B, K rB, K cB,  K C) {
     double *h_C = (double *)malloc(nr_rows_C * nr_cols_C * sizeof(double));
 
     // Allocate 3 arrays on GPU, device arrays
+    K C = ktn(KF,(nr_rows_C*nr_cols_C));
     double *d_A, *d_B, *d_C;
     double *host_memoryA = (double*) &(kF(A)[0]);
     double *host_memoryB = (double*) &(kF(B)[0]);
@@ -83,6 +84,5 @@ K gpu_mmf(K A, K rA, K cA, K B, K rB, K cB,  K C) {
     free(h_B);
     free(h_C);
 
-    R r1(C);
+    R(C);
 }
-
