@@ -19,8 +19,6 @@ K col2im6dInner(K arg1, K arg2, K arg1shape, K padsize, K stridesize){
     long out_h, out_w;
     out_h = (H + 2*pad - HH) / stride + 1;
     out_w = (W + 2*pad - WW) / stride + 1;
-    printf("C,HH,WW,N,H,W,out_h,out_w,stride, pad are %d %d %d %d %d %d %ld %ld %ld %ld \n",C,HH,WW,N,H,W,out_h,out_w,stride,pad);
-    printf(" order of the forloop will be N,C,HH,WW,out_h,out_w -  %d %d %d %d %ld %ld\n",N,C,HH,WW,out_h,out_w);
     // modify arg2's elements, using indexing into arg1
     for(n=0;n<N;++n){
        for(c=0;c<C;++c){
