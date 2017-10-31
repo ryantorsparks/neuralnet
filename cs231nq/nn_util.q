@@ -157,6 +157,31 @@ broadcastArrays:{[x;y]
     (xNew;yNew) 
   };
 
+/ similar to np.broadcast_arrays, e.g. takes matrixes of shape
+/ x: 2 3 1 3; y: 2 1 4 3; and expands x in the 3rd dimension to be
+/ 2 3 4 3, and the y in the 2nd dimension to be 2 3 4 3
+broadcastOneArray:{[x;y]
+    xShape:shape x;
+    yShape:shape y;
+    xCnt:count xShape;
+    yCnt:count yShape;
+    $[xCnt>yCnt;
+        [y:(newshape:(xCnt-yCnt)#xShape)#enlist y;yShape:newshape,yShape];
+      yCnt>xCnt;
+        [x:(newshape:(yCnt-xCnt)#yShape)#enlist x;xShape:newshape,xShape];
+        ];
+
+    xIs1:xShape=1;
+    yIs1:yShape=1;
+
+    xChanges:(wx;yShape wx:where xIs1 and not yIs1);
+    yChanges:(wy;xShape wy:where yIs1 and not xIs1);
+   
+    xNew:expandDim/[x;xChanges 0;xChanges 1];
+    xNew
+  };
+
+
 / extension on broadcastArrays, for when you have 2 matrixes, one that is already expanded, 
 / another that needs to be expanded to the first ones shape, and an operation you want to do
 / on them (e.g. * or %)

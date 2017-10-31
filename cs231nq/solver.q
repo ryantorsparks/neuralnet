@@ -64,6 +64,7 @@ solver.genBatch:{[d]
 solver.xTrainParser:{[x]
     $[3072=count x 0;3 32 32#/:x;x]
  };
+.flat.solver.xTrainParser:(::)
 
 / step function
 solver.step:{[d]
@@ -76,8 +77,7 @@ solver.step:{[d]
     /yBatch:d[`yTrain] batchMask;
 //    batches:getClassValue[`solver.genBatch;dget[d;`class;`]]d;
     batches:solver.genBatch[d];
-//    xBatch:solver.xTrainParser batches 0;
-    xBatch:batches 0;
+    xBatch:solver.xTrainParser batches 0;
     / do data augmentation, mirror half the images randomly
     if[1b~d`dataAugmentation;
         xBatch:@[xBatch;{neg[x div 2]?x}d`batchSize;reverse each]];
@@ -135,7 +135,7 @@ solver.checkAccuracy:{[d]
         x@:mask;
         y@:mask;
       ];
-//    x:solver.xTrainParser x;
+    x:solver.xTrainParser x;
     numBatches:N div batchSize;
 
     / make sure we do at least enough batches
