@@ -188,7 +188,7 @@ nLayerBackwardPassConvLayersLoop:{[d]
     @[d;`i;-;1]
  };
 
-/ loss function for n layer convnet, input/output same as threeLayerConvNet.loss
+/ loss function for n layer convnet, input/output same as .threeLayerConvNet.loss
 .nLayerConvNet.loss:{[d]
     / d expects `dropoutParam`useBatchNorm`wParams(`w1`w2 ...`wN)`bParams(`b1`b2...`bN)
     /           `layerInds(1,2,3...N)

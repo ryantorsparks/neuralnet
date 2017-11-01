@@ -135,11 +135,11 @@ lg "##############################
 
 x:rad 50 3 32 32
 y:50?10
-initd:threeLayerConvNet.init `x`y!(x;y)
-lossGrad:threeLayerConvNet.loss initd
+initd:.threeLayerConvNet.init `x`y!(x;y)
+lossGrad:.threeLayerConvNet.loss initd
 lg "initial loss (no regularization):"
 lossGrad 0
-lossGrad2:threeLayerConvNet.loss @[initd;`reg;:;0.5]
+lossGrad2:.threeLayerConvNet.loss @[initd;`reg;:;0.5]
 lg "initial loss (with regularization):"
 lossGrad2 0
 
@@ -160,8 +160,8 @@ x:rad numInputs,dimInput
 y:numInputs?nClass
 
 startd:`numFilters`filterSize`dimInput`dimHidden`x`y!(3;3;dimInput;7;x;y)
-initd: threeLayerConvNet.init startd
-lossGrad:threeLayerConvNet.loss initd
+initd: .threeLayerConvNet.init startd
+lossGrad:.threeLayerConvNet.loss initd
 
 lg "as a sanity check, compare numerical gradients for reg in 0.0 3.14"
 gradCheckDict:@[(raze key[startd],`useBatchNorm`wScale`w1`w2`w3`b1`b2`b3)#initd;`model`h;:;`threeLayerConvNet,1e-6]
@@ -288,11 +288,11 @@ y:N?10
 
 lg "run three layer loss with reg=0 then reg=0.5"
 
-initd:threeLayerConvNet.init `x`y`useBatchNorm!(x;y;1b)
-lossGrad:threeLayerConvNet.loss initd
+initd:.threeLayerConvNet.init `x`y`useBatchNorm!(x;y;1b)
+lossGrad:.threeLayerConvNet.loss initd
 lg "initial loss (no regularization):"
 lossGrad 0
-lossGrad2:threeLayerConvNet.loss @[initd;`reg;:;0.5]
+lossGrad2:.threeLayerConvNet.loss @[initd;`reg;:;0.5]
 lg "initial loss (with regularization):"
 lossGrad2 0
 
@@ -309,8 +309,8 @@ x:rad numInputs,dimInput
 y:numInputs?nClass
 
 startd:`numFilters`filterSize`dimInput`dimHidden`x`y`useBatchNorm!(3;3;dimInput;7;x;y;1b)
-initd: threeLayerConvNet.init startd
-lossGrad:threeLayerConvNet.loss initd
+initd: .threeLayerConvNet.init startd
+lossGrad:.threeLayerConvNet.loss initd
 
 lg "as a sanity check, compare numerical gradients for reg in 0.0 3.14"
 gradCheckDict:@[(raze key[startd],`useBatchNorm`flat`wScale`w1`w2`w3`b1`b2`b3`beta1`beta2`gamma1`gamma2`bnParams)#initd;`model`h;:;`threeLayerConvNet,1e-6] 

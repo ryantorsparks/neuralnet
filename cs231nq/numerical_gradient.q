@@ -56,7 +56,7 @@ compareNumericalGradients:{[d;reg]
     /           so possibly `x`w1`w2...`b1`b2...
     lg"running numeric gradient check with reg=",string reg;
     d[`reg]:reg;
-    lossFunc:value ` sv $[`model in key d;d`model;`twoLayerNet],`loss;
+    lossFunc:value ` sv `,$[`model in key d;d`model;`twoLayerNet],`loss;
  
     grads:last lossFunc d;
     {[d;grads;lossFunc;param]

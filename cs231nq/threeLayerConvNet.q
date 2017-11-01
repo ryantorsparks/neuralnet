@@ -8,7 +8,7 @@
 /        `wScale: Scalar giving standard deviation for random initialization
 /          of weights.
 /        `reg: Scalar giving L2 regularization strength
-threeLayerConvNet.init:{[d]
+.threeLayerConvNet.init:{[d]
     / d expects at the very least `dimHidden
     defaults:(!) . flip (
         (`dimInput;3 32 32);
@@ -89,12 +89,12 @@ threeLayerConvNet.init:{[d]
     / d[`gamma1`gamm2] - d[`dimHidden`nClass]#\:1f
     / d[`betaParams] - `beta1`beta2
     / d[`beta1`beta2] - d[`dimHidden`nClass]#\:0f
-    d:threeLayerConvNet.initBnParams[d;3];
+    d:.threeLayerConvNet.initBnParams[d;3];
     d
  };
 
 / loss function for three layer convnet, input/output same as twoLayerNet.loss
-threeLayerConvNet.loss:{[d]
+.threeLayerConvNet.loss:{[d]
     / d expects `dropoutParam`useBatchNorm`wParams(`w1`w2 ...`wN)`bParams(`b1`b2...`bN)
     /           `layerInds(1,2,3...N)
     / d possibly (???) needs `bnParams
@@ -165,8 +165,8 @@ threeLayerConvNet.loss:{[d]
     (loss;grads)
  };
 
-threeLayerConvNet.params:{[d] `w1`b1`w2`b2`w3`b3}
-threeLayerConvNet.bnParams:{[d]`beta1`beta2`gamma1`gamma2`bnParams}
+.threeLayerConvNet.params:{[d] `w1`b1`w2`b2`w3`b3}
+.threeLayerConvNet.bnParams:{[d]`beta1`beta2`gamma1`gamma2`bnParams}
 
 / for batch normalization, we need to keep track of running means and
 / variances, so need to pass a special bnParam object to each batch norm
@@ -189,7 +189,7 @@ initBnParams:{[d;numLayers]
    d
  };
 
-threeLayerConvNet.initBnParams:{[d;numLayers]
+.threeLayerConvNet.initBnParams:{[d;numLayers]
    if[d`useBatchNorm;
         lg "We use batchnorm here";
         if[not all (req:`numFilters`dimHidden) in key d;'"initBnParam: d needs all of ",-3!req];
