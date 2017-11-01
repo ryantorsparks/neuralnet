@@ -146,7 +146,7 @@
     inds:(batchSize*til numBatches)_til N;
 
     / get loss func, as it only has x, no y, should just return loss)
-    lossFunc:` sv d[`model],`loss;
+    lossFunc:` sv `,d[`model],`loss;
 
     / also get index of each max entry in resulting loss array
     yPred:raze getMaxIndex[lossFunc;`y _ d] peach x inds;

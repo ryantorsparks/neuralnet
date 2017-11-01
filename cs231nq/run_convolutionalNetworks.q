@@ -313,7 +313,7 @@ initd: threeLayerConvNet.init startd
 lossGrad:threeLayerConvNet.loss initd
 
 lg "as a sanity check, compare numerical gradients for reg in 0.0 3.14"
-gradCheckDict:@[(raze key[startd],`useBatchNorm`wScale`w1`w2`w3`b1`b2`b3`beta1`beta2`gamma1`gamma2`bnParams)#initd;`model`h;:;`threeLayerConvNet,1e-6] 
+gradCheckDict:@[(raze key[startd],`useBatchNorm`flat`wScale`w1`w2`w3`b1`b2`b3`beta1`beta2`gamma1`gamma2`bnParams)#initd;`model`h;:;`threeLayerConvNet,1e-6] 
 compareNumericalGradients[gradCheckDict;0f];
 
 lg "##############################
@@ -355,11 +355,11 @@ y:N?10
 
 lg "run 7 layer loss with reg=0 then reg=0.5"
 
-initd:nLayerConvNet.init `x`y`useBatchNorm!(x;y;1b)
-lossGrad:nLayerConvNet.loss initd
+initd:.nLayerConvNet.init `x`y`useBatchNorm!(x;y;1b)
+lossGrad:.nLayerConvNet.loss initd
 lg "initial loss (no regularization):"
 lossGrad 0
-lossGrad2:nLayerConvNet.loss @[initd;`reg;:;0.5]
+lossGrad2:.nLayerConvNet.loss @[initd;`reg;:;0.5]
 lg "initial loss (with regularization):"
 lossGrad2 0
 
@@ -376,11 +376,11 @@ x:rad numInputs,dimInput
 y:numInputs?nClass
 
 startd:`numFilters`filterSize`dimInput`dimHidden`x`y`useBatchNorm!(16 32;3;dimInput;6 6;x;y;1b)
-initd: nLayerConvNet.init startd
-lossGrad:nLayerConvNet.loss initd
+initd: .nLayerConvNet.init startd
+lossGrad:.nLayerConvNet.loss initd
 
 lg "as a sanity check, compare numerical gradients for reg in 0.0 3.14"
-gradCheckDict:@[(raze key[startd],`useBatchNorm`wScale`bnParams`L`M`wParams`dwParams`dbParams`useDropout,raze(nLayerConvNet.params;nLayerConvNet.bnParams)@\:initd)#initd;`model`h;:;`nLayerConvNet,1e-6]
+gradCheckDict:@[(raze key[startd],`useBatchNorm`wScale`bnParams`L`M`wParams`dwParams`dbParams`useDropout,raze(.nLayerConvNet.params;.nLayerConvNet.bnParams)@\:initd)#initd;`model`h;:;`nLayerConvNet,1e-6]
 if[runAll;compareNumericalGradients[gradCheckDict;0f]];
 
 lg "##############################

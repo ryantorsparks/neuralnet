@@ -239,7 +239,7 @@ useFlatFunctions:{[] -1"using flat versions of functions";
 /      getModelValue[d;`init]
 getModelValue:{[d;x]
     if[not `model in key d;'"getModelValue: d is missing `model from key"];
-    modelFunc: ` sv d[`model],x;
+    modelFunc: ` sv `,d[`model],x;
     if[not count key modelFunc;'"getModelValue: model function ",(-3!modelFunc)," does not exist"];
     modelFunc@d
  };

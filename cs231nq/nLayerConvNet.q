@@ -15,7 +15,7 @@
 /        `wScale: Scalar giving standard deviation for random initialization
 /          of weights.
 /        `reg: Scalar giving L2 regularization strength
-nLayerConvNet.init:{[d]
+.nLayerConvNet.init:{[d]
     / d expects at the very least `dimHidden
     defaults:(!) . flip (
         (`dimInput;3 32 32);
@@ -189,7 +189,7 @@ nLayerBackwardPassConvLayersLoop:{[d]
  };
 
 / loss function for n layer convnet, input/output same as threeLayerConvNet.loss
-nLayerConvNet.loss:{[d]
+.nLayerConvNet.loss:{[d]
     / d expects `dropoutParam`useBatchNorm`wParams(`w1`w2 ...`wN)`bParams(`b1`b2...`bN)
     /           `layerInds(1,2,3...N)
     / d possibly (???) needs `bnParams
@@ -282,7 +282,7 @@ nLayerConvNet.loss:{[d]
 
 
 / initialize batchNorm params
-nLayerConvNet.initBnParams:{[d;x;id;idOffset]
+.nLayerConvNet.initBnParams:{[d;x;id;idOffset]
     lg "We use batchnorm here";
     gammas:x[id]#\:1f;
     betas:x[id]#\:0f;
@@ -326,7 +326,7 @@ initWeightBiasBnParamsConvLayers:{[d]
     d:d,bParamNames!bs;
 
     / add in bn params
-    if[d`useBatchNorm;d:nLayerConvNet.initBnParams[d;F;l+1;0]];
+    if[d`useBatchNorm;d:.nLayerConvNet.initBnParams[d;F;l+1;0]];
     d
  };
 
@@ -359,7 +359,7 @@ initWeightBiasBnParamsAffineReluLayers:{[d]
     d:d,bParamNames!bs;
 
     / add in bn params
-    if[d`useBatchNorm;d:nLayerConvNet.initBnParams[d;dims;m+1;d`L]];
+    if[d`useBatchNorm;d:.nLayerConvNet.initBnParams[d;dims;m+1;d`L]];
     d
  };
 
@@ -378,6 +378,6 @@ sizeConv:{[strideConv;filterSize;H;W;nConv]
     $[nConv=1;(Hp;Wp);.z.s[strideConv;filterSize;Hp;Wp;nConv-1]]
  };
 
-nLayerConvNet.params:{[d]raze d`wParams`bParams}
-nLayerConvNet.bnParams:{[d]raze d`gammaParams`betaParams}
+.nLayerConvNet.params:{[d]raze d`wParams`bParams}
+.nLayerConvNet.bnParams:{[d]raze d`gammaParams`betaParams}
 
