@@ -14,7 +14,7 @@ lg "##############################
     compute scores
     ##############################"
 
-toyScores:twoLayerNet.loss `y _ toyInputDict
+toyScores:.twoLayerNet.loss `y _ toyInputDict
 
 lg "scores are"
 toyScores
@@ -27,7 +27,7 @@ lg "##############################
     forward pass, compute loss and gradient
     ##############################"
 
-toyLossGrad: twoLayerNet.loss toyInputDict
+toyLossGrad: .twoLayerNet.loss toyInputDict
 toyLossGrad 0
 correctToyLoss:1.30378789133
 lossDiff:2 sum/abs toyLossGrad[0]-correctToyLoss
@@ -39,7 +39,7 @@ lg "##############################
     Backward pass on toy model
     ##############################"
 
-maxRelativeGradErrors:{[analyticRes;param]relError[analyticRes[param];numericalGradient[(first twoLayerNet.loss@);toyInputDict;param]]}[toyLossGrad 1] each `w2`b2`w1`b1
+maxRelativeGradErrors:{[analyticRes;param]relError[analyticRes[param];numericalGradient[(first .twoLayerNet.loss@);toyInputDict;param]]}[toyLossGrad 1] each `w2`b2`w1`b1
 lg "max relative gradient errors for w1 and w2 are"
 maxRelativeGradErrors
 

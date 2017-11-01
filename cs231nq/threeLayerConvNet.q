@@ -93,7 +93,7 @@
     d
  };
 
-/ loss function for three layer convnet, input/output same as twoLayerNet.loss
+/ loss function for three layer convnet, input/output same as .twoLayerNet.loss
 .threeLayerConvNet.loss:{[d]
     / d expects `dropoutParam`useBatchNorm`wParams(`w1`w2 ...`wN)`bParams(`b1`b2...`bN)
     /           `layerInds(1,2,3...N)

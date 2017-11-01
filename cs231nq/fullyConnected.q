@@ -3,7 +3,7 @@
 / return list of params for a fully connected neural net given dict d
 / given a dict d, if it contains `modelParams already, return it,
 / otherwise if it has `wParams`bParams
-fullyConnectedNet.params:{[d]
+.fullyConnectedNet.params:{[d]
     / d either expects `modelParams (exit early), both `wParams+`bParams (exit early),
     /     or it needs `dimHidden
     / if we already have it in d, return early
@@ -14,7 +14,7 @@ fullyConnectedNet.params:{[d]
 
     / otherwise, make sure dimHidden is in d, and use that to create
     / if we have 5 hidden dimensions, model params will be `b1`b2...`b6`w1`w2...`w6
-    if[not `dimHidden in key d;'"fullyConnectedNet.params: d is missing `dimHidden"];
+    if[not `dimHidden in key d;'".fullyConnectedNet.params: d is missing `dimHidden"];
     numLayers:1+count d`dimHidden;
     tnl:1+til numLayers;
     wParams:`$"w",/:string tnl;
@@ -22,11 +22,11 @@ fullyConnectedNet.params:{[d]
     wParams,bParams
  };
 
-fullyConnectedNet.bnParams:{[d]
+.fullyConnectedNet.bnParams:{[d]
     if[all `gammaParams`beta in key d;:raze d`gammaParams`betaParams];
         
     / otherwise, make sure dimHidden is in d, and use that to create
-    if[not `dimHidden in key d;'"fullyConnectedNet.params: d is missing `dimHidden"];
+    if[not `dimHidden in key d;'".fullyConnectedNet.params: d is missing `dimHidden"];
     numLayers:1+count d`dimHidden;
     tnl:1+til numLayers;
     gammaParams:`$"gamma",/:string tnl;
@@ -35,7 +35,7 @@ fullyConnectedNet.bnParams:{[d]
  };
 
 / get the layer inds (e.g. if we have 2 hidden layers, it's 1 2 3)
-fullyConnectedNet.layerInds:{[d]
+.fullyConnectedNet.layerInds:{[d]
     if[`layerInds in key d;:d`layerInds];
 
     if[`wParams in key d;:1+til count d`wParams];
@@ -45,7 +45,7 @@ fullyConnectedNet.layerInds:{[d]
 
     if[`numLayers in key d;:1+til d`numLayers];
 
-    if[not `dimHidden in key d;'"fullyConnectedNet.layerInds: needs `dimHidden"];
+    if[not `dimHidden in key d;'".fullyConnectedNet.layerInds: needs `dimHidden"];
     1+til 1+count d`dimHidden
  };
 
@@ -59,8 +59,8 @@ fullyConnectedNet.layerInds:{[d]
 / weightScale - standard deviation for random initialization of weights
 / seed - if not none, then pass this random seed to dropout layers, which makes dropout layers
 /        deterministic so we can gradient check the model
-/ @global - sets fullyConnectedNet.params here (list of `b1`b2`b3...`w1`w2`w3...
-fullyConnectedNet.init:{[d]
+/ @global - sets .fullyConnectedNet.params here (list of `b1`b2`b3...`w1`w2`w3...
+.fullyConnectedNet.init:{[d]
     / d expects at the very least `dimHidden
     defaults:(!) . flip (
         (`dimInput;3*32*32);
@@ -98,7 +98,7 @@ fullyConnectedNet.init:{[d]
     if[not all wParams in key d;d,:wParams!$[d`flat;.[;(::;1);d[`wScale]*]randArrayFlat ./:;d[`wScale]*randArray ./:]wDims];
     d[`bParams]:bParams;
     d[`wParams]:wParams;
-    d[`layerInds]:fullyConnectedNet.layerInds[d];
+    d[`layerInds]:.fullyConnectedNet.layerInds[d];
     d[`L`N`C]:(1+count d`dimHidden),d`dimInput`nClass;
 
     / when using dropout, need to pass a dropoutParam dict to each dropout
@@ -133,7 +133,7 @@ fullyConnectedNet.init:{[d]
 / loss function for fully connected class
 / @param d: contains:
 / `w1`w2`w3 ... `b1`b2`b3  ... , `x and possibly `y
-fullyConnectedNet.loss:{[d]
+.fullyConnectedNet.loss:{[d]
     / d expects `dropoutParam`useBatchNorm`wParams(`w1`w2 ...`wN)`bParams(`b1`b2...`bN)
     /           `layerInds(1,2,3...N)
     / d possibly (???) needs `bnParams
@@ -161,10 +161,10 @@ fullyConnectedNet.loss:{[d]
     / feed each first[outCache] (result of affineReluForward) into next affineReluForward
     / first, get wParams (`w1`w2`w3 ...`w[n-1]) and bParams (`b1`b2 ...`b[n-1])
     / test:
-    modelParams:2 0N#fullyConnectedNet.params d;
+    modelParams:2 0N#.fullyConnectedNet.params d;
     wParams:modelParams 0;
     bParams:modelParams 1;
-    layerInds:fullyConnectedNet.layerInds d;
+    layerInds:.fullyConnectedNet.layerInds d;
 
 
     / ####################### forward pass ##################
@@ -271,7 +271,7 @@ fullyConnectedBackwardPassLoop:{[d]
 / loss function for fully connected class
 / @param d: contains:
 / `w1`w2`w3 ... `b1`b2`b3  ... , `x and possibly `y
-.old.fullyConnectedNet.loss:{[d]
+.old..fullyConnectedNet.loss:{[d]
     / d expects `dropoutParam`useBatchNorm`wParams(`w1`w2 ...`wN)`bParams(`b1`b2...`bN)
     /           `layerInds(1,2,3...N)
     / d possibly (???) needs `bnParams
@@ -299,10 +299,10 @@ fullyConnectedBackwardPassLoop:{[d]
     / feed each first[outCache] (result of affineReluForward) into next affineReluForward
     / first, get wParams (`w1`w2`w3 ...`w[n-1]) and bParams (`b1`b2 ...`b[n-1])
     / test:
-    modelParams:2 0N#fullyConnectedNet.params d;
+    modelParams:2 0N#.fullyConnectedNet.params d;
     wParams:modelParams 0;
     bParams:modelParams 1;
-    layerInds:fullyConnectedNet.layerInds d;
+    layerInds:.fullyConnectedNet.layerInds d;
 
     / forward pass on all but last layer (scan and store result as caches)
     cacheLayers:
@@ -333,7 +333,7 @@ fullyConnectedBackwardPassLoop:{[d]
     / layerInds are 1 2 3 ... 9
     / add on reg to last dw (store as dict of `dxN`dwN`dbN)
     gradDict:renameGradKey[last layerInds;] affineBackward[dscores;cacheScores];
-    gradDict:fullyConnectedNet.backPropGrads[gradDict;1_ reverse layerInds;reverse caches;d`useBatchNorm];
+    gradDict:.fullyConnectedNet.backPropGrads[gradDict;1_ reverse layerInds;reverse caches;d`useBatchNorm];
     gradDict[wParams]+:d[`reg]*d wParams;
     (loss;gradDict)
  };
@@ -344,7 +344,7 @@ fullyConnectedBackwardPassLoop:{[d]
 / revCaches - list of caches corresponding to revInds, from afine(Norm)ReluForward
 / wlist - list of w's, e.g. (w3;w2;w1)
 / reg - regularization, e.g. 1e-5
-fullyConnectedNet.backPropGrads:{[gradDict;revInds;revCaches;useBatchNorm]
+.fullyConnectedNet.backPropGrads:{[gradDict;revInds;revCaches;useBatchNorm]
     / backprop into remaining layers (cacheLayers from above)
     / each iteration uses the `dx from the previous iteration (i.e if we're currently
     / doing layer=7, it will use the `dx from layer 8)

@@ -1,12 +1,12 @@
 / ############ twoLayerNet class functions ############
 
 / learnable params, always  just these 4
-twoLayerNet.params:{[d] `w1`b1`w2`b2}
+.twoLayerNet.params:{[d] `w1`b1`w2`b2}
 
 / layer inds, always 1 2
-twoLayerNet.layerInds:{[d] 1 2}
+.twoLayerNet.layerInds:{[d] 1 2}
 
-twoLayerNet.init:{[d]
+.twoLayerNet.init:{[d]
     / d expects nothing (defauls will provided for `dimInput`dimHidden`nClass`wScale`reg)
     / use defaults if not provided
     defaults:`dimInput`dimHidden`nClass`wScale`reg!(3*32*32;100;10;1e-3;0.0);
@@ -23,7 +23,7 @@ twoLayerNet.init:{[d]
 
 / @param d: contains:
 / `w1`w2`b1`b2`x and possibly `y
-twoLayerNet.loss:{[d]
+.twoLayerNet.loss:{[d]
     / d expects `x`w1`b1`w2`b2
     / d can also accept `y, and if provided (i.e. running train mode),
     /     then it expects `reg

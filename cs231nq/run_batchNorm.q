@@ -97,9 +97,9 @@ lg "##############################
 x:randArray[N;D]
 y:N?C
 startd:(!). flip ((`dimHidden;H1,H2);(`dimInput;D);(`nClass;C);(`wScale;5e-2);(`useBatchNorm;1b);(`useDropout;0b);(`x;x);(`y;y));
-initd:fullyConnectedNet.init startd
+initd:.fullyConnectedNet.init startd
 
-lossGrad:fullyConnectedNet.loss initd;
+lossGrad:.fullyConnectedNet.loss initd;
 lg "initial loss is ",string lossGrad 0
 
 lg "as a sanity check, compare numerical gradients for reg in 0.0 3.14"
