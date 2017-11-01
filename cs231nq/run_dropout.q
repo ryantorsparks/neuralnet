@@ -62,7 +62,7 @@ lossGradCheckOneDropout:{[startd;dropout]
     lossGrad:fullyConnectedNet.loss initd;
 
     lg "initial loss is ",string lossGrad 0;
-    gradCheckDict:@[((raze key[startd],initd[`wParams`bParams]),`useBatchNorm`wParams`bParams`dropout`L`useDropout`dropoutParam)#initd;`model;:;`fullyConnectedNet];
+    gradCheckDict:@[((raze key[startd],initd[`wParams`bParams]),`useBatchNorm`wParams`bParams`dropout`L`flat`useDropout`dropoutParam)#initd;`model;:;`fullyConnectedNet];
 
     lg "comparing numerical gradients, reg=0";
     compareNumericalGradients[gradCheckDict;0]
@@ -88,7 +88,7 @@ startd:smallData,(!). flip (`model`fullyConnectedNet;(`dimHidden;1#500);(`nClass
 trainOneDropout:{[startd;dropout]
     lg "running training for dropout = ",string dropout;
     system"S -314159";
-    solver.train @[startd;`dropout;:;dropout]
+    .solver.train @[startd;`dropout;:;dropout]
  };
 
 res:trainOneDropout[startd;]each 0.0 0.75

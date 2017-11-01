@@ -211,7 +211,7 @@ fullyConnectedNet.loss:{[d]
     / grads should be `dw1`dw2..`db1`db2...`dbeta1`dbeta2...`dgamma1`dgamma2!...
     / TODO: make this cleaner
     grads:{(key[x] where key[x] like "d*")#x}d`hidden;
-    / solver.step expects `w1`w2 not `dw1`dw2 ..., so strip the d's
+    / .solver.step expects `w1`w2 not `dw1`dw2 ..., so strip the d's
     / TODO: make this less hacky
     (loss;removeDFromDictKey grads)
  };
@@ -229,9 +229,9 @@ fullyConnectedForwardPassLoop:{[d]
     hidden:d`hidden;
     h:hidden symi[`h`hdrop@d`useDropout;idx-1];
     if[d[`useBatchNorm]&not lastLayer;
-        gamma:d[`params;p`gamma];
-        beta:d[`params;p`beta];
-        bnParam:d[`bnParams;p`bnParams];
+        gamma:d p`gamma;
+        beta:d p`beta;
+        bnParam:d[`bnParams;p`bnParam];
       ];
     / for last layer in forward pass, set h and cache h:
     if[lastLayer;hidden[pe`h`cacheH]:affineForward`x`w`b!(h;w;b)];

@@ -24,4 +24,4 @@ startd:defaultStartd,inputd
  
 -1"starting cnn with input d \n",.Q.s `xTrain`yTrain`xVal`yVal _ startd;
  
-res:solver.train startd;
+res:.solver.train startd;

@@ -129,7 +129,7 @@ lg "##############################
 startd:`model`xTrain`yTrain`xVal`yVal`updateRule`optimConfig`learnRateDecay`numEpochs`batchSize`printEvery!(`twoLayerNet;xTrain;yTrain;xVal;yVal;`sgd;enlist[`learnRate]!enlist 1e-3;0.95;9;200;100)
 lg "run training, should be able to achieve > 50% validation accuracy"
 /
-res: solver.train startd;
+res: .solver.train startd;
 lg "plot loss history, validation and training accuracy in an IDE e.g qstudio using scatterplots:"
 lg"loss history: ([]iteration:til count res`lossHistory;loss:res`lossHistory)"
 lg"train history: ([]epoch:til 1+ res`numEpochs;loss: res`trainAccHistory)"
@@ -150,20 +150,20 @@ startd: d,`x`y`reg!(x;y;0.0)
 initd:fullyConnectedNet.init startd
 
 lg "as a sanity check, compare numerical gradients for reg in 0.0 3.14"
-gradCheckDict:@[((raze key[startd],initd[`wParams`bParams]),`wParams`bParams`useBatchNorm)#initd;`model;:;`fullyConnectedNet]
+gradCheckDict:@[((raze key[startd],initd[`wParams`bParams]),`wParams`bParams`flat`L`useDropout`useBatchNorm)#initd;`model;:;`fullyConnectedNet]
 compareNumericalGradients[gradCheckDict]each 0.0 3.14;
 
 lg "second sanity check, overfit a small data set using a 3-layer net"
 numTrain:50
 smallData:`xTrain`yTrain`xVal`yVal!(numTrain#xTrain;numTrain#yTrain;xVal;yVal)
 startd:smallData,`model`dimHidden`nClass`reg`learnRateDecay`wScale`updateRule`optimConfig`numEpochs`batchSize`printEvery!(`fullyConnectedNet;100 100;10;0.0;0.95;0.01;`sgd;enlist[`learnRate]!enlist 0.01;20;25;10)
-res: solver.train startd
+res: .solver.train startd
 
 lg "final sanity check, use a 5 layer net to overfit 50 training examples"
 numTrain:50
 smallData:`xTrain`yTrain`xVal`yVal!(numTrain#xTrain;numTrain#yTrain;xVal;yVal)
 startd:smallData,`model`dimHidden`nClass`reg`learnRateDecay`wScale`updateRule`optimConfig`numEpochs`batchSize`printEvery!(`fullyConnectedNet;4#100;10;0.0;0.95;0.036;`sgd;enlist[`learnRate]!enlist 0.021;20;25;10)
-res:solver.train startd
+res:.solver.train startd
 
 lg "##############################
     SGD and momentum
@@ -188,9 +188,9 @@ numTrain:4000
 smallData:`xTrain`yTrain`xVal`yVal!(numTrain#xTrain;numTrain#yTrain;xVal;yVal)
 startd:smallData,(!) . flip (`model`fullyConnectedNet;(`dimHidden;5#100);(`nClass;10);(`wScale;5e-2);(`optimConfig;(enlist `learnRate)!enlist 0.01);(`numEpochs;5);(`batchSize;100))
 lg "running training with sgd"
-resSgd:solver.train @[startd;`updateRule;:;`sgd] 
+resSgd:.solver.train @[startd;`updateRule;:;`sgd] 
 lg "running training with sgdMomentum"
-resSgdMomentum:solver.train @[startd;`updateRule;:;`sgdMomentum] 
+resSgdMomentum:.solver.train @[startd;`updateRule;:;`sgdMomentum] 
 lg "plot loss histories for each, e.g. in qstudio"
 lg "scatter plot of: ([]iteration:til count resSgd`lossHistory;lossSgd:resSgd`lossHistory;lossSgdMomentum:resSgdMomentum`lossHistory)"
 lg "line chart of: ([]iteration:string til 1+count resSgd`valAccHistory;trainAccSgd:0.,resSgd`valAccHistory;lossSgdMomentum:0.,resSgdMomentum`trainAccHistory)"   
@@ -235,10 +235,10 @@ numTrain:4000
 smallData:`xTrain`yTrain`xVal`yVal!(numTrain#xTrain;numTrain#yTrain;xVal;yVal)
 startd:smallData,(!) . flip (`model`fullyConnectedNet;(`dimHidden;5#100);(`nClass;10);(`wScale;5e-2);(`numEpochs;5);(`batchSize;100))
 lg "running training with rmsProp"
-resRmsProp:solver.train @[startd;`updateRule`optimConfig;:;(`rmsProp;enlist[`learnRate]!enlist 1e-4)]
+resRmsProp:.solver.train @[startd;`updateRule`optimConfig;:;(`rmsProp;enlist[`learnRate]!enlist 1e-4)]
 
 lg "running training with adam"
-resAdam:solver.train @[startd;`updateRule`optimConfig;:;(`adam;enlist[`learnRate]!enlist 1e-3)]
+resAdam:.solver.train @[startd;`updateRule`optimConfig;:;(`adam;enlist[`learnRate]!enlist 1e-3)]
 
 lg "plot all 4 together, sgd, sgdMomentum, rmsProp, adam"
 lg"scatter plot of: ([]iteration:til 200;lossSgd:resSgd`lossHistory;lossSgdMomentum:resSgdMomentum`lossHistory;lossRmsProp:resRmsProp`lossHistory;lossAdam:resAdam `lossHistory)"
@@ -261,7 +261,7 @@ startd:(!) . flip ((`xTrain;xTrain);(`yTrain;yTrain);(`xVal;xVal);(`yVal;yVal);`
 
 lg "run adam with 100 75 50 25 hidden dimensions, validation accuracy should 
     be around 50% (varies slightly depending on random initialization):\n"
-res:solver.train startd
+res:.solver.train startd
 
 lg "plot results using a q IDE with charting tool"
 lg"scatter plot:  ([]iteration:til count res`lossHistory;loss:res`lossHistory)"

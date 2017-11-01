@@ -96,14 +96,14 @@ lg "##############################
 `. upsert `N`D`H1`H2`C!2 15 20 30 10;
 x:randArray[N;D]
 y:N?C
-startd:(!). flip ((`dimHidden;H1,H2);(`dimInput;D);(`nClass;C);(`wScale;5e-2);(`useBatchNorm;1b);(`x;x);(`y;y));
+startd:(!). flip ((`dimHidden;H1,H2);(`dimInput;D);(`nClass;C);(`wScale;5e-2);(`useBatchNorm;1b);(`useDropout;0b);(`x;x);(`y;y));
 initd:fullyConnectedNet.init startd
 
 lossGrad:fullyConnectedNet.loss initd;
 lg "initial loss is ",string lossGrad 0
 
 lg "as a sanity check, compare numerical gradients for reg in 0.0 3.14"
-gradCheckDict:@[((raze key[startd],initd[`wParams`bParams`gammaParams`betaParams]),`wParams`bParams`gammaParams`betaParams`bnParams)#initd;`model;:;`fullyConnectedNet]
+gradCheckDict:@[((raze key[startd],initd[`wParams`bParams`gammaParams`betaParams]),`wParams`bParams`gammaParams`betaParams`bnParams`L`flat)#initd;`model;:;`fullyConnectedNet]
 compareNumericalGradients[gradCheckDict]each 0.0 3.14;
 
 
@@ -116,10 +116,10 @@ smallData:`xTrain`yTrain`xVal`yVal!(numTrain#xTrain;numTrain#yTrain;xVal;yVal)
 startd:smallData,(!). flip (`model`fullyConnectedNet;(`dimHidden;5#100);(`nClass;10);(`wScale;2e-2);(`numEpocs;10);(`batchSize;50);(`updateRule;`adam);(`optimConfig;enlist[`learnRate]!enlist 1e-3);(`printEvery;200);(`learnRateDecay;0.95));
 
 lg "run without batchnorm first"
-res1:solver.train @[startd;`useBatchNorm;:;0b]
+res1:.solver.train @[startd;`useBatchNorm;:;0b]
 
 lg "now run with batchnorm, should converge faster"
-res2:solver.train @[startd;`useBatchNorm;:;1b]
+res2:.solver.train @[startd;`useBatchNorm;:;1b]
 
 lg "plot results:
   
@@ -151,8 +151,8 @@ compareOneWeightScale:{[d;wScales;ind]
     d[`wScale]:wScale;
     aggs:(last;max;max);
     resKeys:`lossHistory`trainAccHistory`valAccHistory;
-    res:`baseline,wScale,aggs@'solver.train[@[d;`useBatchNorm;:;0b]]resKeys;
-    res2:`batchNorm,wScale,aggs@'solver.train[@[d;`useBatchNorm;:;1b]]resKeys;
+    res:`baseline,wScale,aggs@'.solver.train[@[d;`useBatchNorm;:;0b]]resKeys;
+    res2:`batchNorm,wScale,aggs@'.solver.train[@[d;`useBatchNorm;:;1b]]resKeys;
     flip `method`wScale`finalLoss`bestTrainAcc`bestValAcc!flip (res;res2)
  }
 

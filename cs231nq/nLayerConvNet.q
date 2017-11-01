@@ -275,7 +275,7 @@ nLayerConvNet.loss:{[d]
 
     / grads should be `dw1`dw2..`db1`db2...`dbeta1`dbeta2...`dgamma1`dgamma2!...
     grads:raze[d`dwParams`dbParams`dgammaParams`dbetaParams]#d`blocks;
-    / solver.step expects `w1`w2 not `dw1`dw2 ..., so strip the d's
+    / .solver.step expects `w1`w2 not `dw1`dw2 ..., so strip the d's
     / TODO: make this less hacky
     (loss;removeDFromDictKey grads)
  };

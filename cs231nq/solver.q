@@ -1,4 +1,4 @@
-/ ########### solver class functions ###########
+/ ########### .solver.class functions ###########
 
 / optional args:
 /   `updateRule - e.g `sgd
@@ -8,7 +8,7 @@
 /   `batchSize - minibatch size for training
 /   `numEpochs - number of epochs to run during training
 /   `printEvery - training losses will be printery every printEvery iterations
-solver.init:{[d]
+.solver.init:{[d]
     / d expects `model (getModelValue)
     d:nulld,d;
    
@@ -30,7 +30,7 @@ solver.init:{[d]
  };
 
 / reset a bunch of dict variables
-solver.reset:{[d]
+.solver.reset:{[d]
     / d expects `optimConfig`model
     / book-keeping variables
     optimd:d`optimConfig;
@@ -52,7 +52,7 @@ solver.reset:{[d]
  };
 
 
-solver.genBatch:{[d]
+.solver.genBatch:{[d]
     numTrain:count d`xTrain;
     batchMask:neg[d`batchSize]?numTrain;
     xBatch:d[`xTrain] batchMask;
@@ -61,13 +61,13 @@ solver.genBatch:{[d]
  };
 
 / allow for xTrain to be either read from mapped array, or already an in-mem blob
-solver.xTrainParser:{[x]
+.solver.xTrainParser:{[x]
     $[3072=count x 0;3 32 32#/:x;x]
  };
 .flat.solver.xTrainParser:(::)
 
 / step function
-solver.step:{[d]
+.solver.step:{[d]
     / d expects `xTrain`yTrain`batchSize`lossHistory`optimConfigs`updateRule
     / possibly (???( 
     / create mini batch
@@ -75,17 +75,17 @@ solver.step:{[d]
     /batchMask:neg[d`batchSize]?numTrain;
     /xBatch:d[`xTrain] batchMask;
     /yBatch:d[`yTrain] batchMask;
-//    batches:getClassValue[`solver.genBatch;dget[d;`class;`]]d;
-    batches:solver.genBatch[d];
-    xBatch:solver.xTrainParser batches 0;
+//    batches:getClassValue[`.solver.genBatch;dget[d;`class;`]]d;
+    batches:.solver.genBatch[d];
+    xBatch:.solver.xTrainParser batches 0;
     / do data augmentation, mirror half the images randomly
     if[1b~d`dataAugmentation;
         xBatch:@[xBatch;{neg[x div 2]?x}d`batchSize;reverse each]];
     yBatch:batches 1;
-    solver.i.step[d;xBatch;yBatch]
+    .solver.i.step[d;xBatch;yBatch]
  };
 
-solver.i.step:{[d;xBatch;yBatch]
+.solver.i.step:{[d;xBatch;yBatch]
     / compute loss and grad of mini batch
     modelParams:getModelValue[d;`params];
   
@@ -121,7 +121,7 @@ solver.i.step:{[d;xBatch;yBatch]
 
 / accuracy check
 / d is `x`y`numSamples`batchSize
-solver.checkAccuracy:{[d]
+.solver.checkAccuracy:{[d]
     / d expects `x`y`model`numSamples`batchSize
     / possibly sumbsample the data
     N:count d`x;
@@ -135,7 +135,7 @@ solver.checkAccuracy:{[d]
         x@:mask;
         y@:mask;
       ];
-    x:solver.xTrainParser x;
+    x:.solver.xTrainParser x;
     numBatches:N div batchSize;
 
     / make sure we do at least enough batches
@@ -160,21 +160,21 @@ getMaxIndex:{[f;d;x]{x?max x}each f @[d;`x;:;x]};
 .flat.getMaxIndex:{[f;d;x]{x?max x}each (#). f @[d;`x;:;x]};
 
 / train function
-solver.train:{[d]
+.solver.train:{[d]
     / d expects `xTrain`batchSize`numEpochs
     / first initialize d (this will first call model specific d[`model].init func, then
     / fill in blanks with default values)
-    d: solver.init d;
+    d: .solver.init d;
 
     / then reset everything
-    d: solver.reset d;
+    d: .solver.reset d;
 
     / get # of trainings, numEpochs, iters per epoch etc.
     numTrain:count d`xTrain;
     iterationsPerEpoch:1|numTrain div d`batchSize;
     numIterations:d[`numEpochs]*iterationsPerEpoch;
     d[`numIterations`iterationsPerEpoch]:numIterations,iterationsPerEpoch;
-    res:numIterations solver.i.train/d;
+    res:numIterations .solver.i.train/d;
     
     / finally, swap in best params (only the model params though, leave
     / the rest in tact (e.g. loss/accuracy histories)
@@ -183,7 +183,7 @@ solver.train:{[d]
  };
 
 / called iteratively by sover.train
-solver.i.train:{[d]
+.solver.i.train:{[d]
     / d expects `cnt`numIterations`printEvery`lossHistory`iterationsPerEpoch`epoch
     /           `optimConfigs`learnRate`learnRateDecay`model`batchSize`xTrain`yTrain
     /           `trainAccHistory`valAccHistory`bestValAcc
@@ -192,7 +192,7 @@ solver.i.train:{[d]
     numIterations:d`numIterations;
 
     / step
-    d:solver.step d;
+    d:.solver.step d;
 
     if[0=cnt mod d`printEvery;
         lgts"Iteration: ",string[d`cnt],"/",string[numIterations]," loss: ",string last d`lossHistory;
@@ -211,8 +211,8 @@ solver.i.train:{[d]
         lg"checking accuracies";
         checkKeys:modelParams,`bParams`wParams`layerInds`useBatchNorm`filterSize`L`M`reg`dropout`useDropout`dropoutParam`flat;
         if[d`useBatchNorm;checkKeys,:`bnParams`betaParams`gammaParams,getModelValue[d;`bnParams]];
-        trainAcc:solver.checkAccuracy (inter[checkKeys;key d]#d),`model`x`y`batchSize`numSamples`useDropout!d[`model`xTrain`yTrain`batchSize],1000,0b;
-        valAcc:solver.checkAccuracy (inter[checkKeys;key d]#d),`model`x`y`batchSize`numSamples`useDropout!d[`model`xVal`yVal`batchSize],0N,0b;
+        trainAcc:.solver.checkAccuracy (inter[checkKeys;key d]#d),`model`x`y`batchSize`numSamples`useDropout!d[`model`xTrain`yTrain`batchSize],1000,0b;
+        valAcc:.solver.checkAccuracy (inter[checkKeys;key d]#d),`model`x`y`batchSize`numSamples`useDropout!d[`model`xVal`yVal`batchSize],0N,0b;
         d[`trainAccHistory],:trainAcc;
         d[`valAccHistory],:valAcc;
         lgts"Epoch: ",string[d`epoch],"/",string[d`numEpochs]," train acc: ",string[trainAcc]," val acc: ",string[valAcc];
@@ -228,7 +228,7 @@ solver.i.train:{[d]
  };
 
 
-/ ################ captioning solver specific funcs ################
+/ ################ captioning .solver.specific funcs ################
 captioningSolver.init:{[d]
     / d expects `model (getModelValue)
     d:nulld,d;
@@ -266,7 +266,7 @@ captioningSolver.genBatch:{[d]
 captioningSolver.step:{[d]
     d[`split]:`train;
     batches:captioningSolver.genBatch d;
-    solver.i.step[d;;]. batches`imageFeatures`captions
+    .solver.i.step[d;;]. batches`imageFeatures`captions
  };
 
 / train function
@@ -277,7 +277,7 @@ captioningSolver.train:{[d]
     d: captioningSolver.init d;
 
     / then reset everything
-    d: solver.reset d;
+    d: .solver.reset d;
 
     / get # of trainings, numEpochs, iters per epoch etc.
     numTrain:count d`trainCaptions;

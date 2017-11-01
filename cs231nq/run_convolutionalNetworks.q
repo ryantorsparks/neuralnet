@@ -185,7 +185,7 @@ smallData:`xTrain`yTrain`xVal`yVal!(numTrain#xTrain;numTrain#yTrain;xVal;yVal)
 lg "running 10 epochs of overfitting"
 startd:smallData,(!). flip (`model`threeLayerConvNet;(`wScale;1e-2);(`numEpocs;10);(`batchSize;50);(`updateRule;`adam);(`optimConfig;enlist[`learnRate]!enlist 1e-3);(`printEvery;1));
 
-if[runAll;res:solver.train startd]
+if[runAll;res:.solver.train startd]
 
 lg "##############################
     Train the net
@@ -203,7 +203,7 @@ lg "for the base case, should expect to see approx 20% accuracy"
 
 startd:(!). flip ((`xTrain;xTrain);(`yTrain;yTrain);(`xVal;xVal);(`yVal;yVal);`model`threeLayerConvNet;(`wScale;1e-3);(`numEpochs;1);(`batchSize;50);(`updateRule;`adam);(`optimConfig;enlist[`learnRate]!enlist 1e-3);(`printEvery;20));
 
-if[runAll;res:solver.train startd]
+if[runAll;res:.solver.train startd]
 
 lg "##############################
     Decrease the filter size
@@ -213,7 +213,7 @@ lg "instead of the default filter size of 7, use 3. Should get around 45-50% acc
 
 startd:(!). flip ((`xTrain;xTrain);(`yTrain;yTrain);(`xVal;xVal);(`yVal;yVal);`model`threeLayerConvNet;(`wScale;1e-3);(`numEpochs;1);(`batchSize;50);(`updateRule;`adam);(`optimConfig;enlist[`learnRate]!enlist 1e-3);(`printEvery;20);(`dimHidden;500);(`filterSize;3));
 
-if[runAll;res:solver.train startd]
+if[runAll;res:.solver.train startd]
 
 lg "##############################
     Experiment with spatial batchnorm
@@ -328,7 +328,7 @@ smallData:`xTrain`yTrain`xVal`yVal!(numTrain#xTrain;numTrain#yTrain;xVal;yVal)
 lg "running 10 epochs of overfitting"
 startd:smallData,(!). flip (`model`threeLayerConvNet;(`wScale;1e-2);(`numEpochs;10);(`batchSize;50);(`updateRule;`adam);(`optimConfig;enlist[`learnRate]!enlist 1e-3);(`printEvery;1);(`useBatchNorm;1b));
 
-if[runAll;res:solver.train startd]
+if[runAll;res:.solver.train startd]
 
 lg "##############################
     Long run of 3 layer net
@@ -339,7 +339,7 @@ lg "this will take hours to run, and should get around
 
 startd:(!). flip ((`xTrain;xTrain);(`yTrain;yTrain);(`xVal;xVal);(`yVal;yVal);`model`threeLayerConvNet;(`wScale;1e-3);(`numEpochs;4);(`batchSize;50);(`updateRule;`adam);(`optimConfig;enlist[`learnRate]!enlist 1e-3);(`printEvery;20);(`dimHidden;500);(`filterSize;3);(`useBatchNorm;1b));
 
-if[runAll;res:solver.train startd]
+if[runAll;res:.solver.train startd]
 
 lg "##############################
     Running a deeper conv net
@@ -397,7 +397,7 @@ lg "running 10 epochs of overfitting, larger convnet,
     should reach 100% training accuracy within 10 epochs"
 startd:smallData,(!). flip (`model`nLayerConvNet;(`wScale;1e-2);(`numEpochs;10);(`batchSize;50);(`updateRule;`adam);(`optimConfig;enlist[`learnRate]!enlist 1e-3);(`printEvery;1);(`useBatchNorm;1b);(`dimInputs;3 32 32);(`numFilters;16 32 64 128);`filterSize,3;(`dimHidden;500 500));
 
-if[runAll;res:solver.train startd]
+if[runAll;res:.solver.train startd]
 
 lg "##############################
     Run the full, deep conv net on
@@ -406,4 +406,4 @@ lg "##############################
 
 startd:(!). flip (`useBatchNorm,1b;(`numFilters;16 32 64 128);`batchSize,50;`updateRule`adam;`filterSize,3;`printEvery,10;(`dimHidden;500 500);(`dimInput;3 32 32);(`numEpochs;30);`wScale,.05;`learnRateDecay,0.9;`nClass,10;(`xTrain;xTrain);(`yTrain;yTrain);(`xVal;xVal);(`yVal;yVal);`model`nLayerConvNet;(`optimConfig;(enlist `learnRate)!enlist 1e-3);`reg,0.05;`dropout,0.75)
 
-if[runAll;res:solver.train startd]
+if[runAll;res:.solver.train startd]
