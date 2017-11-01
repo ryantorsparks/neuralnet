@@ -231,6 +231,7 @@ maxPoolForwardNaive:{[x;poolParam]
    (out;cache)
  };
 
+/ TODO: don't assume sameSize and Tiles
 maxPoolForwardFast:{[x;poolParam]
     xShape:shape x;
     N:xShape 0;
@@ -482,7 +483,7 @@ convReluPoolBackward:{[dout;cache]
     dxDwDb
  };
 
-
+/ OLD, not used anymore, garbage function!!!
 / when doing conv backward fast, we need to initialize a few variables
 / that are very slow to create, but are used again and again
 / @params d - dict, should have `N`C`H`W`HH`WW`pad`stride`outh`outw
@@ -540,6 +541,7 @@ convBackwardFast:{[dout;cache]
     `dx`dw`db!(dx;dw;db)
  };
 
+/ TODO: convert to flat
 col2im6d:{[d]
     tempd::d;
     stride:d`stride;
@@ -561,6 +563,7 @@ col2im6d:{[d]
     res
  };
 
+/ OLD, not used
 / used by convBackwardFast, needs to have .conv.initBackwardVars run first
 col2im6dOld:{[dxCols]   
     colVals:matrixDotInds[dxCols;.conv.colValInds];
