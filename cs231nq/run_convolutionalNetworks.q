@@ -2,7 +2,7 @@
 \l load_all.q
 \l load_cifar_data.q
 / set runAll to 1b only if you want to run everything
-runAll:0b
+runAll:@[value;`runAll;0b];
 
 lg "##############################
     Convolutional Networks
