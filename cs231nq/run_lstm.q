@@ -112,15 +112,15 @@ wordToIdx:(nullToken,`cat`dog)!0 2 3
 V:count wordToIdx
 T:13
 startd:(!). flip((`wordToIdx;wordToIdx);`dimInput,D;`dimWordVec,W;`dimHidden,H;`cellType`lstm);
-initd:captioningRNN.init startd;
+initd:.captioningRNN.init startd;
 
 / scale everything to a linSpace of that shape
-initd:@[initd;captioningRNN.params[];{shapex#linSpace[-1.4;1.3;prd shapex:shape x]}]
+initd:@[initd;.captioningRNN.params[];{shapex#linSpace[-1.4;1.3;prd shapex:shape x]}]
 
 features:(N;D)#linSpace[-0.5;1.7;N*D]
 captions:(N,T)#til[N*T]mod V;
 
-lossGrads:captioningRNN.loss @[initd;`features`captions;:;(features;captions)]
+lossGrads:.captioningRNN.loss @[initd;`features`captions;:;(features;captions)]
 
 lg "comparing loss to expected "
 lg "loss is ",string loss:first lossGrads
@@ -142,7 +142,7 @@ smallData:(!). flip ((`trainCaptions;train_captions mask);(`trainImageIdxs;train
 
 startd:smallData,(!). flip (`updateRule`adam;`numEpochs,50;`batchSize,25;(`optimConfig;enlist[`learnRate]!enlist 5e-3);`lrDecay,0.05;`printEvery,10;`cellType`lstm;(`wordToIdx;word_to_idx);(`dimInput;count train_features 0);`dimHidden,512;`dimWordVec,256;`model`captioningRNN)
 
-if[runAll;res:captioningSolver.train startd
+if[runAll;res:.captioningSolver.train startd
 
     lg "plot loss history, validation and training accuracy in an IDE e.g qstudio using scatterplots:"
     lg"loss history: ([]iteration:til count res`lossHistory;loss:res`lossHistory)"
@@ -166,6 +166,6 @@ smallData:(!). flip ((`trainCaptions;train_captions mask);(`trainImageIdxs;train
 
 startd:smallData,(!). flip (`updateRule`adam;`numEpochs,10;`batchSize,25;(`optimConfig;enlist[`learnRate]!enlist 5e-3);`lrDecay,0.995;`printEvery,10;`cellType`lstm;(`wordToIdx;word_to_idx);(`dimInput;count train_features 0);`dimHidden,512;`dimWordVec,256;`model`captioningRNN)
 
-res:captioningSolver.train startd
+res:.captioningSolver.train startd
 
 sampleCaptions[smallData;res;] each `train`val

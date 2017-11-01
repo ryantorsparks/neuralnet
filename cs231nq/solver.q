@@ -229,7 +229,7 @@ getMaxIndex:{[f;d;x]{x?max x}each f @[d;`x;:;x]};
 
 
 / ################ captioning .solver.specific funcs ################
-captioningSolver.init:{[d]
+.captioningSolver.init:{[d]
     / d expects `model (getModelValue)
     d:nulld,d;
    
@@ -249,7 +249,7 @@ captioningSolver.init:{[d]
     d
  };
         
-captioningSolver.genBatch:{[d]
+.captioningSolver.genBatch:{[d]
     batchSize:dget[d;`batchSize;100];
     split:string dget[d;`split;`train];
     / either valCaptions or trainCaptions
@@ -263,18 +263,18 @@ captioningSolver.genBatch:{[d]
  };
 
 
-captioningSolver.step:{[d]
+.captioningSolver.step:{[d]
     d[`split]:`train;
-    batches:captioningSolver.genBatch d;
+    batches:.captioningSolver.genBatch d;
     .solver.i.step[d;;]. batches`imageFeatures`captions
  };
 
 / train function
-captioningSolver.train:{[d]
+.captioningSolver.train:{[d]
     / d expects `xTrain`batchSize`numEpochs
     / first initialize d (this will first call model specific d[`model].init func, then
     / fill in blanks with default values)
-    d: captioningSolver.init d;
+    d: .captioningSolver.init d;
 
     / then reset everything
     d: .solver.reset d;
@@ -284,7 +284,7 @@ captioningSolver.train:{[d]
     iterationsPerEpoch:1|numTrain div d`batchSize;
     numIterations:d[`numEpochs]*iterationsPerEpoch;
     d[`numIterations`iterationsPerEpoch]:numIterations,iterationsPerEpoch;
-    res:numIterations captioningSolver.i.train/d;
+    res:numIterations .captioningSolver.i.train/d;
 
     / finally, swap in best params (only the model params though, leave
     / the rest in tact (e.g. loss/accuracy histories)
@@ -292,7 +292,7 @@ captioningSolver.train:{[d]
     res
  };
  
-captioningSolver.i.train:{[d]
+.captioningSolver.i.train:{[d]
     / d expects `cnt`numIterations`printEvery`lossHistory`iterationsPerEpoch`epoch
     /           `optimConfigs`learnRate`learnRateDecay`model`batchSize`xTrain`yTrain
     /           `trainAccHistory`valAccHistory`bestValAcc
@@ -301,7 +301,7 @@ captioningSolver.i.train:{[d]
     numIterations:d`numIterations;
 
     / step
-    d:captioningSolver.step d;
+    d:.captioningSolver.step d;
 
     if[(0=cnt mod d`printEvery)or numIterations=1+cnt;
         lgts"Iteration: ",string[d`cnt],"/",string[numIterations]," loss: ",string last d`lossHistory;

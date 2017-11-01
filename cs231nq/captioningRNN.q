@@ -2,7 +2,7 @@
 / (.i.e. word_to_idx@`$"<END>"), uses global vars from load_coco_data.q
 decodeCaptions:{" " sv idx_to_word (1+x?endId)#x}
 
-captioningRNN.init:{[d]
+.captioningRNN.init:{[d]
     defaults:(!). flip 
     (
       `dimInput,512;
@@ -43,13 +43,13 @@ captioningRNN.init:{[d]
  };
 
 
-captioningRNN.params:{[d] `wEmbed`wProj`bProj`wx`wh`b`wVocab`bVocab};
+.captioningRNN.params:{[d] `wEmbed`wProj`bProj`wx`wh`b`wVocab`bVocab};
 
 / input d with key:
 /   `features: input image features, shape (N;D)
 /   `captions: ground-truth captions, integer array shape (N;T) where
 /              each element in the range 0<=y[i, t] < V
-captioningRNN.loss:{[d]
+.captioningRNN.loss:{[d]
     captionsIn:-1 _/:d`captions;
     captionsOut:1 _/:d`captions;
     mask:not captionsOut=d`null;
@@ -88,7 +88,7 @@ captioningRNN.loss:{[d]
     (loss;gradRes)
  };
 
-captioningRNN.sample:{[d]
+.captioningRNN.sample:{[d]
     features:d`features;
     N:count features;
     maxLength:dget[d;`maxLength;30];
@@ -127,10 +127,10 @@ captioningRNN.sample:{[d]
     flip res`captions
  };
 
-sampleCocoMinibatch:{[d;split;batchSize] d,captioningSolver.genBatch d:@[d;`split`batchSize;:;(split;batchSize)]}
+sampleCocoMinibatch:{[d;split;batchSize] d,.captioningSolver.genBatch d:@[d;`split`batchSize;:;(split;batchSize)]}
 
 / inputs:
-/   res - result of training, i.e. captioningRNN.train ....
+/   res - result of training, i.e. .captioningRNN.train ....
 /   smallData - small data to run on 
 /   split - `test or `val
 sampleCaptions:{[smallData;res;split]
@@ -138,7 +138,7 @@ sampleCaptions:{[smallData;res;split]
     minibatch:sampleCocoMinibatch[smallData;split;2];
     gtCaptions:minibatch`captions;
     features:minibatch`imageFeatures;
-    captionTrainRes:captioningRNN.sample @[res;`features;:;features];
+    captionTrainRes:.captioningRNN.sample @[res;`features;:;features];
     {[gtRes;res;url] lg "for url: \n",url,"\nground truth captions are: \n",(decodeCaptions gtRes),"\n";lg "train res captions are: \n",(decodeCaptions res),"\n";}./: flip (minibatch`captions;captionTrainRes;minibatch`urls);
  };
 
