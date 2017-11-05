@@ -315,5 +315,6 @@ loadCFunc[`sumMatrixFlat;3];
 / like b+/:matrix but for flat matrix addDotBias[b;flatm;nrows;ncols]
 loadCFunc[`addDotBias;4];
 
-/ make all c funcs
-makeAllCFuncs:{system" && " sv {"./makeqc64.sh ",-2_ string x} each {x where x like "*.c"}key `:.}
+/ make all c funcs, run in c_functions dir
+makeCCmd:"./",(`l32`l64`m32`m64!("makeqc_linux";"makeqc_linux64";"makeqc";"makeqc64"))[.z.o],".sh ";
+makeAllCFuncs:{system" && " sv {maceCCmd,-2_ string x} each {x where x like "*.c"}key `:.}
