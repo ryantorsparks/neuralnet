@@ -282,7 +282,7 @@ squeeze:{[m] {x where x>1}[shape m]#razeo m}
 /   strides: 1444 38 1 4332 38 1
 /   asStrided[m;newshape;strides]
 / equivalent to np.lib.stride_tricks.as_strided
-asStrided:{[m;newshape;strides] newshape#razeo[m]@{raze x+/:raze y}/[reverse[strides]*'til each reverse newshape]}
+asStrided:{[m;newshape;strides] newshape#razeo[m]@{raze x+/:raze y}/[reverse[strides]*til each reverse newshape]}
 
 / override func
 getClassValue:{[func;class] value $[()~key override: ` sv (-1_v),class,last v:` vs func;func;override]}
