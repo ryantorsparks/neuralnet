@@ -287,30 +287,33 @@ asStrided:{[m;newshape;strides] newshape#razeo[m]@{raze x+/:raze y}/[reverse[str
 / override func
 getClassValue:{[func;class] value $[()~key override: ` sv (-1_v),class,last v:` vs func;func;override]}
 
+/ try and load in a C (.so) function from $$QHOME
+/ note this assumes that the .so file name matches the function name inside it
+loadCFunc:{[f;nvars]
+    lg "attempting to load ",string[f]," c function";
+    .[{[f;n] f set f 2:(f;n)};(f;nvars);{lg"WARNING: failed to load ",string[y]," c function ";}[;f]];
+ };
+
 / load in col2im c funtion
-lg "attempting to load col2im6dInner function, must be a col2im6dInner.so object in $QHOME";
-@[{`col2im6dInner set `col2im6dInner 2:(`col2im6dInner;5)};();{lg"WARNING: failed to load col2im6dInner c function"}];
+loadCFunc[`col2im6dInner;5];
 
 / load in maskBroadcast6dAxes35  c funtion
-lg "attempting to load maskBroadcast6dAxes35 function, must be a maskBroadcast6dAxes35.so object in $QHOME";
-@[{`maskBroadcast6dAxes35 set `maskBroadcast6dAxes35 2:(`maskBroadcast6dAxes35;4)};();{lg"WARNING: failed to load maskBroadcast6dAxes35 c function"}];
+loadCFunc[`maskBroadcast6dAxes35;4];
 
 / load in sumAxes35KeepDims6dBroadcast c funtion
-lg "attempting to load sumAxes35KeepDims6dBroadcast function, must be a sumAxes35KeepDims6dBroadcast.so object in $QHOME";
-@[{`sumAxes35KeepDims6dBroadcast set `sumAxes35KeepDims6dBroadcast 2:(`sumAxes35KeepDims6dBroadcast;2)};();{lg"WARNING: failed to load sumAxes35KeepDims6dBroadcast c function"}];
+loadCFunc[`sumAxes35KeepDims6dBroadcast;2];
 
 / load in expandAxes35Flat6dMatrix
-lg "attempting to load expandAxes35Flat6dMatrix function, must be a expandAxes35Flat6dMatrix.so object in $QHOME";
-@[{`expandAxes35Flat6dMatrix set `expandAxes35Flat6dMatrix 2:(`expandAxes35Flat6dMatrix;3)};();{lg"WARNING: failed to load sumAxes35KeepDims6dBroadcast c function"}];
+loadCFunc[`expandAxes35Flat6dMatrix;3];
 
 / like "flip" but for a flattned matrix flip[flatm;nrows;ncols]
-flipFlat:`flipFlat 2:(`flipFlat;3)
+loadCFunc[`flipFlat;3];
 
 / like "sum matrix" but for flattened matrix flip[flatm;nrows;ncols]
-sumMatrixFlat:`sumMatrixFlat 2:(`sumMatrixFlat;3)
+loadCFunc[`sumMatrixFlat;3];
 
 / like b+/:matrix but for flat matrix addDotBias[b;flatm;nrows;ncols]
-addDotBias:`addDotBias 2:(`addDotBias;4)
+loadCFunc[`addDotBias;4];
 
-// make all c funcs
+/ make all c funcs
 makeAllCFuncs:{system" && " sv {"./makeqc64.sh ",-2_ string x} each {x where x like "*.c"}key `:.}

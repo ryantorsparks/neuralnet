@@ -271,7 +271,7 @@ fullyConnectedBackwardPassLoop:{[d]
 / loss function for fully connected class
 / @param d: contains:
 / `w1`w2`w3 ... `b1`b2`b3  ... , `x and possibly `y
-.old..fullyConnectedNet.loss:{[d]
+.old.fullyConnectedNet.loss:{[d]
     / d expects `dropoutParam`useBatchNorm`wParams(`w1`w2 ...`wN)`bParams(`b1`b2...`bN)
     /           `layerInds(1,2,3...N)
     / d possibly (???) needs `bnParams
