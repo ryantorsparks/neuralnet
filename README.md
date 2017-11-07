@@ -1,4 +1,8 @@
 # neuralnet
+
+UPDATE: 
+* have added slides to my kx meetup presentation here [kx meetup slides](https://github.com/ryantorsparks/neuralnet/blob/master/kx%20meetup%20convnets.pdf), they are probably a good start for reading
+
 I've tried to do/translate the Stanford cs231n assignment into kdb/q. Currently, I've completed assignments 1 and 2, and started on the third and final. The first 2 look at
 * 2 layer neural networks
 * n-layer fully connected neural networks (10 layer example)
@@ -22,6 +26,7 @@ I've tried to do/translate the Stanford cs231n assignment into kdb/q. Currently,
 TODO:
 * implement ensembles for convnets
 * convert the convnet stuff to use flat list matrixes instead of actual nested lists of lists (bit of a huge task though)
+* reduce some of the hard coding (e.g. around filtersizes etc.)
 
 Source is http://cs231n.github.io/assignments2016/
 
